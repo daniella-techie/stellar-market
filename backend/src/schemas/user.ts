@@ -18,6 +18,7 @@ export const updateUserProfileSchema = z.object({
     .max(10, "Cannot have more than 10 skills")
     .optional(),
   stellarAddress: optionalStellarAddressSchema,
+  availability: z.boolean().optional(),
 });
 
 export const getUsersQuerySchema = paginationSchema.extend({
@@ -25,6 +26,8 @@ export const getUsersQuerySchema = paginationSchema.extend({
   skill: z.string().optional(),
 });
 
+export const getUserJobsQuerySchema = paginationSchema;
+
 export const getUserByIdParamSchema = z.object({
-  id: z.string().uuid(),
+  id: z.string().min(1, "User ID is required"),
 });

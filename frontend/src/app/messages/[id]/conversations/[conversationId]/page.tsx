@@ -15,7 +15,7 @@ export default function ConversationPage() {
   const { token, user: currentUser } = useAuth();
   const partnerId = params?.conversationId as string;
 
-  const [messages, setMessages] = useState<any[]>([]);
+  const [messages, setMessages] = useState<any[]>([]); // eslint-disable-line @typescript-eslint/no-explicit-any
   const [partnerUsername, setPartnerUsername] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -28,7 +28,7 @@ export default function ConversationPage() {
     }
 
     axios
-      .get<any[]>(`${API}/messages/${partnerId}`, {
+      .get<any[]>(`${API}/messages/${partnerId}`, { // eslint-disable-line @typescript-eslint/no-explicit-any
         headers: { Authorization: `Bearer ${token}` },
       })
       .then((res) => {
@@ -48,7 +48,7 @@ export default function ConversationPage() {
   if (loading) {
     return (
       <div className="max-w-2xl mx-auto px-4 py-10">
-        <div className="h-96 bg-dark-card rounded-xl animate-pulse border border-dark-border" />
+        <div className="h-96 bg-theme-card rounded-xl animate-pulse border border-theme-border" />
       </div>
     );
   }
@@ -65,13 +65,13 @@ export default function ConversationPage() {
     <main className="max-w-2xl mx-auto px-4 py-6 flex flex-col h-[calc(100vh-4rem)]">
       <Link
         href="/messages"
-        className="flex items-center gap-2 text-dark-muted hover:text-dark-heading text-sm mb-4 transition-colors w-fit"
+        className="flex items-center gap-2 text-theme-text hover:text-theme-heading text-sm mb-4 transition-colors w-fit"
       >
         <ArrowLeft size={16} />
         Back to messages
       </Link>
 
-      <div className="flex-1 bg-dark-card border border-dark-border rounded-xl overflow-hidden flex flex-col">
+      <div className="flex-1 bg-theme-card border border-theme-border rounded-xl overflow-hidden flex flex-col">
         <ChatWindow
           currentUserId={currentUser?.id || ""}
           partnerId={partnerId}

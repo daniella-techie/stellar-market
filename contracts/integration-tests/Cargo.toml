@@ -1,0 +1,13 @@
+[package]
+name = "stellar-market-integration-tests"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+soroban-sdk = { workspace = true }
+stellar-market-escrow = { path = "../escrow" }
+stellar-market-dispute = { path = "../dispute" }
+stellar-market-reputation = { path = "../reputation" }
+
+[dev-dependencies]
+soroban-sdk = { workspace = true, features = ["testutils"] }

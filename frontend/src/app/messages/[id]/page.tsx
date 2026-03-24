@@ -119,10 +119,10 @@ export default function ChatThreadPage() {
     return (
       <div className="max-w-4xl mx-auto px-4 py-12 flex flex-col h-[80vh]">
         <div className="animate-pulse flex items-center gap-4 mb-8">
-          <div className="w-10 h-10 bg-dark-border rounded-full" />
-          <div className="h-6 bg-dark-border rounded w-48" />
+          <div className="w-10 h-10 bg-theme-border rounded-full" />
+          <div className="h-6 bg-theme-border rounded w-48" />
         </div>
-        <div className="flex-1 bg-dark-card/30 rounded-2xl border border-dark-border" />
+        <div className="flex-1 bg-theme-card/30 rounded-2xl border border-theme-border" />
       </div>
     );
   }
@@ -130,11 +130,11 @@ export default function ChatThreadPage() {
   return (
     <div className="max-w-4xl mx-auto px-4 py-8 flex flex-col h-[calc(100vh-120px)]">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6 pb-4 border-b border-dark-border">
+      <div className="flex items-center justify-between mb-6 pb-4 border-b border-theme-border">
         <div className="flex items-center gap-4">
           <button
             onClick={() => router.back()}
-            className="p-2 hover:bg-dark-card rounded-full transition-colors"
+            className="p-2 hover:bg-theme-card rounded-full transition-colors"
           >
             <ArrowLeft size={20} />
           </button>
@@ -151,7 +151,7 @@ export default function ChatThreadPage() {
               )}
             </div>
             <div>
-              <h2 className="font-bold text-dark-heading">
+              <h2 className="font-bold text-theme-heading">
                 {otherUser?.username || "Chat"}
               </h2>
               {job && (
@@ -175,7 +175,7 @@ export default function ChatThreadPage() {
             return <MessageBubble key={msg.id} message={msg} isMe={isMe} />;
           })
         ) : (
-          <div className="h-full flex flex-col items-center justify-center text-dark-text opacity-50">
+          <div className="h-full flex flex-col items-center justify-center text-theme-text opacity-50">
             <MessageSquare size={48} className="mb-4" />
             <p>No messages yet. Send a message to start the conversation!</p>
           </div>
@@ -184,10 +184,10 @@ export default function ChatThreadPage() {
 
       {/* Input Area */}
       <form onSubmit={handleSendMessage} className="relative">
-        <div className="flex items-end gap-3 bg-dark-card p-2 rounded-2xl border border-dark-border focus-within:border-stellar-blue/50 transition-all shadow-xl">
+        <div className="flex items-end gap-3 bg-theme-card p-2 rounded-2xl border border-theme-border focus-within:border-stellar-blue/50 transition-all shadow-xl">
           <button
             type="button"
-            className="p-2.5 text-dark-text hover:text-stellar-blue transition-colors"
+            className="p-2.5 text-theme-text hover:text-stellar-blue transition-colors"
           >
             <Paperclip size={20} />
           </button>
@@ -201,7 +201,7 @@ export default function ChatThreadPage() {
               }
             }}
             placeholder="Type your message..."
-            className="flex-1 bg-transparent border-none focus:ring-0 text-dark-heading py-2.5 resize-none max-h-32 text-sm"
+            className="flex-1 bg-transparent border-none focus:ring-0 text-theme-heading py-2.5 resize-none max-h-32 text-sm"
             rows={1}
           />
           <button
@@ -210,7 +210,7 @@ export default function ChatThreadPage() {
             className={`p-2.5 rounded-xl transition-all ${
               newMessage.trim() && !sending
                 ? "bg-stellar-blue text-white shadow-lg shadow-stellar-blue/20 hover:scale-105 active:scale-95"
-                : "bg-dark-border text-dark-text opacity-50 cursor-not-allowed"
+                : "bg-theme-border text-theme-text opacity-50 cursor-not-allowed"
             }`}
           >
             <Send size={20} />

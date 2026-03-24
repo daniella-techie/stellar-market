@@ -67,8 +67,8 @@ function ToastItem({ toast, onClose }: { toast: Toast; onClose: () => void }) {
     <div
       className={`flex items-center gap-3 px-4 py-3 rounded-lg border shadow-lg min-w-[300px] max-w-[420px] animate-slide-in ${
         toast.type === "success"
-          ? "bg-green-900/80 border-green-700 text-green-100"
-          : "bg-red-900/80 border-red-700 text-red-100"
+          ? "bg-theme-success/10 border-theme-success/20 text-theme-success"
+          : "bg-theme-error/10 border-theme-error/20 text-theme-error"
       }`}
       role="alert"
     >

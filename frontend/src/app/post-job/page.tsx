@@ -37,8 +37,8 @@ export default function PostJobPage() {
 
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <h1 className="text-3xl font-bold text-dark-heading mb-2">Post a Job</h1>
-      <p className="text-dark-text mb-8">
+      <h1 className="text-3xl font-bold text-theme-heading mb-2">Post a Job</h1>
+      <p className="text-theme-text mb-8">
         Describe your project and set milestones. Funds will be locked in escrow
         when a freelancer is accepted.
       </p>
@@ -46,7 +46,7 @@ export default function PostJobPage() {
       <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
         {/* Title */}
         <div>
-          <label className="block text-sm font-medium text-dark-heading mb-2">
+          <label className="block text-sm font-medium text-theme-heading mb-2">
             Job Title
           </label>
           <input
@@ -58,7 +58,7 @@ export default function PostJobPage() {
 
         {/* Description */}
         <div>
-          <label className="block text-sm font-medium text-dark-heading mb-2">
+          <label className="block text-sm font-medium text-theme-heading mb-2">
             Description
           </label>
           <textarea
@@ -70,7 +70,7 @@ export default function PostJobPage() {
 
         {/* Category */}
         <div>
-          <label className="block text-sm font-medium text-dark-heading mb-2">
+          <label className="block text-sm font-medium text-theme-heading mb-2">
             Category
           </label>
           <select className="input-field">
@@ -88,7 +88,7 @@ export default function PostJobPage() {
         {/* Milestones */}
         <div>
           <div className="flex items-center justify-between mb-4">
-            <label className="text-sm font-medium text-dark-heading">
+            <label className="text-sm font-medium text-theme-heading">
               Milestones
             </label>
             <button
@@ -149,7 +149,7 @@ export default function PostJobPage() {
 
         {/* Total */}
         <div className="card flex items-center justify-between">
-          <span className="text-dark-heading font-semibold">Total Budget</span>
+          <span className="text-theme-heading font-semibold">Total Budget</span>
           <span className="text-2xl font-bold bg-gradient-to-r from-stellar-blue to-stellar-purple bg-clip-text text-transparent">
             {totalBudget.toLocaleString()} XLM
           </span>

@@ -1,37 +1,54 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { Search } from "lucide-react";
+import { useState, useEffect, useCallback, Suspense } from "react";
+import { Search, SlidersHorizontal } from "lucide-react";
 import axios from "axios";
 import JobCard from "@/components/JobCard";
 import Pagination from "@/components/Pagination";
+import FilterSidebar from "@/components/FilterSidebar";
+import { useJobFilters } from "@/hooks/useJobFilters";
 import { Job, PaginatedResponse } from "@/types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 const JOBS_PER_PAGE = 10;
 
-const categories = ["All", "Frontend", "Backend", "Smart Contract", "Design", "Mobile", "Documentation"];
+function JobsContent() {
+  const {
+    filters,
+    debouncedSearch,
+    updateFilter,
+    updateSearch,
+    toggleArrayFilter,
+    clearAll,
+    activeCount,
+    postedAfterDate,
+  } = useJobFilters();
 
-export default function JobsPage() {
-  const [search, setSearch] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("All");
-  const [page, setPage] = useState(1);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   const fetchJobs = useCallback(async () => {
     setLoading(true);
     try {
       const params: Record<string, string | number> = {
-        page,
+        page: filters.page,
         limit: JOBS_PER_PAGE,
       };
-      if (selectedCategory !== "All") params.category = selectedCategory;
-      if (search) params.search = search;
 
-      const res = await axios.get<PaginatedResponse<Job>>(`${API_URL}/jobs`, { params });
+      if (filters.sort !== "newest") params.sort = filters.sort;
+      if (debouncedSearch) params.search = debouncedSearch;
+      if (filters.skills.length) params.skills = filters.skills.join(",");
+      if (filters.status.length) params.status = filters.status.join(",");
+      if (filters.minBudget) params.minBudget = Number(filters.minBudget);
+      if (filters.maxBudget) params.maxBudget = Number(filters.maxBudget);
+      if (postedAfterDate) params.postedAfter = postedAfterDate;
+
+      const res = await axios.get<PaginatedResponse<Job>>(`${API_URL}/jobs`, {
+        params,
+      });
       setJobs(res.data.data);
       setTotal(res.data.total);
       setTotalPages(res.data.totalPages);
@@ -42,85 +59,135 @@ export default function JobsPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, selectedCategory, search]);
+  }, [
+    filters.page,
+    filters.sort,
+    filters.skills,
+    filters.status,
+    filters.minBudget,
+    filters.maxBudget,
+    debouncedSearch,
+    postedAfterDate,
+  ]);
 
   useEffect(() => {
     fetchJobs();
   }, [fetchJobs]);
 
-  // Reset to page 1 when filters change
-  const handleCategoryChange = (cat: string) => {
-    setSelectedCategory(cat);
-    setPage(1);
-  };
-
-  const handleSearchChange = (value: string) => {
-    setSearch(value);
-    setPage(1);
-  };
+  const start = total > 0 ? (filters.page - 1) * JOBS_PER_PAGE + 1 : 0;
+  const end = Math.min(filters.page * JOBS_PER_PAGE, total);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <h1 className="text-3xl font-bold text-dark-heading mb-8">
-        Browse Jobs
-      </h1>
-
-      {/* Search & Filters */}
-      <div className="flex flex-col md:flex-row gap-4 mb-8">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-dark-text" size={18} />
-          <input
-            type="text"
-            placeholder="Search jobs..."
-            className="input-field pl-10"
-            value={search}
-            onChange={(e) => handleSearchChange(e.target.value)}
-          />
-        </div>
-        <div className="flex gap-2 flex-wrap">
-          {categories.map((cat) => (
-            <button
-              key={cat}
-              onClick={() => handleCategoryChange(cat)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                selectedCategory === cat
-                  ? "bg-stellar-blue text-white"
-                  : "bg-dark-card border border-dark-border text-dark-text hover:border-stellar-blue"
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
-        </div>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-8">
+        <h1 className="text-3xl font-bold text-theme-heading">Browse Jobs</h1>
+        <button
+          onClick={() => setDrawerOpen(true)}
+          className="lg:hidden flex items-center gap-2 btn-secondary py-2 px-4 relative"
+        >
+          <SlidersHorizontal size={18} />
+          <span>Filters</span>
+          {activeCount > 0 && (
+            <span className="absolute -top-2 -right-2 bg-stellar-blue text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">
+              {activeCount}
+            </span>
+          )}
+        </button>
       </div>
 
-      {/* Job Listings */}
-      {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="animate-pulse bg-dark-card border border-dark-border rounded-xl h-64" />
-          ))}
+      {/* Search */}
+      <div className="relative mb-6">
+        <Search
+          className="absolute left-3 top-1/2 -translate-y-1/2 text-theme-text"
+          size={18}
+        />
+        <input
+          type="text"
+          placeholder="Search jobs..."
+          className="input-field pl-10"
+          value={filters.search}
+          onChange={(e) => updateSearch(e.target.value)}
+        />
+      </div>
+
+      {/* Main layout: sidebar + results */}
+      <div className="flex gap-8">
+        <FilterSidebar
+          filters={filters}
+          updateFilter={updateFilter}
+          toggleArrayFilter={toggleArrayFilter}
+          clearAll={clearAll}
+          activeCount={activeCount}
+          isOpen={drawerOpen}
+          onClose={() => setDrawerOpen(false)}
+        />
+
+        {/* Results */}
+        <div className="flex-1 min-w-0">
+          {/* Results count */}
+          {!loading && (
+            <p className="text-sm text-theme-text mb-4">
+              Showing {start}
+              {total > 0 && <>&ndash;{end}</>} of {total} jobs
+            </p>
+          )}
+
+          {loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="animate-pulse bg-theme-card border border-theme-border rounded-xl h-64"
+                />
+              ))}
+            </div>
+          ) : jobs.length > 0 ? (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {jobs.map((job) => (
+                  <JobCard key={job.id} job={job} />
+                ))}
+              </div>
+              <Pagination
+                page={filters.page}
+                totalPages={totalPages}
+                total={total}
+                limit={JOBS_PER_PAGE}
+                onPageChange={(p) => updateFilter("page", p)}
+              />
+            </>
+          ) : (
+            <div className="text-center py-20">
+              <p className="text-theme-text text-lg mb-2">
+                No jobs found matching your filters.
+              </p>
+              {activeCount > 0 && (
+                <button
+                  onClick={clearAll}
+                  className="text-stellar-blue hover:text-stellar-purple text-sm font-medium transition-colors"
+                >
+                  Clear all filters
+                </button>
+              )}
+            </div>
+          )}
         </div>
-      ) : jobs.length > 0 ? (
-        <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {jobs.map((job) => (
-              <JobCard key={job.id} job={job} />
-            ))}
-          </div>
-          <Pagination
-            page={page}
-            totalPages={totalPages}
-            total={total}
-            limit={JOBS_PER_PAGE}
-            onPageChange={setPage}
-          />
-        </>
-      ) : (
-        <div className="text-center py-20 text-dark-text">
-          No jobs found matching your criteria.
-        </div>
-      )}
+      </div>
     </div>
+  );
+}
+
+export default function JobsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <div className="animate-pulse bg-theme-card rounded-xl h-96" />
+        </div>
+      }
+    >
+      <JobsContent />
+    </Suspense>
   );
 }

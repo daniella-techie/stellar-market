@@ -3,6 +3,8 @@ import { PrismaClient } from "@prisma/client";
 import { authenticate, AuthRequest } from "../middleware/auth";
 import { validate } from "../middleware/validation";
 import { asyncHandler } from "../middleware/error";
+import { NotificationService } from "../services/notification.service";
+import { NotificationType } from "@prisma/client";
 import {
   createMilestoneSchema,
   updateMilestoneSchema,
@@ -31,7 +33,7 @@ router.get(
   authenticate,
   validate({ params: getJobByIdParamSchema }),
   asyncHandler(async (req: AuthRequest, res: Response) => {
-    const { jobId } = req.params;
+    const jobId = req.params.jobId as string;
 
     const job = await prisma.job.findUnique({ where: { id: jobId } });
     if (!job) {
@@ -100,6 +102,7 @@ router.post(
         .json({ error: "Not authorized to create milestones for this job." });
     }
 
+    const milestonesCount = await prisma.milestone.count({ where: { jobId } });
     const milestone = await prisma.milestone.create({
       data: {
         jobId,
@@ -107,6 +110,7 @@ router.post(
         description,
         amount,
         dueDate: new Date(dueDate),
+        order: milestonesCount + 1,
       },
       include: {
         job: { select: { id: true, title: true } },
@@ -123,7 +127,7 @@ router.get(
   authenticate,
   validate({ params: getMilestoneByIdParamSchema }),
   asyncHandler(async (req: AuthRequest, res: Response) => {
-    const { id } = req.params;
+    const id = req.params.id as string;
 
     const milestone = await prisma.milestone.findUnique({
       where: { id },
@@ -144,8 +148,8 @@ router.get(
     }
 
     // Check if user is authorized to view this milestone
-    const isClient = milestone.job.clientId === req.userId;
-    const isFreelancer = milestone.job.freelancerId === req.userId;
+    const isClient = (milestone as any).job.clientId === req.userId;
+    const isFreelancer = (milestone as any).job.freelancerId === req.userId;
 
     if (!isClient && !isFreelancer) {
       return res
@@ -166,7 +170,7 @@ router.put(
     body: updateMilestoneSchema,
   }),
   asyncHandler(async (req: AuthRequest, res: Response) => {
-    const { id } = req.params;
+    const id = req.params.id as string;
     const updateData = req.body;
 
     if (updateData.dueDate) {
@@ -181,7 +185,7 @@ router.put(
     if (!milestone) {
       return res.status(404).json({ error: "Milestone not found." });
     }
-    if (milestone.job.clientId !== req.userId) {
+    if ((milestone as any).job.clientId !== req.userId) {
       return res
         .status(403)
         .json({ error: "Not authorized to update this milestone." });
@@ -205,7 +209,7 @@ router.delete(
   authenticate,
   validate({ params: getMilestoneByIdParamSchema }),
   asyncHandler(async (req: AuthRequest, res: Response) => {
-    const { id } = req.params;
+    const id = req.params.id as string;
 
     const milestone = await prisma.milestone.findUnique({
       where: { id },
@@ -215,7 +219,7 @@ router.delete(
     if (!milestone) {
       return res.status(404).json({ error: "Milestone not found." });
     }
-    if (milestone.job.clientId !== req.userId) {
+    if ((milestone as any).job.clientId !== req.userId) {
       return res
         .status(403)
         .json({ error: "Not authorized to delete this milestone." });
@@ -235,7 +239,7 @@ router.patch(
     body: updateMilestoneStatusSchema,
   }),
   asyncHandler(async (req: AuthRequest, res: Response) => {
-    const { id } = req.params;
+    const id = req.params.id as string;
     const { status } = req.body;
 
     const milestone = await prisma.milestone.findUnique({
@@ -247,7 +251,7 @@ router.patch(
       return res.status(404).json({ error: "Milestone not found." });
     }
 
-    const job = milestone.job;
+    const job = (milestone as any).job;
     const isClient = job.clientId === req.userId;
     const isFreelancer = job.freelancerId === req.userId;
 
@@ -275,6 +279,17 @@ router.patch(
       where: { id },
       data: { status },
     });
+
+    // Notify the client when freelancer submits milestone
+    if (isFreelancer && status === "COMPLETED") {
+      await NotificationService.sendNotification({
+        userId: job.clientId,
+        type: NotificationType.MILESTONE_SUBMITTED,
+        title: "Milestone Submitted",
+        message: `Freelancer submitted milestone: ${milestone.title}`,
+        metadata: { jobId: job.id, milestoneId: id },
+      });
+    }
 
     // Auto-complete job when all milestones are completed
     if (status === "COMPLETED") {

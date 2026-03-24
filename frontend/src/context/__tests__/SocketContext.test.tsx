@@ -3,6 +3,12 @@ import React from "react";
 import { render, act, screen } from "@testing-library/react";
 import { SocketProvider, useSocket } from "@/context/SocketContext";
 
+// Mock AuthContext — SocketProvider calls useAuth()
+jest.mock("@/context/AuthContext", () => ({
+  useAuth: () => ({ token: "mock-token", user: null, login: jest.fn(), logout: jest.fn(), isLoading: false }),
+  AuthProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+}));
+
 // Mock socket.io-client
 jest.mock("socket.io-client", () => {
   const handlers: Record<string, ((...args: unknown[]) => void)[]> = {};

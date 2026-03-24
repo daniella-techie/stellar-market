@@ -11,7 +11,6 @@ import { Send } from "lucide-react";
 import { useSocket } from "@/context/SocketContext";
 import TypingIndicator from "./TypingIndicator";
 
-const TOKEN_KEY = "stellarmarket_jwt";
 const TYPING_DEBOUNCE_MS = 1500;
 
 export interface ChatMessage {
@@ -141,11 +140,11 @@ export default function ChatWindow({
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="px-4 py-3 border-b border-dark-border flex items-center gap-3">
+      <div className="px-4 py-3 border-b border-theme-border flex items-center gap-3">
         <div className="w-8 h-8 rounded-full bg-gradient-to-br from-stellar-blue to-stellar-purple flex items-center justify-center text-white text-sm font-bold">
           {partnerUsername[0]?.toUpperCase()}
         </div>
-        <span className="font-semibold text-dark-heading">{partnerUsername}</span>
+        <span className="font-semibold text-theme-heading">{partnerUsername}</span>
       </div>
 
       {/* Messages */}
@@ -158,17 +157,15 @@ export default function ChatWindow({
               className={`flex ${isOwn ? "justify-end" : "justify-start"}`}
             >
               <div
-                className={`max-w-[70%] px-4 py-2 rounded-2xl text-sm leading-relaxed ${
-                  isOwn
+                className={`max-w-[70%] px-4 py-2 rounded-2xl text-sm leading-relaxed ${isOwn
                     ? "bg-stellar-blue text-white rounded-br-sm"
-                    : "bg-dark-card text-dark-text border border-dark-border rounded-bl-sm"
-                }`}
+                    : "bg-theme-card text-theme-text border border-theme-border rounded-bl-sm"
+                  }`}
               >
                 {msg.content}
                 <div
-                  className={`text-xs mt-1 ${
-                    isOwn ? "text-blue-200" : "text-dark-muted"
-                  }`}
+                  className={`text-xs mt-1 ${isOwn ? "text-blue-200" : "text-theme-text"
+                    }`}
                 >
                   {new Date(msg.createdAt).toLocaleTimeString([], {
                     hour: "2-digit",
@@ -187,7 +184,7 @@ export default function ChatWindow({
       {/* Input */}
       <form
         onSubmit={handleSend}
-        className="px-4 py-3 border-t border-dark-border flex items-end gap-3"
+        className="px-4 py-3 border-t border-theme-border flex items-end gap-3"
       >
         <textarea
           rows={1}
@@ -200,7 +197,7 @@ export default function ChatWindow({
             }
           }}
           placeholder={`Message ${partnerUsername}…`}
-          className="flex-1 resize-none bg-dark-card border border-dark-border rounded-xl px-4 py-2.5 text-sm text-dark-text placeholder-dark-muted focus:outline-none focus:border-stellar-blue transition-colors"
+          className="flex-1 resize-none bg-theme-card border border-theme-border rounded-xl px-4 py-2.5 text-sm text-theme-text placeholder-theme-text focus:outline-none focus:border-stellar-blue transition-colors"
         />
         <button
           type="submit"

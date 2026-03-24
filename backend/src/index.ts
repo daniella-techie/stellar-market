@@ -4,12 +4,13 @@ import helmet from "helmet";
 import { createServer } from "http";
 import { config } from "./config";
 import routes from "./routes";
-import { apiRateLimiter, authRateLimiter } from "./middleware/rate-limit";
+import { apiRateLimiter, authRateLimiter, forgotPasswordRateLimiter } from "./middleware/rate-limit";
 import { sanitizeInput } from "./middleware/sanitize";
 import { errorHandler } from "./middleware/error";
 import { initSocket } from "./socket";
 
 const app = express();
+import { swaggerUi, swaggerSpec } from "./config/swagger";
 const httpServer = createServer(app);
 
 // Attach Socket.io
@@ -27,6 +28,14 @@ const corsOptions: cors.CorsOptions = {
 };
 
 // Security middleware
+  // Swagger UI setup (disabled in production)
+  if (process.env.NODE_ENV !== "production") {
+    app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+    app.get("/api/openapi.json", (_req, res) => {
+      res.setHeader("Content-Type", "application/json");
+      res.send(swaggerSpec);
+    });
+  }
 app.use(helmet());
 app.use(cors(corsOptions));
 app.use(express.json());
@@ -40,6 +49,8 @@ app.get("/health", (_req, res) => {
 // Rate limiting
 app.use("/api/auth/login", authRateLimiter);
 app.use("/api/auth/register", authRateLimiter);
+app.use("/api/auth/2fa/validate", authRateLimiter);
+app.use("/api/auth/forgot-password", forgotPasswordRateLimiter);
 app.use("/api", apiRateLimiter);
 
 // API routes

@@ -10,6 +10,24 @@ jest.mock("axios", () => ({
 import axios from "axios";
 const mockAxios = axios as jest.Mocked<typeof axios>;
 
+// ─── Mock AuthContext ─────────────────────────────────────────────────────────
+jest.mock("@/context/AuthContext", () => ({
+  useAuth: () => ({
+    token: "mock-token",
+    user: null,
+    login: jest.fn(),
+    logout: jest.fn(),
+    isLoading: false,
+  }),
+  AuthProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+}));
+
+// ─── Mock ThemeContext ────────────────────────────────────────────────────────
+jest.mock("@/context/ThemeContext", () => ({
+  useTheme: () => ({ theme: "dark", toggleTheme: jest.fn() }),
+  ThemeProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+}));
+
 // ─── Mock WalletContext ───────────────────────────────────────────────────────
 jest.mock("@/context/WalletContext", () => ({
   useWallet: () => ({

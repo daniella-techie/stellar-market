@@ -31,7 +31,7 @@ export default function JobsLoading() {
               <Skeleton className="h-4 w-24" />
               <Skeleton className="h-4 w-16" />
             </div>
-            <div className="flex items-center gap-2 mt-4 pt-4 border-t border-dark-border">
+            <div className="flex items-center gap-2 mt-4 pt-4 border-t border-theme-border">
               <Skeleton className="w-6 h-6 rounded-full" />
               <Skeleton className="h-4 w-24" />
             </div>

@@ -18,22 +18,73 @@
 }
 
 @layer base {
+  :root {
+    --bg-main: #ffffff;
+    --bg-card: #f9fafb;
+    --bg-secondary: #f3f4f6;
+    --border: #e5e7eb;
+    --text-muted: #6b7280;
+    --text-heading: #111827;
+    --text-body: #374151;
+    --accent-blue: #3E54CF;
+    --accent-purple: #7B61FF;
+    
+    /* Status Colors */
+    --success: #10b981;
+    --success-bg: rgba(16, 185, 129, 0.1);
+    --error: #ef4444;
+    --error-bg: rgba(239, 68, 68, 0.1);
+    --warning: #f59e0b;
+    --warning-bg: rgba(245, 158, 11, 0.1);
+    --info: #3b82f6;
+    --info-bg: rgba(59, 130, 246, 0.1);
+  }
+
+  [data-theme='dark'] {
+    --bg-main: #0a0b14;
+    --bg-card: #12131f;
+    --bg-secondary: #1a1b2a;
+    --border: #1e2035;
+    --text-muted: #a1a1b5;
+    --text-heading: #e4e4ed;
+    --text-body: #c9c9d9;
+    
+    /* Status Colors - Dark Mode Refinement */
+    --success: #10b981;
+    --success-bg: rgba(16, 185, 129, 0.2);
+    --error: #f87171;
+    --error-bg: rgba(248, 113, 113, 0.2);
+    --warning: #fbbf24;
+    --warning-bg: rgba(251, 191, 36, 0.2);
+    --info: #60a5fa;
+    --info-bg: rgba(96, 165, 250, 0.2);
+  }
+
   body {
-    @apply bg-dark-bg text-dark-text;
+    @apply bg-[var(--bg-main)] text-[var(--text-muted)];
   }
 }
 
 @layer components {
   .card {
-    @apply bg-dark-card border border-dark-border rounded-xl p-6;
+    @apply bg-[var(--bg-card)] border border-[var(--border)] rounded-xl p-6;
   }
   .btn-primary {
     @apply bg-stellar-blue hover:bg-stellar-purple text-white font-medium px-6 py-3 rounded-lg transition-colors duration-200;
   }
   .btn-secondary {
-    @apply bg-dark-card border border-dark-border hover:border-stellar-blue text-dark-heading font-medium px-6 py-3 rounded-lg transition-colors duration-200;
+    @apply bg-[var(--bg-card)] border border-[var(--border)] hover:border-stellar-blue text-[var(--text-heading)] font-medium px-6 py-3 rounded-lg transition-colors duration-200;
   }
   .input-field {
-    @apply bg-dark-card border border-dark-border rounded-lg px-4 py-3 text-dark-heading placeholder-dark-text focus:outline-none focus:border-stellar-blue transition-colors w-full;
+    @apply bg-[var(--bg-card)] border border-[var(--border)] rounded-lg px-4 py-3 text-[var(--text-heading)] placeholder-[var(--text-muted)] focus:outline-none focus:border-stellar-blue transition-colors w-full;
+  }
+  /* Theme Transition Smoothing */
+  *, *::before, *::after {
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+  }
+
+  /* Disable transitions for initial load to prevent flash of transition */
+  .no-transition * {
+    transition: none !important;
   }
 }

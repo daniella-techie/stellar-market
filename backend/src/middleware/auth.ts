@@ -1,9 +1,13 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { config } from "../config";
+import { PrismaClient, UserRole } from "@prisma/client";
+
+const prisma = new PrismaClient();
 
 export interface AuthRequest extends Request {
   userId?: string;
+  userRole?: UserRole;
 }
 
 export const authenticate = (
@@ -21,10 +25,89 @@ export const authenticate = (
   const token = authHeader.split(" ")[1];
 
   try {
-    const decoded = jwt.verify(token, config.jwtSecret) as { userId: string };
+    const decoded = jwt.verify(token, config.jwtSecret) as { userId: string; purpose?: string };
+
+    if (decoded.purpose === "2fa_pending") {
+      res.status(401).json({ error: "2FA verification required." });
+      return;
+    }
+
     req.userId = decoded.userId;
     next();
   } catch {
     res.status(401).json({ error: "Invalid or expired token." });
+  }
+};
+
+export const requireAdmin = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  // First authenticate the user
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    res.status(401).json({ error: "Access denied. No token provided." });
+    return;
+  }
+
+  const token = authHeader.split(" ")[1];
+
+  try {
+    const decoded = jwt.verify(token, config.jwtSecret) as { userId: string };
+    req.userId = decoded.userId;
+
+    // Query database for user role
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+      select: { role: true },
+    });
+
+    if (!user) {
+      res.status(401).json({ error: "User not found." });
+      return;
+    }
+
+    if (user.role !== UserRole.ADMIN) {
+      res.status(403).json({ error: "Access denied. Admin privileges required." });
+      return;
+    }
+
+    req.userRole = user.role;
+    next();
+  } catch {
+    res.status(401).json({ error: "Invalid or expired token." });
+  }
+};
+
+export const checkSuspension = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  if (!req.userId) {
+    next();
+    return;
+  }
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.userId },
+      select: { isSuspended: true, suspendReason: true },
+    });
+
+    if (user && user.isSuspended) {
+      res.status(403).json({
+        error: "Account suspended.",
+        reason: user.suspendReason || "Your account has been suspended.",
+      });
+      return;
+    }
+
+    next();
+  } catch (error) {
+    console.error("Error checking suspension status:", error);
+    next();
   }
 };

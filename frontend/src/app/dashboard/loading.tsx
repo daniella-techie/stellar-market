@@ -19,7 +19,7 @@ export default function DashboardLoading() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-4 mb-6 border-b border-dark-border px-1">
+      <div className="flex gap-4 mb-6 border-b border-theme-border px-1">
         {[1, 2, 3].map((i) => (
           <Skeleton key={i} className="h-8 w-24 mb-3" />
         ))}

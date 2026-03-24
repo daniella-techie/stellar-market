@@ -1,0 +1,272 @@
+"use client";
+
+import { useState, useCallback, useEffect } from "react";
+import { X, Loader2, AlertCircle } from "lucide-react";
+import dynamic from "next/dynamic";
+import axios from "axios";
+import { useAuth } from "@/context/AuthContext";
+import { useToast } from "@/components/Toast";
+import { Job } from "@/types";
+
+const MDEditor = dynamic(() => import("@uiw/react-md-editor"), { ssr: false });
+
+const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000/api";
+
+const TIMELINE_OPTIONS = [
+  { label: "1 week", days: 7 },
+  { label: "2 weeks", days: 14 },
+  { label: "1 month", days: 30 },
+  { label: "2 months", days: 60 },
+  { label: "Custom", days: 0 },
+];
+
+const MIN_PROPOSAL_LENGTH = 200;
+
+interface ApplyModalProps {
+  job: Job;
+  isOpen: boolean;
+  onClose: () => void;
+  onSuccess: () => void;
+}
+
+export default function ApplyModal({
+  job,
+  isOpen,
+  onClose,
+  onSuccess,
+}: ApplyModalProps) {
+  const { token } = useAuth();
+  const { toast } = useToast();
+
+  const [proposal, setProposal] = useState("");
+  const [bidAmount, setBidAmount] = useState(job.budget);
+  const [selectedTimeline, setSelectedTimeline] = useState(TIMELINE_OPTIONS[0].label);
+  const [customDays, setCustomDays] = useState<number | "">("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (isOpen) {
+      setProposal("");
+      setBidAmount(job.budget);
+      setSelectedTimeline(TIMELINE_OPTIONS[0].label);
+      setCustomDays("");
+      setError("");
+      setValidationErrors({});
+    }
+  }, [isOpen, job.budget]);
+
+  const getEstimatedDuration = useCallback((): number => {
+    const option = TIMELINE_OPTIONS.find((o) => o.label === selectedTimeline);
+    if (option && option.days > 0) return option.days;
+    return typeof customDays === "number" ? customDays : 0;
+  }, [selectedTimeline, customDays]);
+
+  const validate = useCallback((): boolean => {
+    const errors: Record<string, string> = {};
+    const plainText = proposal.replace(/[#*_~`>\-\[\]()!|]/g, "").trim();
+
+    if (!proposal.trim()) {
+      errors.proposal = "Cover letter is required.";
+    } else if (plainText.length < MIN_PROPOSAL_LENGTH) {
+      errors.proposal = `Cover letter must be at least ${MIN_PROPOSAL_LENGTH} characters. Currently ${plainText.length}.`;
+    }
+
+    if (!bidAmount || bidAmount <= 0) {
+      errors.bidAmount = "Proposed budget must be a positive number.";
+    }
+
+    const duration = getEstimatedDuration();
+    if (duration <= 0) {
+      errors.estimatedDuration = "Please select or enter a valid timeline.";
+    }
+
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  }, [proposal, bidAmount, getEstimatedDuration]);
+
+  const handleSubmit = async () => {
+    setError("");
+    if (!validate()) return;
+
+    setSubmitting(true);
+    try {
+      await axios.post(
+        `${API}/applications/jobs/${job.id}/apply`,
+        {
+          jobId: job.id,
+          proposal,
+          bidAmount,
+          estimatedDuration: getEstimatedDuration(),
+        },
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+      toast.success("Application submitted!");
+      onSuccess();
+      onClose();
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err) && err.response?.data?.error) {
+        setError(err.response.data.error);
+      } else {
+        setError("Something went wrong. Please try again.");
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  const plainTextLength = proposal.replace(/[#*_~`>\-\[\]()!|]/g, "").trim().length;
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center"
+      role="dialog"
+      aria-modal="true"
+    >
+      <div className="absolute inset-0 bg-black/60" onClick={onClose} />
+      <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-dark-card border border-dark-border rounded-xl p-6 mx-4">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-bold text-dark-heading">
+            Apply for this Job
+          </h2>
+          <button
+            onClick={onClose}
+            className="text-dark-text hover:text-dark-heading transition-colors"
+            aria-label="Close"
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        <p className="text-sm text-dark-text mb-6">
+          {job.title} &mdash; {job.budget.toLocaleString()} XLM
+        </p>
+
+        {error && (
+          <div className="flex items-center gap-2 p-3 mb-4 rounded-lg bg-red-900/40 border border-red-700 text-red-200 text-sm">
+            <AlertCircle size={16} className="shrink-0" />
+            {error}
+          </div>
+        )}
+
+        <div className="space-y-5">
+          <div>
+            <label className="block text-sm font-medium text-dark-heading mb-2">
+              Cover Letter
+            </label>
+            <div data-color-mode="dark">
+              <MDEditor
+                value={proposal}
+                onChange={(val) => setProposal(val || "")}
+                height={240}
+                preview="edit"
+              />
+            </div>
+            <div className="flex items-center justify-between mt-1">
+              {validationErrors.proposal ? (
+                <span className="text-red-400 text-xs">
+                  {validationErrors.proposal}
+                </span>
+              ) : (
+                <span className="text-xs text-dark-text">
+                  Minimum {MIN_PROPOSAL_LENGTH} characters
+                </span>
+              )}
+              <span
+                className={`text-xs ${
+                  plainTextLength < MIN_PROPOSAL_LENGTH
+                    ? "text-dark-text"
+                    : "text-green-400"
+                }`}
+              >
+                {plainTextLength}
+              </span>
+            </div>
+          </div>
+
+          <div>
+            <label
+              htmlFor="bidAmount"
+              className="block text-sm font-medium text-dark-heading mb-2"
+            >
+              Proposed Budget (XLM)
+            </label>
+            <input
+              id="bidAmount"
+              type="number"
+              min="1"
+              step="any"
+              className="input-field"
+              value={bidAmount}
+              onChange={(e) => setBidAmount(parseFloat(e.target.value) || 0)}
+            />
+            {validationErrors.bidAmount && (
+              <span className="text-red-400 text-xs mt-1 block">
+                {validationErrors.bidAmount}
+              </span>
+            )}
+          </div>
+
+          <div>
+            <label
+              htmlFor="timeline"
+              className="block text-sm font-medium text-dark-heading mb-2"
+            >
+              Estimated Timeline
+            </label>
+            <select
+              id="timeline"
+              className="input-field"
+              value={selectedTimeline}
+              onChange={(e) => setSelectedTimeline(e.target.value)}
+            >
+              {TIMELINE_OPTIONS.map((opt) => (
+                <option key={opt.label} value={opt.label}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+            {selectedTimeline === "Custom" && (
+              <input
+                type="number"
+                min="1"
+                placeholder="Number of days"
+                className="input-field mt-2"
+                value={customDays}
+                onChange={(e) =>
+                  setCustomDays(e.target.value ? parseInt(e.target.value, 10) : "")
+                }
+              />
+            )}
+            {validationErrors.estimatedDuration && (
+              <span className="text-red-400 text-xs mt-1 block">
+                {validationErrors.estimatedDuration}
+              </span>
+            )}
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3 mt-6 pt-4 border-t border-dark-border">
+          <button
+            onClick={onClose}
+            className="btn-secondary flex-1"
+            disabled={submitting}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSubmit}
+            className="btn-primary flex-1 flex items-center justify-center gap-2"
+            disabled={submitting}
+          >
+            {submitting && <Loader2 size={16} className="animate-spin" />}
+            {submitting ? "Submitting..." : "Submit Application"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

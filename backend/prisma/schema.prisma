@@ -10,6 +10,7 @@ datasource db {
 enum UserRole {
   CLIENT
   FREELANCER
+  ADMIN
 }
 
 enum JobStatus {
@@ -34,38 +35,104 @@ enum ApplicationStatus {
   REJECTED
 }
 
-model User {
-  id            String   @id @default(cuid())
-  walletAddress String   @unique
-  email         String?  @unique
-  username      String   @unique
-  password      String?
-  bio           String?
-  avatarUrl     String?
-  role          UserRole @default(FREELANCER)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+enum EscrowStatus {
+  UNFUNDED
+  FUNDED
+  COMPLETED
+  CANCELLED
+  DISPUTED
+}
 
-  clientJobs     Job[]         @relation("ClientJobs")
-  freelancerJobs Job[]         @relation("FreelancerJobs")
-  applications   Application[]
-  sentMessages   Message[]     @relation("SentMessages")
-  receivedMessages Message[]   @relation("ReceivedMessages")
-  reviewsGiven   Review[]      @relation("ReviewsGiven")
-  reviewsReceived Review[]     @relation("ReviewsReceived")
+enum TransactionType {
+  DEPOSIT
+  RELEASE
+  REFUND
+  DISPUTE_PAYOUT
+}
+
+enum NotificationType {
+  JOB_APPLIED
+  APPLICATION_ACCEPTED
+  MILESTONE_SUBMITTED
+  MILESTONE_APPROVED
+  DISPUTE_RAISED
+  DISPUTE_RESOLVED
+  NEW_MESSAGE
+}
+
+enum DisputeStatus {
+  OPEN
+  REVIEWING
+  VOTING
+  RESOLVED_CLIENT
+  RESOLVED_FREELANCER
+  OVERRIDDEN_BY_ADMIN
+}
+
+model User {
+  id                     String    @id @default(cuid())
+  walletAddress          String    @unique
+  email                  String?   @unique
+  username               String    @unique
+  password               String?
+  bio                    String?
+  avatarUrl              String?
+  role                   UserRole  @default(FREELANCER)
+  twoFactorSecret        String?
+  twoFactorEnabled       Boolean   @default(false)
+  backupCodes            String[]
+  emailVerified          Boolean   @default(false)
+  emailVerificationToken String?
+  passwordResetToken     String?
+  passwordResetExpiry    DateTime?
+  isFlagged              Boolean   @default(false)
+  flagReason             String?
+  isSuspended            Boolean   @default(false)
+  suspendReason          String?
+  suspendedAt            DateTime?
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+  availability           Boolean   @default(true)
+  averageRating          Float     @default(0)
+  reviewCount            Int       @default(0)
+
+  clientJobs        Job[]          @relation("ClientJobs")
+  freelancerJobs    Job[]          @relation("FreelancerJobs")
+  applications      Application[]
+  sentMessages      Message[]      @relation("SentMessages")
+  receivedMessages  Message[]      @relation("ReceivedMessages")
+  reviewsGiven      Review[]       @relation("ReviewsGiven")
+  reviewsReceived   Review[]       @relation("ReviewsReceived")
+  skills            String[]
+  transactionsFrom  Transaction[]  @relation("TransactionsFrom")
+  transactionsTo    Transaction[]  @relation("TransactionsTo")
+  attachments       Attachment[]
+  notifications     Notification[]
+  auditLogs         AuditLog[]
+  initiatedDisputes Dispute[]      @relation("DisputeInitiated")
+  respondedDisputes Dispute[]      @relation("DisputeResponded")
+  votesCast         Vote[]         @relation("VotesCast")
 }
 
 model Job {
-  id           String    @id @default(cuid())
-  title        String
-  description  String
-  budget       Float
-  category     String
-  status       JobStatus @default(OPEN)
-  clientId     String
-  freelancerId String?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  id            String       @id @default(cuid())
+  title         String
+  description   String
+  budget        Float
+  category      String
+  status        JobStatus    @default(OPEN)
+  clientId      String
+  freelancerId  String?
+  contractJobId String?      @unique
+  escrowStatus  EscrowStatus @default(UNFUNDED)
+  skills        String[]
+  deadline      DateTime
+  isFlagged     Boolean      @default(false)
+  flagReason    String?
+  flaggedAt     DateTime?
+  flaggedBy     String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
 
   client       User          @relation("ClientJobs", fields: [clientId], references: [id])
   freelancer   User?         @relation("FreelancerJobs", fields: [freelancerId], references: [id])
@@ -73,29 +140,37 @@ model Job {
   applications Application[]
   messages     Message[]
   reviews      Review[]
+  transactions Transaction[]
+  attachments  Attachment[]
+  dispute      Dispute?
 }
 
 model Milestone {
-  id          String          @id @default(cuid())
-  jobId       String
-  title       String
-  description String
-  amount      Float
-  status      MilestoneStatus @default(PENDING)
-  order       Int
-  createdAt   DateTime        @default(now())
+  id               String          @id @default(cuid())
+  jobId            String
+  title            String
+  description      String
+  amount           Float
+  status           MilestoneStatus @default(PENDING)
+  order            Int
+  onChainIndex     Int?
+  contractDeadline DateTime?
+  dueDate          DateTime?
+  createdAt        DateTime        @default(now())
 
-  job Job @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  job          Job           @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
 }
 
 model Application {
-  id             String            @id @default(cuid())
-  jobId          String
-  freelancerId   String
-  coverLetter    String
-  proposedBudget Float
-  status         ApplicationStatus @default(PENDING)
-  createdAt      DateTime          @default(now())
+  id                String            @id @default(cuid())
+  jobId             String
+  freelancerId      String
+  proposal          String
+  bidAmount         Float
+  estimatedDuration String
+  status            ApplicationStatus @default(PENDING)
+  createdAt         DateTime          @default(now())
 
   job        Job  @relation(fields: [jobId], references: [id], onDelete: Cascade)
   freelancer User @relation(fields: [freelancerId], references: [id])
@@ -131,4 +206,123 @@ model Review {
   reviewee User @relation("ReviewsReceived", fields: [revieweeId], references: [id])
 
   @@unique([jobId, reviewerId])
+}
+
+model Transaction {
+  id           String          @id @default(cuid())
+  jobId        String
+  milestoneId  String?
+  fromAddress  String
+  toAddress    String
+  amount       Float
+  tokenAddress String
+  txHash       String          @unique
+  type         TransactionType
+  createdAt    DateTime        @default(now())
+
+  job       Job        @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  milestone Milestone? @relation(fields: [milestoneId], references: [id], onDelete: SetNull)
+  from      User       @relation("TransactionsFrom", fields: [fromAddress], references: [walletAddress])
+  to        User       @relation("TransactionsTo", fields: [toAddress], references: [walletAddress])
+
+  @@index([txHash])
+  @@index([jobId])
+  @@index([fromAddress])
+  @@index([toAddress])
+  @@index([type])
+  @@index([createdAt])
+}
+
+model Attachment {
+  id           String   @id @default(cuid())
+  uploaderId   String
+  jobId        String?
+  disputeId    String?
+  filename     String
+  originalName String
+  mimeType     String
+  size         Int
+  url          String
+  createdAt    DateTime @default(now())
+
+  uploader User     @relation(fields: [uploaderId], references: [id], onDelete: Cascade)
+  job      Job?     @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  dispute  Dispute? @relation(fields: [disputeId], references: [id], onDelete: Cascade)
+
+  @@index([uploaderId])
+  @@index([jobId])
+  @@index([disputeId])
+  @@index([createdAt])
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String
+  message   String
+  read      Boolean          @default(false)
+  metadata  Json?
+  createdAt DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  adminId   String
+  action    String
+  target    String
+  metadata  Json?
+  timestamp DateTime @default(now())
+
+  admin User @relation(fields: [adminId], references: [id])
+}
+
+model Dispute {
+  id                 String        @id @default(cuid())
+  jobId              String        @unique
+  contractDisputeId  String?       @unique
+  initiatorId        String
+  respondentId       String
+  reason             String
+  status             DisputeStatus @default(OPEN)
+  votesForClient     Int           @default(0)
+  votesForFreelancer Int           @default(0)
+  minVotes           Int           @default(3)
+  escalated          Boolean       @default(false)
+  outcome            String?
+  resolvedAt         DateTime?
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  job         Job          @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  initiator   User         @relation("DisputeInitiated", fields: [initiatorId], references: [id])
+  respondent  User         @relation("DisputeResponded", fields: [respondentId], references: [id])
+  votes       Vote[]
+  attachments Attachment[]
+
+  @@index([jobId])
+  @@index([initiatorId])
+  @@index([respondentId])
+  @@index([status])
+}
+
+model Vote {
+  id        String   @id @default(cuid())
+  disputeId String
+  voterId   String
+  choice    String // "CLIENT" or "FREELANCER"
+  reason    String
+  createdAt DateTime @default(now())
+
+  dispute Dispute @relation(fields: [disputeId], references: [id], onDelete: Cascade)
+  voter   User    @relation("VotesCast", fields: [voterId], references: [id])
+
+  @@unique([disputeId, voterId])
+  @@index([disputeId])
+  @@index([voterId])
 }

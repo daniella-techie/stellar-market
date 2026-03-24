@@ -1,0 +1,19 @@
+{
+    "name": "StellarMarket",
+    "short_name": "StellarMarket",
+    "icons": [
+        {
+            "src": "/favicon.svg",
+            "sizes": "any",
+            "type": "image/svg+xml"
+        },
+        {
+            "src": "/apple-touch-icon.png",
+            "sizes": "180x180",
+            "type": "image/png"
+        }
+    ],
+    "theme_color": "#3E54CF",
+    "background_color": "#0a0b14",
+    "display": "standalone"
+}

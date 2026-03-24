@@ -1,0 +1,1150 @@
+Contracts — Tests	Set up job	﻿2026-02-25T21:00:25.7596330Z Current runner version: '2.331.0'
+Contracts — Tests	Set up job	2026-02-25T21:00:25.7633487Z ##[group]Runner Image Provisioner
+Contracts — Tests	Set up job	2026-02-25T21:00:25.7634832Z Hosted Compute Agent
+Contracts — Tests	Set up job	2026-02-25T21:00:25.7635732Z Version: 20260213.493
+Contracts — Tests	Set up job	2026-02-25T21:00:25.7636896Z Commit: 5c115507f6dd24b8de37d8bbe0bb4509d0cc0fa3
+Contracts — Tests	Set up job	2026-02-25T21:00:25.7638087Z Build Date: 2026-02-13T00:28:41Z
+Contracts — Tests	Set up job	2026-02-25T21:00:25.7639075Z Worker ID: {4eccf323-bf18-4261-91a2-32b93c3e13b5}
+Contracts — Tests	Set up job	2026-02-25T21:00:25.7640375Z Azure Region: eastus2
+Contracts — Tests	Set up job	2026-02-25T21:00:25.7641522Z ##[endgroup]
+Contracts — Tests	Set up job	2026-02-25T21:00:25.7644018Z ##[group]Operating System
+Contracts — Tests	Set up job	2026-02-25T21:00:25.7645067Z Ubuntu
+Contracts — Tests	Set up job	2026-02-25T21:00:25.7645935Z 24.04.3
+Contracts — Tests	Set up job	2026-02-25T21:00:25.7646716Z LTS
+Contracts — Tests	Set up job	2026-02-25T21:00:25.7647576Z ##[endgroup]
+Contracts — Tests	Set up job	2026-02-25T21:00:25.7648452Z ##[group]Runner Image
+Contracts — Tests	Set up job	2026-02-25T21:00:25.7649411Z Image: ubuntu-24.04
+Contracts — Tests	Set up job	2026-02-25T21:00:25.7650613Z Version: 20260224.36.1
+Contracts — Tests	Set up job	2026-02-25T21:00:25.7652415Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20260224.36/images/ubuntu/Ubuntu2404-Readme.md
+Contracts — Tests	Set up job	2026-02-25T21:00:25.7655278Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20260224.36
+Contracts — Tests	Set up job	2026-02-25T21:00:25.7657007Z ##[endgroup]
+Contracts — Tests	Set up job	2026-02-25T21:00:25.7658924Z ##[group]GITHUB_TOKEN Permissions
+Contracts — Tests	Set up job	2026-02-25T21:00:25.7661899Z Contents: read
+Contracts — Tests	Set up job	2026-02-25T21:00:25.7662760Z Metadata: read
+Contracts — Tests	Set up job	2026-02-25T21:00:25.7663778Z Packages: read
+Contracts — Tests	Set up job	2026-02-25T21:00:25.7664626Z ##[endgroup]
+Contracts — Tests	Set up job	2026-02-25T21:00:25.7667339Z Secret source: None
+Contracts — Tests	Set up job	2026-02-25T21:00:25.7669179Z Prepare workflow directory
+Contracts — Tests	Set up job	2026-02-25T21:00:25.8225034Z Prepare all required actions
+Contracts — Tests	Set up job	2026-02-25T21:00:25.8279877Z Getting action download info
+Contracts — Tests	Set up job	2026-02-25T21:00:26.1922860Z Download action repository 'actions/checkout@v4' (SHA:34e114876b0b11c390a56381ad16ebd13914f8d5)
+Contracts — Tests	Set up job	2026-02-25T21:00:26.3376718Z Download action repository 'dtolnay/rust-toolchain@stable' (SHA:631a55b12751854ce901bb631d5902ceb48146f7)
+Contracts — Tests	Set up job	2026-02-25T21:00:26.5465262Z Download action repository 'Swatinem/rust-cache@v2' (SHA:779680da715d629ac1d338a641029a2f4372abb5)
+Contracts — Tests	Set up job	2026-02-25T21:00:27.0354039Z Complete job name: Contracts — Tests
+Contracts — Tests	Run actions/checkout@v4	﻿2026-02-25T21:00:27.1188434Z ##[group]Run actions/checkout@v4
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.1189723Z with:
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.1190715Z   repository: stellarmarket-labs/stellar-market
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.1192043Z   token: ***
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.1192737Z   ssh-strict: true
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.1193465Z   ssh-user: git
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.1194202Z   persist-credentials: true
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.1195031Z   clean: true
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.1195775Z   sparse-checkout-cone-mode: true
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.1196676Z   fetch-depth: 1
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.1197393Z   fetch-tags: false
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.1198142Z   show-progress: true
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.1198891Z   lfs: false
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.1199569Z   submodules: false
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.1200327Z   set-safe-directory: true
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.1201832Z ##[endgroup]
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.2322786Z Syncing repository: stellarmarket-labs/stellar-market
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.2325448Z ##[group]Getting Git version info
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.2326983Z Working directory is '/home/runner/work/stellar-market/stellar-market'
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.2329045Z [command]/usr/bin/git version
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.2414178Z git version 2.53.0
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.2441806Z ##[endgroup]
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.2457443Z Temporarily overriding HOME='/home/runner/work/_temp/a66cb76e-8c1a-462f-94df-2fbbb202c93b' before making global git config changes
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.2460005Z Adding repository directory to the temporary git global config as a safe directory
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.2463030Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/stellar-market/stellar-market
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.2507199Z Deleting the contents of '/home/runner/work/stellar-market/stellar-market'
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.2510750Z ##[group]Initializing the repository
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.2515522Z [command]/usr/bin/git init /home/runner/work/stellar-market/stellar-market
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.2639764Z hint: Using 'master' as the name for the initial branch. This default branch name
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.2643299Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.2646577Z hint: to use in all of your new repositories, which will suppress this warning,
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.2649709Z hint: call:
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.2651305Z hint:
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.2652939Z hint: 	git config --global init.defaultBranch <name>
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.2654764Z hint:
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.2656470Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.2659519Z hint: 'development'. The just-created branch can be renamed via this command:
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.2662091Z hint:
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.2663234Z hint: 	git branch -m <name>
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.2664546Z hint:
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.2666457Z hint: Disable this message with "git config set advice.defaultBranchName false"
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.2668878Z Initialized empty Git repository in /home/runner/work/stellar-market/stellar-market/.git/
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.2672627Z [command]/usr/bin/git remote add origin https://github.com/stellarmarket-labs/stellar-market
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.2700287Z ##[endgroup]
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.2702814Z ##[group]Disabling automatic garbage collection
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.2704930Z [command]/usr/bin/git config --local gc.auto 0
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.2737122Z ##[endgroup]
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.2739277Z ##[group]Setting up auth
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.2745355Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.2781400Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.3193697Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.3229993Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.3484632Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.3519544Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.3761844Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.3799405Z ##[endgroup]
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.3803086Z ##[group]Fetching the repository
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.3812135Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +ebe43230772a1b5a7f0473db497a90f526ae6951:refs/remotes/pull/116/merge
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.6541469Z From https://github.com/stellarmarket-labs/stellar-market
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.6544618Z  * [new ref]         ebe43230772a1b5a7f0473db497a90f526ae6951 -> pull/116/merge
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.6580710Z ##[endgroup]
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.6583241Z ##[group]Determining the checkout info
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.6586267Z ##[endgroup]
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.6588874Z [command]/usr/bin/git sparse-checkout disable
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.6634739Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.6664531Z ##[group]Checking out the ref
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.6668817Z [command]/usr/bin/git checkout --progress --force refs/remotes/pull/116/merge
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.6929678Z Note: switching to 'refs/remotes/pull/116/merge'.
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.6932248Z 
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.6933233Z You are in 'detached HEAD' state. You can look around, make experimental
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.6935134Z changes and commit them, and you can discard any commits you make in this
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.6937815Z state without impacting any branches by switching back to a branch.
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.6939608Z 
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.6940917Z If you want to create a new branch to retain commits you create, you may
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.6943809Z do so (now or later) by using -c with the switch command. Example:
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.6945726Z 
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.6946408Z   git switch -c <new-branch-name>
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.6947547Z 
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.6948276Z Or undo this operation with:
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.6949282Z 
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.6949943Z   git switch -
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.6951015Z 
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.6952284Z Turn off this advice by setting config variable advice.detachedHead to false
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.6954073Z 
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.6956028Z HEAD is now at ebe4323 Merge fb664eced8951bf763349cb01837973c2c32e184 into 8b2a8671e7eb3181ed0c5a58cc4e252a04bad000
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.6959797Z ##[endgroup]
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.6984351Z [command]/usr/bin/git log -1 --format=%H
+Contracts — Tests	Run actions/checkout@v4	2026-02-25T21:00:27.7007923Z ebe43230772a1b5a7f0473db497a90f526ae6951
+Contracts — Tests	Set up Rust toolchain	﻿2026-02-25T21:00:27.7560547Z ##[group]Run dtolnay/rust-toolchain@stable
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:27.7561797Z with:
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:27.7562535Z   targets: wasm32-unknown-unknown
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:27.7563540Z   toolchain: stable
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:27.7564372Z ##[endgroup]
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:27.7799547Z ##[group]Run : parse toolchain version
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:27.7801133Z [36;1m: parse toolchain version[0m
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:27.7802076Z [36;1mif [[ -z $toolchain ]]; then[0m
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:27.7803744Z [36;1m  # GitHub does not enforce `required: true` inputs itself. https://github.com/actions/runner/issues/1070[0m
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:27.7805539Z [36;1m  echo "'toolchain' is a required input" >&2[0m
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:27.7806556Z [36;1m  exit 1[0m
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:27.7807637Z [36;1melif [[ $toolchain =~ ^stable' '[0-9]+' '(year|month|week|day)s?' 'ago$ ]]; then[0m
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:27.7809008Z [36;1m  if [[ Linux == macOS ]]; then[0m
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:27.7810921Z [36;1m    echo "toolchain=1.$((($(date -v-$(sed 's/stable \([0-9]*\) \(.\).*/\1\2/' <<< $toolchain) +%s)/60/60/24-16569)/7/6))" >> $GITHUB_OUTPUT[0m
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:27.7812739Z [36;1m  else[0m
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:27.7814122Z [36;1m    echo "toolchain=1.$((($(date --date "${toolchain#stable }" +%s)/60/60/24-16569)/7/6))" >> $GITHUB_OUTPUT[0m
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:27.7815692Z [36;1m  fi[0m
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:27.7816714Z [36;1melif [[ $toolchain =~ ^stable' 'minus' '[0-9]+' 'releases?$ ]]; then[0m
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:27.7818478Z [36;1m  echo "toolchain=1.$((($(date +%s)/60/60/24-16569)/7/6-${toolchain//[^0-9]/}))" >> $GITHUB_OUTPUT[0m
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:27.7820018Z [36;1melif [[ $toolchain =~ ^1\.[0-9]+$ ]]; then[0m
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:27.7821962Z [36;1m  echo "toolchain=1.$((i=${toolchain#1.}, c=($(date +%s)/60/60/24-16569)/7/6, i+9*i*(10*i<=c)+90*i*(100*i<=c)))" >> $GITHUB_OUTPUT[0m
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:27.7823618Z [36;1melse[0m
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:27.7824421Z [36;1m  echo "toolchain=$toolchain" >> $GITHUB_OUTPUT[0m
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:27.7825422Z [36;1mfi[0m
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:27.7881965Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:27.7883134Z env:
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:27.7883758Z   toolchain: stable
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:27.7884444Z ##[endgroup]
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:27.8095119Z ##[group]Run : construct rustup command line
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:27.8096232Z [36;1m: construct rustup command line[0m
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:27.8097669Z [36;1mecho "targets=$(for t in ${targets//,/ }; do echo -n ' --target' $t; done)" >> $GITHUB_OUTPUT[0m
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:27.8099727Z [36;1mecho "components=$(for c in ${components//,/ }; do echo -n ' --component' $c; done)" >> $GITHUB_OUTPUT[0m
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:27.8101613Z [36;1mecho "downgrade=" >> $GITHUB_OUTPUT[0m
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:27.8151771Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:27.8152845Z env:
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:27.8153513Z   targets: wasm32-unknown-unknown
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:27.8154357Z   components: 
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:27.8155017Z ##[endgroup]
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:27.8302337Z ##[group]Run : set $CARGO_HOME
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:27.8303218Z [36;1m: set $CARGO_HOME[0m
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:27.8304271Z [36;1mecho CARGO_HOME=${CARGO_HOME:-"$HOME/.cargo"} >> $GITHUB_ENV[0m
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:27.8353803Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:27.8355388Z ##[endgroup]
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:27.8509880Z ##[group]Run : install rustup if needed
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:27.8511073Z [36;1m: install rustup if needed[0m
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:27.8512058Z [36;1mif ! command -v rustup &>/dev/null; then[0m
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:27.8514433Z [36;1m  curl --proto '=https' --tlsv1.2 --retry 10 --retry-connrefused --location --silent --show-error --fail https://sh.rustup.rs | sh -s -- --default-toolchain none -y[0m
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:27.8516789Z [36;1m  echo "$CARGO_HOME/bin" >> $GITHUB_PATH[0m
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:27.8517715Z [36;1mfi[0m
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:27.8568854Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:27.8569964Z env:
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:27.8570847Z   CARGO_HOME: /home/runner/.cargo
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:27.8571956Z ##[endgroup]
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:27.8712626Z ##[group]Run rustup toolchain install stable --target wasm32-unknown-unknown --profile minimal --no-self-update
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:27.8715053Z [36;1mrustup toolchain install stable --target wasm32-unknown-unknown --profile minimal --no-self-update[0m
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:27.8763059Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:27.8764126Z env:
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:27.8764773Z   CARGO_HOME: /home/runner/.cargo
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:27.8765635Z   RUSTUP_PERMIT_COPY_RENAME: 1
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:27.8766433Z ##[endgroup]
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:28.1671962Z info: syncing channel updates for 'stable-x86_64-unknown-linux-gnu'
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:28.3438062Z info: latest update on 2026-02-12, rust version 1.93.1 (01f6ddf75 2026-02-11)
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:28.3719614Z info: downloading component 'rust-std' for 'wasm32-unknown-unknown'
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:28.5694223Z info: installing component 'rust-std' for 'wasm32-unknown-unknown'
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.0213646Z 
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.0312499Z   stable-x86_64-unknown-linux-gnu updated - rustc 1.93.1 (01f6ddf75 2026-02-11) (from rustc 1.93.1 (01f6ddf75 2026-02-11))
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.0313611Z 
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.0380257Z ##[group]Run rustup default stable
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.0380996Z [36;1mrustup default stable[0m
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.0433069Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.0433441Z env:
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.0433673Z   CARGO_HOME: /home/runner/.cargo
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.0433945Z ##[endgroup]
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.0562055Z info: using existing install for 'stable-x86_64-unknown-linux-gnu'
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.0858138Z info: default toolchain set to 'stable-x86_64-unknown-linux-gnu'
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.0859048Z 
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.0948117Z   stable-x86_64-unknown-linux-gnu unchanged - rustc 1.93.1 (01f6ddf75 2026-02-11)
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.0948563Z 
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.1001661Z ##[group]Run : create cachekey
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.1002033Z [36;1m: create cachekey[0m
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.1002578Z [36;1mDATE=$(rustc +stable --version --verbose | sed -ne 's/^commit-date: \(20[0-9][0-9]\)-\([01][0-9]\)-\([0-3][0-9]\)$/\1\2\3/p')[0m
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.1003241Z [36;1mHASH=$(rustc +stable --version --verbose | sed -ne 's/^commit-hash: //p')[0m
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.1003761Z [36;1mecho "cachekey=$(echo $DATE$HASH | head -c12)" >> $GITHUB_OUTPUT[0m
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.1055692Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.1056054Z env:
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.1056279Z   CARGO_HOME: /home/runner/.cargo
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.1056545Z ##[endgroup]
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.1701391Z ##[group]Run : disable incremental compilation
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.1701820Z [36;1m: disable incremental compilation[0m
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.1702186Z [36;1mif [ -z "${CARGO_INCREMENTAL+set}" ]; then[0m
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.1702547Z [36;1m  echo CARGO_INCREMENTAL=0 >> $GITHUB_ENV[0m
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.1702857Z [36;1mfi[0m
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.1756051Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.1756482Z env:
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.1756724Z   CARGO_HOME: /home/runner/.cargo
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.1756992Z ##[endgroup]
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.1858661Z ##[group]Run : enable colors in Cargo output
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.1859258Z [36;1m: enable colors in Cargo output[0m
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.1859604Z [36;1mif [ -z "${CARGO_TERM_COLOR+set}" ]; then[0m
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.1859952Z [36;1m  echo CARGO_TERM_COLOR=always >> $GITHUB_ENV[0m
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.1860250Z [36;1mfi[0m
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.1909917Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.1910280Z env:
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.1910776Z   CARGO_HOME: /home/runner/.cargo
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.1911065Z   CARGO_INCREMENTAL: 0
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.1911290Z ##[endgroup]
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.2016000Z ##[group]Run : enable Cargo sparse registry
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.2016356Z [36;1m: enable Cargo sparse registry[0m
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.2016725Z [36;1m# implemented in 1.66, stabilized in 1.68, made default in 1.70[0m
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.2017630Z [36;1mif [ -z "${CARGO_REGISTRIES_CRATES_IO_PROTOCOL+set}" -o -f "/home/runner/work/_temp"/.implicit_cargo_registries_crates_io_protocol ]; then[0m
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.2018372Z [36;1m  if rustc +stable --version --verbose | grep -q '^release: 1\.6[89]\.'; then[0m
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.2018956Z [36;1m    touch "/home/runner/work/_temp"/.implicit_cargo_registries_crates_io_protocol || true[0m
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.2019501Z [36;1m    echo CARGO_REGISTRIES_CRATES_IO_PROTOCOL=sparse >> $GITHUB_ENV[0m
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.2020006Z [36;1m  elif rustc +stable --version --verbose | grep -q '^release: 1\.6[67]\.'; then[0m
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.2020842Z [36;1m    touch "/home/runner/work/_temp"/.implicit_cargo_registries_crates_io_protocol || true[0m
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.2021404Z [36;1m    echo CARGO_REGISTRIES_CRATES_IO_PROTOCOL=git >> $GITHUB_ENV[0m
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.2021756Z [36;1m  fi[0m
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.2021966Z [36;1mfi[0m
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.2071360Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.2071725Z env:
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.2071942Z   CARGO_HOME: /home/runner/.cargo
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.2072208Z   CARGO_INCREMENTAL: 0
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.2072452Z   CARGO_TERM_COLOR: always
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.2072683Z ##[endgroup]
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.2519336Z ##[group]Run : work around spurious network errors in curl 8.0
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.2519820Z [36;1m: work around spurious network errors in curl 8.0[0m
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.2520814Z [36;1m# https://rust-lang.zulipchat.com/#narrow/stream/246057-t-cargo/topic/timeout.20investigation[0m
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.2521496Z [36;1mif rustc +stable --version --verbose | grep -q '^release: 1\.7[01]\.'; then[0m
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.2521976Z [36;1m  echo CARGO_HTTP_MULTIPLEXING=false >> $GITHUB_ENV[0m
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.2522307Z [36;1mfi[0m
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.2576328Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.2576713Z env:
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.2576938Z   CARGO_HOME: /home/runner/.cargo
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.2577215Z   CARGO_INCREMENTAL: 0
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.2577461Z   CARGO_TERM_COLOR: always
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.2577697Z ##[endgroup]
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.2837259Z ##[group]Run rustc +stable --version --verbose
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.2837677Z [36;1mrustc +stable --version --verbose[0m
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.2892097Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.2892468Z env:
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.2892689Z   CARGO_HOME: /home/runner/.cargo
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.2892962Z   CARGO_INCREMENTAL: 0
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.2893202Z   CARGO_TERM_COLOR: always
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.2893437Z ##[endgroup]
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.3093939Z rustc 1.93.1 (01f6ddf75 2026-02-11)
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.3094733Z binary: rustc
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.3095235Z commit-hash: 01f6ddf7588f42ae2d7eb0a2f21d44e8e96674cf
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.3095716Z commit-date: 2026-02-11
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.3096075Z host: x86_64-unknown-linux-gnu
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.3096429Z release: 1.93.1
+Contracts — Tests	Set up Rust toolchain	2026-02-25T21:00:30.3096965Z LLVM version: 21.1.8
+Contracts — Tests	Cache Rust dependencies	﻿2026-02-25T21:00:30.3233563Z ##[group]Run Swatinem/rust-cache@v2
+Contracts — Tests	Cache Rust dependencies	2026-02-25T21:00:30.3233895Z with:
+Contracts — Tests	Cache Rust dependencies	2026-02-25T21:00:30.3234108Z   workspaces: contracts
+Contracts — Tests	Cache Rust dependencies	2026-02-25T21:00:30.3234353Z   prefix-key: v0-rust
+Contracts — Tests	Cache Rust dependencies	2026-02-25T21:00:30.3234781Z   add-job-id-key: true
+Contracts — Tests	Cache Rust dependencies	2026-02-25T21:00:30.3235031Z   add-rust-environment-hash-key: true
+Contracts — Tests	Cache Rust dependencies	2026-02-25T21:00:30.3235311Z   cache-targets: true
+Contracts — Tests	Cache Rust dependencies	2026-02-25T21:00:30.3235547Z   cache-all-crates: false
+Contracts — Tests	Cache Rust dependencies	2026-02-25T21:00:30.3235798Z   cache-workspace-crates: false
+Contracts — Tests	Cache Rust dependencies	2026-02-25T21:00:30.3236063Z   save-if: true
+Contracts — Tests	Cache Rust dependencies	2026-02-25T21:00:30.3236285Z   cache-provider: github
+Contracts — Tests	Cache Rust dependencies	2026-02-25T21:00:30.3236514Z   cache-bin: true
+Contracts — Tests	Cache Rust dependencies	2026-02-25T21:00:30.3236733Z   lookup-only: false
+Contracts — Tests	Cache Rust dependencies	2026-02-25T21:00:30.3236949Z env:
+Contracts — Tests	Cache Rust dependencies	2026-02-25T21:00:30.3237158Z   CARGO_HOME: /home/runner/.cargo
+Contracts — Tests	Cache Rust dependencies	2026-02-25T21:00:30.3237417Z   CARGO_INCREMENTAL: 0
+Contracts — Tests	Cache Rust dependencies	2026-02-25T21:00:30.3237649Z   CARGO_TERM_COLOR: always
+Contracts — Tests	Cache Rust dependencies	2026-02-25T21:00:30.3237879Z ##[endgroup]
+Contracts — Tests	Cache Rust dependencies	2026-02-25T21:00:31.4432244Z ##[group]Cache Configuration
+Contracts — Tests	Cache Rust dependencies	2026-02-25T21:00:31.4432888Z Cache Provider:
+Contracts — Tests	Cache Rust dependencies	2026-02-25T21:00:31.4436188Z     github
+Contracts — Tests	Cache Rust dependencies	2026-02-25T21:00:31.4436899Z Workspaces:
+Contracts — Tests	Cache Rust dependencies	2026-02-25T21:00:31.4437946Z     /home/runner/work/stellar-market/stellar-market/contracts
+Contracts — Tests	Cache Rust dependencies	2026-02-25T21:00:31.4439446Z Cache Paths:
+Contracts — Tests	Cache Rust dependencies	2026-02-25T21:00:31.4440105Z     /home/runner/.cargo/bin
+Contracts — Tests	Cache Rust dependencies	2026-02-25T21:00:31.4446814Z     /home/runner/.cargo/.crates.toml
+Contracts — Tests	Cache Rust dependencies	2026-02-25T21:00:31.4447329Z     /home/runner/.cargo/.crates2.json
+Contracts — Tests	Cache Rust dependencies	2026-02-25T21:00:31.4447792Z     /home/runner/.cargo/registry
+Contracts — Tests	Cache Rust dependencies	2026-02-25T21:00:31.4448231Z     /home/runner/.cargo/git
+Contracts — Tests	Cache Rust dependencies	2026-02-25T21:00:31.4448781Z     /home/runner/work/stellar-market/stellar-market/contracts/target
+Contracts — Tests	Cache Rust dependencies	2026-02-25T21:00:31.4449368Z Restore Key:
+Contracts — Tests	Cache Rust dependencies	2026-02-25T21:00:31.4449755Z     v0-rust-contracts-test-Linux-x64-b09cd888
+Contracts — Tests	Cache Rust dependencies	2026-02-25T21:00:31.4450231Z Cache Key:
+Contracts — Tests	Cache Rust dependencies	2026-02-25T21:00:31.4450863Z     v0-rust-contracts-test-Linux-x64-b09cd888-b6363927
+Contracts — Tests	Cache Rust dependencies	2026-02-25T21:00:31.4451374Z .. Prefix:
+Contracts — Tests	Cache Rust dependencies	2026-02-25T21:00:31.4451726Z   - v0-rust-contracts-test-Linux-x64
+Contracts — Tests	Cache Rust dependencies	2026-02-25T21:00:31.4452191Z .. Environment considered:
+Contracts — Tests	Cache Rust dependencies	2026-02-25T21:00:31.4453305Z   - Rust Version: 1.93.1 x86_64-unknown-linux-gnu (01f6ddf7588f42ae2d7eb0a2f21d44e8e96674cf)
+Contracts — Tests	Cache Rust dependencies	2026-02-25T21:00:31.4454059Z   - CARGO_HOME
+Contracts — Tests	Cache Rust dependencies	2026-02-25T21:00:31.4454381Z   - CARGO_INCREMENTAL
+Contracts — Tests	Cache Rust dependencies	2026-02-25T21:00:31.4454739Z   - CARGO_TERM_COLOR
+Contracts — Tests	Cache Rust dependencies	2026-02-25T21:00:31.4455085Z .. Lockfiles considered:
+Contracts — Tests	Cache Rust dependencies	2026-02-25T21:00:31.4455640Z   - /home/runner/work/stellar-market/stellar-market/contracts/Cargo.lock
+Contracts — Tests	Cache Rust dependencies	2026-02-25T21:00:31.4456484Z   - /home/runner/work/stellar-market/stellar-market/contracts/dispute/Cargo.toml
+Contracts — Tests	Cache Rust dependencies	2026-02-25T21:00:31.4457382Z   - /home/runner/work/stellar-market/stellar-market/contracts/escrow/Cargo.toml
+Contracts — Tests	Cache Rust dependencies	2026-02-25T21:00:31.4458342Z   - /home/runner/work/stellar-market/stellar-market/contracts/integration-tests/Cargo.toml
+Contracts — Tests	Cache Rust dependencies	2026-02-25T21:00:31.4459347Z   - /home/runner/work/stellar-market/stellar-market/contracts/reputation/Cargo.toml
+Contracts — Tests	Cache Rust dependencies	2026-02-25T21:00:31.4460368Z ##[endgroup]
+Contracts — Tests	Cache Rust dependencies	2026-02-25T21:00:31.4460786Z 
+Contracts — Tests	Cache Rust dependencies	2026-02-25T21:00:31.4460943Z ... Restoring cache ...
+Contracts — Tests	Cache Rust dependencies	2026-02-25T21:00:31.5350618Z Cache hit for: v0-rust-contracts-test-Linux-x64-b09cd888-b6363927
+Contracts — Tests	Cache Rust dependencies	2026-02-25T21:00:32.5723913Z Received 217806815 of 217806815 (100.0%), 205.7 MBs/sec
+Contracts — Tests	Cache Rust dependencies	2026-02-25T21:00:32.5725659Z Cache Size: ~208 MB (217806815 B)
+Contracts — Tests	Cache Rust dependencies	2026-02-25T21:00:32.5816685Z [command]/usr/bin/tar -xf /home/runner/work/_temp/923d8a52-56f6-4ee1-ac55-13ceb4a2d396/cache.tzst -P -C /home/runner/work/stellar-market/stellar-market --use-compress-program unzstd
+Contracts — Tests	Cache Rust dependencies	2026-02-25T21:00:33.8883652Z Cache restored successfully
+Contracts — Tests	Cache Rust dependencies	2026-02-25T21:00:33.9359828Z Restored from cache key "v0-rust-contracts-test-Linux-x64-b09cd888-b6363927" full match: true.
+Contracts — Tests	Run contract tests	﻿2026-02-25T21:00:33.9479970Z ##[group]Run cargo test
+Contracts — Tests	Run contract tests	2026-02-25T21:00:33.9480242Z [36;1mcargo test[0m
+Contracts — Tests	Run contract tests	2026-02-25T21:00:33.9529626Z shell: /usr/bin/bash -e {0}
+Contracts — Tests	Run contract tests	2026-02-25T21:00:33.9529880Z env:
+Contracts — Tests	Run contract tests	2026-02-25T21:00:33.9530079Z   CARGO_HOME: /home/runner/.cargo
+Contracts — Tests	Run contract tests	2026-02-25T21:00:33.9530338Z   CARGO_INCREMENTAL: 0
+Contracts — Tests	Run contract tests	2026-02-25T21:00:33.9530741Z   CARGO_TERM_COLOR: always
+Contracts — Tests	Run contract tests	2026-02-25T21:00:33.9530965Z   CACHE_ON_FAILURE: false
+Contracts — Tests	Run contract tests	2026-02-25T21:00:33.9531180Z ##[endgroup]
+Contracts — Tests	Run contract tests	2026-02-25T21:00:34.3884143Z [1m[92m    Updating[0m crates.io index
+Contracts — Tests	Run contract tests	2026-02-25T21:00:34.9972178Z [1m[92m   Compiling[0m stellar-market-escrow v0.1.0 (/home/runner/work/stellar-market/stellar-market/contracts/escrow)
+Contracts — Tests	Run contract tests	2026-02-25T21:00:34.9974687Z [1m[92m   Compiling[0m stellar-market-dispute v0.1.0 (/home/runner/work/stellar-market/stellar-market/contracts/dispute)
+Contracts — Tests	Run contract tests	2026-02-25T21:00:38.6093831Z [1m[33mwarning[0m[1m: use of deprecated method `soroban_sdk::Env::register_stellar_asset_contract`: use [Env::register_stellar_asset_contract_v2][0m
+Contracts — Tests	Run contract tests	2026-02-25T21:00:38.6111634Z    [1m[94m--> [0mescrow/src/test.rs:244:26
+Contracts — Tests	Run contract tests	2026-02-25T21:00:38.6112444Z     [1m[94m|[0m
+Contracts — Tests	Run contract tests	2026-02-25T21:00:38.6113369Z [1m[94m244[0m [1m[94m|[0m     let token_addr = env.register_stellar_asset_contract(admin.clone());
+Contracts — Tests	Run contract tests	2026-02-25T21:00:38.6114517Z     [1m[94m|[0m                          [1m[33m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+Contracts — Tests	Run contract tests	2026-02-25T21:00:38.6115258Z     [1m[94m|[0m
+Contracts — Tests	Run contract tests	2026-02-25T21:00:38.6115955Z     [1m[94m= [0m[1mnote[0m: `#[warn(deprecated)]` on by default
+Contracts — Tests	Run contract tests	2026-02-25T21:00:38.6116548Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:38.7068526Z [1m[33mwarning[0m[1m: constant `JOB_COUNT` is never used[0m
+Contracts — Tests	Run contract tests	2026-02-25T21:00:38.7069669Z   [1m[94m--> [0mescrow/src/lib.rs:78:7
+Contracts — Tests	Run contract tests	2026-02-25T21:00:38.7070634Z    [1m[94m|[0m
+Contracts — Tests	Run contract tests	2026-02-25T21:00:38.7071282Z [1m[94m78[0m [1m[94m|[0m const JOB_COUNT: &str = "JOB_COUNT";
+Contracts — Tests	Run contract tests	2026-02-25T21:00:38.7071970Z    [1m[94m|[0m       [1m[33m^^^^^^^^^[0m
+Contracts — Tests	Run contract tests	2026-02-25T21:00:38.7072484Z    [1m[94m|[0m
+Contracts — Tests	Run contract tests	2026-02-25T21:00:38.7073179Z    [1m[94m= [0m[1mnote[0m: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+Contracts — Tests	Run contract tests	2026-02-25T21:00:38.7073750Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:38.8333504Z [1m[33mwarning[0m[1m: hiding a lifetime that's elided elsewhere is confusing[0m
+Contracts — Tests	Run contract tests	2026-02-25T21:00:38.8334721Z    [1m[94m--> [0mescrow/src/test.rs:236:26
+Contracts — Tests	Run contract tests	2026-02-25T21:00:38.8335250Z     [1m[94m|[0m
+Contracts — Tests	Run contract tests	2026-02-25T21:00:38.8336018Z [1m[94m236[0m [1m[94m|[0m fn setup_refund_env(env: &Env) -> (EscrowContractClient, Address) {
+Contracts — Tests	Run contract tests	2026-02-25T21:00:38.8337421Z     [1m[94m|[0m                          [1m[33m^^^^[0m      [1m[33m^^^^^^^^^^^^^^^^^^^^[0m [1m[33mthe same lifetime is hidden here[0m
+Contracts — Tests	Run contract tests	2026-02-25T21:00:38.8338439Z     [1m[94m|[0m                          [1m[33m|[0m
+Contracts — Tests	Run contract tests	2026-02-25T21:00:38.8339180Z     [1m[94m|[0m                          [1m[33mthe lifetime is elided here[0m
+Contracts — Tests	Run contract tests	2026-02-25T21:00:38.8339809Z     [1m[94m|[0m
+Contracts — Tests	Run contract tests	2026-02-25T21:00:38.8340839Z     [1m[94m= [0m[1mhelp[0m: the same lifetime is referred to in inconsistent ways, making the signature confusing
+Contracts — Tests	Run contract tests	2026-02-25T21:00:38.8342004Z     [1m[94m= [0m[1mnote[0m: `#[warn(mismatched_lifetime_syntaxes)]` on by default
+Contracts — Tests	Run contract tests	2026-02-25T21:00:38.8342755Z [1m[96mhelp[0m: use `'_` for type paths
+Contracts — Tests	Run contract tests	2026-02-25T21:00:38.8343219Z     [1m[94m|[0m
+Contracts — Tests	Run contract tests	2026-02-25T21:00:38.8343981Z [1m[94m236[0m [1m[94m| [0mfn setup_refund_env(env: &Env) -> (EscrowContractClient[92m<'_>[0m, Address) {
+Contracts — Tests	Run contract tests	2026-02-25T21:00:38.8345170Z     [1m[94m|[0m                                                        [92m++++[0m
+Contracts — Tests	Run contract tests	2026-02-25T21:00:38.8345710Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:41.8332326Z [1m[33mwarning[0m: `stellar-market-escrow` (lib test) generated 3 warnings (1 duplicate) (run `cargo fix --lib -p stellar-market-escrow --tests` to apply 1 suggestion)
+Contracts — Tests	Run contract tests	2026-02-25T21:00:41.8345457Z [1m[33mwarning[0m: `stellar-market-escrow` (lib) generated 1 warning
+Contracts — Tests	Run contract tests	2026-02-25T21:00:41.8346747Z [1m[92m   Compiling[0m stellar-market-reputation v0.1.0 (/home/runner/work/stellar-market/stellar-market/contracts/reputation)
+Contracts — Tests	Run contract tests	2026-02-25T21:00:42.9975432Z [1m[92m   Compiling[0m stellar-market-integration-tests v0.1.0 (/home/runner/work/stellar-market/stellar-market/contracts/integration-tests)
+Contracts — Tests	Run contract tests	2026-02-25T21:00:43.0428525Z [1m[33mwarning[0m[1m: use of deprecated method `soroban_sdk::Env::register_stellar_asset_contract`: use [Env::register_stellar_asset_contract_v2][0m
+Contracts — Tests	Run contract tests	2026-02-25T21:00:43.0429858Z   [1m[94m--> [0mintegration-tests/tests/integration_test.rs:29:29
+Contracts — Tests	Run contract tests	2026-02-25T21:00:43.0430651Z    [1m[94m|[0m
+Contracts — Tests	Run contract tests	2026-02-25T21:00:43.0431383Z [1m[94m29[0m [1m[94m|[0m     let token_address = env.register_stellar_asset_contract(admin.clone());
+Contracts — Tests	Run contract tests	2026-02-25T21:00:43.0432634Z    [1m[94m|[0m                             [1m[33m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+Contracts — Tests	Run contract tests	2026-02-25T21:00:43.0433172Z    [1m[94m|[0m
+Contracts — Tests	Run contract tests	2026-02-25T21:00:43.0433656Z    [1m[94m= [0m[1mnote[0m: `#[warn(deprecated)]` on by default
+Contracts — Tests	Run contract tests	2026-02-25T21:00:43.0434040Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:43.5176488Z [1m[33mwarning[0m: `stellar-market-integration-tests` (test "integration_test") generated 1 warning
+Contracts — Tests	Run contract tests	2026-02-25T21:00:43.5177516Z [1m[92m    Finished[0m `test` profile [unoptimized + debuginfo] target(s) in 9.51s
+Contracts — Tests	Run contract tests	2026-02-25T21:00:43.5430046Z [1m[92m     Running[0m unittests src/lib.rs (target/debug/deps/stellar_market_dispute-9c941bd3c4a67574)
+Contracts — Tests	Run contract tests	2026-02-25T21:00:43.5446425Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:43.5446585Z running 14 tests
+Contracts — Tests	Run contract tests	2026-02-25T21:00:43.5683528Z test test::test_initialize_contract ... ok
+Contracts — Tests	Run contract tests	2026-02-25T21:00:43.5684511Z test test::test_is_eligible_voter_high_reputation ... ok
+Contracts — Tests	Run contract tests	2026-02-25T21:00:43.5703869Z test test::test_raise_dispute ... ok
+Contracts — Tests	Run contract tests	2026-02-25T21:00:43.5797271Z test test::test_set_min_voter_reputation ... ok
+Contracts — Tests	Run contract tests	2026-02-25T21:00:43.6141654Z test test::test_tie_break_default_refund_both ... ok
+Contracts — Tests	Run contract tests	2026-02-25T21:00:43.6475955Z test test::test_tie_break_escalate ... ok
+Contracts — Tests	Run contract tests	2026-02-25T21:00:43.6818050Z test test::test_tie_break_favor_client ... ok
+Contracts — Tests	Run contract tests	2026-02-25T21:00:43.7203360Z test test::test_tie_break_favor_freelancer ... ok
+Contracts — Tests	Run contract tests	2026-02-25T21:00:43.7541752Z test test::test_tie_break_refund_both ... ok
+Contracts — Tests	Run contract tests	2026-02-25T21:00:43.7910116Z test test::test_vote_and_resolve ... ok
+Contracts — Tests	Run contract tests	2026-02-25T21:00:44.0586938Z test test::test_initialize_twice_fails - should panic ... ok
+Contracts — Tests	Run contract tests	2026-02-25T21:00:44.0592253Z test test::test_set_min_voter_reputation_non_admin_fails - should panic ... ok
+Contracts — Tests	Run contract tests	2026-02-25T21:00:44.0694961Z test test::test_resolve_without_enough_votes - should panic ... ok
+Contracts — Tests	Run contract tests	2026-02-25T21:00:44.0772683Z test test::test_vote_with_reputation_check ... ok
+Contracts — Tests	Run contract tests	2026-02-25T21:00:44.0773800Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:44.0774866Z test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.53s
+Contracts — Tests	Run contract tests	2026-02-25T21:00:44.0775498Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:44.0807095Z [1m[92m     Running[0m unittests src/lib.rs (target/debug/deps/stellar_market_escrow-687d9f9bb446ee85)
+Contracts — Tests	Run contract tests	2026-02-25T21:00:44.0823578Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:44.0823862Z running 17 tests
+Contracts — Tests	Run contract tests	2026-02-25T21:00:44.6012079Z test test::test_claim_refund_fails_unauthorized - should panic ... ok
+Contracts — Tests	Run contract tests	2026-02-25T21:00:44.6014358Z test test::test_claim_refund_fails_before_grace_period - should panic ... ok
+Contracts — Tests	Run contract tests	2026-02-25T21:00:44.6076587Z test test::test_claim_refund_fails_on_cancelled_job - should panic ... ok
+Contracts — Tests	Run contract tests	2026-02-25T21:00:44.6123069Z test test::test_claim_refund_fails_on_completed_job - should panic ... ok
+Contracts — Tests	Run contract tests	2026-02-25T21:00:44.6547065Z test test::test_claim_refund_fails_with_pending_milestone - should panic ... ok
+Contracts — Tests	Run contract tests	2026-02-25T21:00:44.6605719Z test test::test_claim_refund_full ... ok
+Contracts — Tests	Run contract tests	2026-02-25T21:00:44.6705372Z test test::test_create_job_invalid_deadline - should panic ... ok
+Contracts — Tests	Run contract tests	2026-02-25T21:00:44.6813188Z test test::test_create_job ... ok
+Contracts — Tests	Run contract tests	2026-02-25T21:00:44.6863157Z test test::test_claim_refund_partial ... ok
+Contracts — Tests	Run contract tests	2026-02-25T21:00:44.6867693Z test test::test_claim_refund_in_progress_status ... ok
+Contracts — Tests	Run contract tests	2026-02-25T21:00:44.6942564Z test test::test_extend_deadline ... ok
+Contracts — Tests	Run contract tests	2026-02-25T21:00:44.6979723Z test test::test_is_milestone_overdue ... ok
+Contracts — Tests	Run contract tests	2026-02-25T21:00:44.7101599Z test test::test_job_count_increments ... ok
+Contracts — Tests	Run contract tests	2026-02-25T21:00:44.7355934Z test test::test_submit_milestone_past_deadline - should panic ... ok
+Contracts — Tests	Run contract tests	2026-02-25T21:00:44.7449695Z test test::test_resolve_dispute_callback_client_wins ... ok
+Contracts — Tests	Run contract tests	2026-02-25T21:00:44.7505243Z test test::test_resolve_dispute_callback_freelancer_wins ... ok
+Contracts — Tests	Run contract tests	2026-02-25T21:00:44.7576306Z test test::test_resolve_dispute_callback_refund_both ... ok
+Contracts — Tests	Run contract tests	2026-02-25T21:00:44.7576820Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:44.7577250Z test result: ok. 17 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.68s
+Contracts — Tests	Run contract tests	2026-02-25T21:00:44.7577648Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:44.7611422Z [1m[92m     Running[0m tests/integration_test.rs (target/debug/deps/integration_test-2482fdc247ba2d87)
+Contracts — Tests	Run contract tests	2026-02-25T21:00:44.7634041Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:44.7634282Z running 8 tests
+Contracts — Tests	Run contract tests	2026-02-25T21:00:44.8568130Z test test_dispute_with_all_milestones_approved ... ok
+Contracts — Tests	Run contract tests	2026-02-25T21:00:44.8736550Z test test_dispute_resolved_for_freelancer ... ok
+Contracts — Tests	Run contract tests	2026-02-25T21:00:44.8839478Z test test_dispute_resolved_for_client ... ok
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.2230972Z test test_full_workflow_with_partial_completion_and_cancellation ... ok
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.2956412Z test test_multiple_jobs_with_reputation_accumulation ... ok
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.3174075Z test test_happy_path_job_completion_with_reputation ... ok
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.4063865Z test test_duplicate_vote_on_dispute_fails - should panic ... ok
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.4164492Z test test_reputation_review_before_job_completion_fails - should panic ... ok
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.4164987Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.4165378Z test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.65s
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.4165776Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.4199060Z [1m[92m     Running[0m unittests src/lib.rs (target/debug/deps/stellar_market_reputation-b1930151294aed95)
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.4214696Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.4214874Z running 23 tests
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9161516Z test test::test_badge_timestamp ... FAILED
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9162508Z test test::test_badge_awarded_on_tier_crossing ... FAILED
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9183068Z test test::test_get_badges_empty ... ok
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9189074Z test test::test_badge_not_duplicated ... FAILED
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9195552Z test test::test_average_rating ... FAILED
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9251250Z test test::test_get_tier_no_reputation ... ok
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9309496Z test test::test_decay_calculation ... FAILED
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9341100Z test test::test_get_tier_bronze ... FAILED
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9370886Z test test::test_get_tier_gold ... FAILED
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9418382Z test test::test_invalid_rating - should panic ... ok
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9437515Z test test::test_get_tier_silver ... FAILED
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9464070Z test test::test_get_tier_platinum ... FAILED
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9501210Z test test::test_job_not_completed - should panic ... FAILED
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9534186Z test test::test_job_not_found - should panic ... FAILED
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9612894Z test test::test_not_job_participant - should panic ... FAILED
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9627473Z test test::test_reviewer_not_participant_but_reviewee_is - should panic ... FAILED
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9639166Z test test::test_multiple_tier_badges ... FAILED
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9641456Z test test::test_self_review - should panic ... ok
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9690130Z test test::test_set_decay_rate ... ok
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9750905Z test test::test_set_decay_rate_invalid - should panic ... ok
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9773812Z test test::test_submit_review_freelancer_reviews_client ... FAILED
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9779354Z test test::test_submit_review_client_reviews_freelancer ... FAILED
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9828731Z test test::test_tier_downgrade_no_badge_removal ... FAILED
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9829087Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9829385Z failures:
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9829585Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9829770Z ---- test::test_badge_timestamp stdout ----
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9830116Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9831114Z thread 'test::test_badge_timestamp' (2617) panicked at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-env-host-21.2.1/src/host.rs:768:9:
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9832304Z HostError: Error(Contract, #11)
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9832814Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9832963Z Event log (newest first):
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9833618Z    0: [Diagnostic Event] topics:[error, Error(Contract, #11)], data:"escalating error to panic"
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9836128Z    1: [Diagnostic Event] topics:[error, Error(Contract, #11)], data:["contract call failed", submit_review, [CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM, CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M, CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4, 1, 3, "Good", 1]]
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9839280Z    2: [Failed Diagnostic Event (not emitted)] contract:CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4, topics:[error, Error(Contract, #11)], data:"escalating Ok(ScErrorType::Contract) frame-exit to Err"
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9841993Z    3: [Failed Diagnostic Event (not emitted)] contract:CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4, topics:[fn_return, submit_review], data:Error(Contract, #11)
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9845107Z    4: [Diagnostic Event] topics:[fn_call, Bytes(0000000000000000000000000000000000000000000000000000000000000002), submit_review], data:[CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM, CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M, CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4, 1, 3, "Good", 1]
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9847182Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9847331Z Backtrace (newest first):
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9848020Z    0: <soroban_env_host::host::Host as soroban_env_common::env::EnvBase>::escalate_error_to_panic
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9849191Z              at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-env-host-21.2.1/src/host.rs:767:31
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9850331Z    1: soroban_sdk::env::internal::reject_err::{{closure}}
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9851359Z              at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-sdk-21.7.7/src/env.rs:52:27
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9852180Z    2: core::result::Result<T,E>::map_err
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9852903Z              at /rustc/01f6ddf7588f42ae2d7eb0a2f21d44e8e96674cf/library/core/src/result.rs:968:27
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9853663Z    3: soroban_sdk::env::internal::reject_err
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9854470Z              at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-sdk-21.7.7/src/env.rs:52:11
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9855323Z    4: <soroban_sdk::env::Env as soroban_env_common::env::Env>::call
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9856167Z              at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-sdk-21.7.7/src/env.rs:1667:13
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9856969Z    5: soroban_sdk::env::Env::invoke_contract
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9857752Z              at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-sdk-21.7.7/src/env.rs:379:18
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9858700Z    6: stellar_market_reputation::ReputationContractClient::submit_review
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9859292Z              at src/lib.rs:146:1
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9859760Z    7: stellar_market_reputation::test::test_badge_timestamp
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9860256Z              at src/test.rs:722:23
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9860960Z    8: stellar_market_reputation::test::test_badge_timestamp::{{closure}}
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9861513Z              at src/test.rs:707:26
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9861904Z    9: core::ops::function::FnOnce::call_once
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9862625Z              at /rustc/01f6ddf7588f42ae2d7eb0a2f21d44e8e96674cf/library/core/src/ops/function.rs:250:5
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9863219Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9863226Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9863571Z note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9864647Z Writing test snapshot file for test "test::test_badge_timestamp" to "test_snapshots/test/test_badge_timestamp.1.json".
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9865372Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9865618Z ---- test::test_badge_awarded_on_tier_crossing stdout ----
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9866005Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9866936Z thread 'test::test_badge_awarded_on_tier_crossing' (2615) panicked at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-env-host-21.2.1/src/host.rs:768:9:
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9868382Z HostError: Error(Contract, #11)
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9868647Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9868791Z Event log (newest first):
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9869431Z    0: [Diagnostic Event] topics:[error, Error(Contract, #11)], data:"escalating error to panic"
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9872228Z    1: [Diagnostic Event] topics:[error, Error(Contract, #11)], data:["contract call failed", submit_review, [CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM, CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M, CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4, 1, 2, "Decent", 1]]
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9874993Z    2: [Failed Diagnostic Event (not emitted)] contract:CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4, topics:[error, Error(Contract, #11)], data:"escalating Ok(ScErrorType::Contract) frame-exit to Err"
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9876805Z    3: [Failed Diagnostic Event (not emitted)] contract:CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4, topics:[fn_return, submit_review], data:Error(Contract, #11)
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9878621Z    4: [Diagnostic Event] topics:[fn_call, Bytes(0000000000000000000000000000000000000000000000000000000000000002), submit_review], data:[CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM, CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M, CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4, 1, 2, "Decent", 1]
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9879943Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9880034Z Backtrace (newest first):
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9880694Z    0: <soroban_env_host::host::Host as soroban_env_common::env::EnvBase>::escalate_error_to_panic
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9881386Z              at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-env-host-21.2.1/src/host.rs:767:31
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9881950Z    1: soroban_sdk::env::internal::reject_err::{{closure}}
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9882471Z              at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-sdk-21.7.7/src/env.rs:52:27
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9882970Z    2: core::result::Result<T,E>::map_err
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9883385Z              at /rustc/01f6ddf7588f42ae2d7eb0a2f21d44e8e96674cf/library/core/src/result.rs:968:27
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9883825Z    3: soroban_sdk::env::internal::reject_err
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9884304Z              at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-sdk-21.7.7/src/env.rs:52:11
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9884849Z    4: <soroban_sdk::env::Env as soroban_env_common::env::Env>::call
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9885396Z              at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-sdk-21.7.7/src/env.rs:1667:13
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9885890Z    5: soroban_sdk::env::Env::invoke_contract
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9886369Z              at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-sdk-21.7.7/src/env.rs:379:18
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9886943Z    6: stellar_market_reputation::ReputationContractClient::submit_review
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9887298Z              at src/lib.rs:146:1
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9887733Z    7: stellar_market_reputation::test::test_badge_awarded_on_tier_crossing
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9888090Z              at src/test.rs:514:23
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9888454Z    8: stellar_market_reputation::test::test_badge_awarded_on_tier_crossing::{{closure}}
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9888848Z              at src/test.rs:500:41
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9889097Z    9: core::ops::function::FnOnce::call_once
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9889535Z              at /rustc/01f6ddf7588f42ae2d7eb0a2f21d44e8e96674cf/library/core/src/ops/function.rs:250:5
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9889896Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9889900Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9890319Z Writing test snapshot file for test "test::test_badge_awarded_on_tier_crossing" to "test_snapshots/test/test_badge_awarded_on_tier_crossing.1.json".
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9891023Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9891141Z ---- test::test_badge_not_duplicated stdout ----
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9891349Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9892031Z thread 'test::test_badge_not_duplicated' (2616) panicked at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-env-host-21.2.1/src/host.rs:768:9:
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9892716Z HostError: Error(Contract, #11)
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9892871Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9893425Z [1m[91merror[0m: test failed, to rerun pass `-p stellar-market-reputation --lib`
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9893813Z Event log (newest first):
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9894191Z    0: [Diagnostic Event] topics:[error, Error(Contract, #11)], data:"escalating error to panic"
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9895706Z    1: [Diagnostic Event] topics:[error, Error(Contract, #11)], data:["contract call failed", submit_review, [CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM, CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M, CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAK3IM, 1, 2, "Okay", 1]]
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9897490Z    2: [Failed Diagnostic Event (not emitted)] contract:CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4, topics:[error, Error(Contract, #11)], data:"escalating Ok(ScErrorType::Contract) frame-exit to Err"
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9898772Z    3: [Failed Diagnostic Event (not emitted)] contract:CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4, topics:[fn_return, submit_review], data:Error(Contract, #11)
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9900699Z    4: [Diagnostic Event] topics:[fn_call, Bytes(0000000000000000000000000000000000000000000000000000000000000002), submit_review], data:[CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM, CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M, CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAK3IM, 1, 2, "Okay", 1]
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9901932Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9902026Z Backtrace (newest first):
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9902405Z    0: <soroban_env_host::host::Host as soroban_env_common::env::EnvBase>::escalate_error_to_panic
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9903073Z              at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-env-host-21.2.1/src/host.rs:767:31
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9903639Z    1: soroban_sdk::env::internal::reject_err::{{closure}}
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9904164Z              at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-sdk-21.7.7/src/env.rs:52:27
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9904675Z    2: core::result::Result<T,E>::map_err
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9905093Z              at /rustc/01f6ddf7588f42ae2d7eb0a2f21d44e8e96674cf/library/core/src/result.rs:968:27
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9905532Z    3: soroban_sdk::env::internal::reject_err
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9906023Z              at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-sdk-21.7.7/src/env.rs:52:11
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9906612Z    4: <soroban_sdk::env::Env as soroban_env_common::env::Env>::call
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9907176Z              at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-sdk-21.7.7/src/env.rs:1667:13
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9907681Z    5: soroban_sdk::env::Env::invoke_contract
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9908170Z              at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-sdk-21.7.7/src/env.rs:379:18
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9908759Z    6: stellar_market_reputation::ReputationContractClient::submit_review
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9909114Z              at src/lib.rs:146:1
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9909418Z    7: stellar_market_reputation::test::test_badge_not_duplicated
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9909742Z              at src/test.rs:546:23
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9910078Z    8: stellar_market_reputation::test::test_badge_not_duplicated::{{closure}}
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9910623Z              at src/test.rs:530:31
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9910903Z    9: core::ops::function::FnOnce::call_once
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9911348Z              at /rustc/01f6ddf7588f42ae2d7eb0a2f21d44e8e96674cf/library/core/src/ops/function.rs:250:5
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9911704Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9911708Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9912068Z Writing test snapshot file for test "test::test_badge_not_duplicated" to "test_snapshots/test/test_badge_not_duplicated.1.json".
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9912662Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9912764Z ---- test::test_average_rating stdout ----
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9912954Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9913437Z thread 'test::test_average_rating' (2614) panicked at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-env-host-21.2.1/src/host.rs:768:9:
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9914140Z HostError: Error(Contract, #11)
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9914395Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9914532Z Event log (newest first):
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9915159Z    0: [Diagnostic Event] topics:[error, Error(Contract, #11)], data:"escalating error to panic"
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9917343Z    1: [Diagnostic Event] topics:[error, Error(Contract, #11)], data:["contract call failed", submit_review, [CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM, CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M, CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAK3IM, 1, 5, "Excellent", 10]]
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9919197Z    2: [Failed Diagnostic Event (not emitted)] contract:CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4, topics:[error, Error(Contract, #11)], data:"escalating Ok(ScErrorType::Contract) frame-exit to Err"
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9920745Z    3: [Failed Diagnostic Event (not emitted)] contract:CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4, topics:[fn_return, submit_review], data:Error(Contract, #11)
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9922543Z    4: [Diagnostic Event] topics:[fn_call, Bytes(0000000000000000000000000000000000000000000000000000000000000002), submit_review], data:[CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM, CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M, CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAK3IM, 1, 5, "Excellent", 10]
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9923789Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9923877Z Backtrace (newest first):
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9924268Z    0: <soroban_env_host::host::Host as soroban_env_common::env::EnvBase>::escalate_error_to_panic
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9924942Z              at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-env-host-21.2.1/src/host.rs:767:31
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9925511Z    1: soroban_sdk::env::internal::reject_err::{{closure}}
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9926018Z              at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-sdk-21.7.7/src/env.rs:52:27
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9926509Z    2: core::result::Result<T,E>::map_err
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9926927Z              at /rustc/01f6ddf7588f42ae2d7eb0a2f21d44e8e96674cf/library/core/src/result.rs:968:27
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9927359Z    3: soroban_sdk::env::internal::reject_err
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9927844Z              at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-sdk-21.7.7/src/env.rs:52:11
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9928394Z    4: <soroban_sdk::env::Env as soroban_env_common::env::Env>::call
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9928943Z              at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-sdk-21.7.7/src/env.rs:1667:13
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9929435Z    5: soroban_sdk::env::Env::invoke_contract
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9929933Z              at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-sdk-21.7.7/src/env.rs:379:18
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9930683Z    6: stellar_market_reputation::ReputationContractClient::submit_review
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9931049Z              at src/lib.rs:146:1
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9931341Z    7: stellar_market_reputation::test::test_average_rating
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9931648Z              at src/test.rs:141:23
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9931974Z    8: stellar_market_reputation::test::test_average_rating::{{closure}}
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9932317Z              at src/test.rs:124:25
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9932565Z    9: core::ops::function::FnOnce::call_once
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9933004Z              at /rustc/01f6ddf7588f42ae2d7eb0a2f21d44e8e96674cf/library/core/src/ops/function.rs:250:5
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9933362Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9933366Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9933692Z Writing test snapshot file for test "test::test_average_rating" to "test_snapshots/test/test_average_rating.1.json".
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9934260Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9934371Z ---- test::test_decay_calculation stdout ----
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9934570Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9935072Z thread 'test::test_decay_calculation' (2619) panicked at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-env-host-21.2.1/src/host.rs:768:9:
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9935797Z HostError: Error(Contract, #11)
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9935955Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9936044Z Event log (newest first):
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9936421Z    0: [Diagnostic Event] topics:[error, Error(Contract, #11)], data:"escalating error to panic"
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9938028Z    1: [Diagnostic Event] topics:[error, Error(Contract, #11)], data:["contract call failed", submit_review, [CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM, CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4, CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAK3IM, 1, 5, "Great", 100]]
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9939864Z    2: [Failed Diagnostic Event (not emitted)] contract:CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4, topics:[error, Error(Contract, #11)], data:"escalating Ok(ScErrorType::Contract) frame-exit to Err"
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9941538Z    3: [Failed Diagnostic Event (not emitted)] contract:CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4, topics:[fn_return, submit_review], data:Error(Contract, #11)
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9943319Z    4: [Diagnostic Event] topics:[fn_call, Bytes(0000000000000000000000000000000000000000000000000000000000000002), submit_review], data:[CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM, CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4, CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAK3IM, 1, 5, "Great", 100]
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9944973Z    5: [Diagnostic Event] contract:CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4, topics:[fn_return, initialize], data:Void
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9946073Z    6: [Diagnostic Event] topics:[fn_call, Bytes(0000000000000000000000000000000000000000000000000000000000000002), initialize], data:[CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M, 50]
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9946770Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9946855Z Backtrace (newest first):
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9947237Z    0: <soroban_env_host::host::Host as soroban_env_common::env::EnvBase>::escalate_error_to_panic
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9947908Z              at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-env-host-21.2.1/src/host.rs:767:31
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9948456Z    1: soroban_sdk::env::internal::reject_err::{{closure}}
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9948973Z              at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-sdk-21.7.7/src/env.rs:52:27
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9949539Z    2: core::result::Result<T,E>::map_err
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9950066Z              at /rustc/01f6ddf7588f42ae2d7eb0a2f21d44e8e96674cf/library/core/src/result.rs:968:27
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9950795Z    3: soroban_sdk::env::internal::reject_err
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9951499Z              at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-sdk-21.7.7/src/env.rs:52:11
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9952153Z    4: <soroban_sdk::env::Env as soroban_env_common::env::Env>::call
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9952818Z              at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-sdk-21.7.7/src/env.rs:1667:13
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9953469Z    5: soroban_sdk::env::Env::invoke_contract
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9954046Z              at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-sdk-21.7.7/src/env.rs:379:18
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9954775Z    6: stellar_market_reputation::ReputationContractClient::submit_review
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9955273Z              at src/lib.rs:146:1
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9955696Z    7: stellar_market_reputation::test::test_decay_calculation
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9956075Z              at src/test.rs:793:23
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9956551Z    8: stellar_market_reputation::test::test_decay_calculation::{{closure}}
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9957028Z              at src/test.rs:771:28
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9957784Z    9: core::ops::function::FnOnce::call_once
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9958338Z              at /rustc/01f6ddf7588f42ae2d7eb0a2f21d44e8e96674cf/library/core/src/ops/function.rs:250:5
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9958795Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9958800Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9959178Z Writing test snapshot file for test "test::test_decay_calculation" to "test_snapshots/test/test_decay_calculation.1.json".
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9973214Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9973384Z ---- test::test_get_tier_bronze stdout ----
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9973791Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9974319Z thread 'test::test_get_tier_bronze' (2621) panicked at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-env-host-21.2.1/src/host.rs:768:9:
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9975005Z HostError: Error(Contract, #11)
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9975166Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9975262Z Event log (newest first):
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9975650Z    0: [Diagnostic Event] topics:[error, Error(Contract, #11)], data:"escalating error to panic"
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9977037Z    1: [Diagnostic Event] topics:[error, Error(Contract, #11)], data:["contract call failed", submit_review, [CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM, CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M, CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4, 1, 2, "Okay", 1]]
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9978854Z    2: [Failed Diagnostic Event (not emitted)] contract:CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4, topics:[error, Error(Contract, #11)], data:"escalating Ok(ScErrorType::Contract) frame-exit to Err"
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9980160Z    3: [Failed Diagnostic Event (not emitted)] contract:CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4, topics:[fn_return, submit_review], data:Error(Contract, #11)
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9982147Z    4: [Diagnostic Event] topics:[fn_call, Bytes(0000000000000000000000000000000000000000000000000000000000000002), submit_review], data:[CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM, CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M, CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4, 1, 2, "Okay", 1]
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9983378Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9983470Z Backtrace (newest first):
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9983882Z    0: <soroban_env_host::host::Host as soroban_env_common::env::EnvBase>::escalate_error_to_panic
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9984567Z              at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-env-host-21.2.1/src/host.rs:767:31
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9985116Z    1: soroban_sdk::env::internal::reject_err::{{closure}}
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9985638Z              at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-sdk-21.7.7/src/env.rs:52:27
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9986127Z    2: core::result::Result<T,E>::map_err
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9986545Z              at /rustc/01f6ddf7588f42ae2d7eb0a2f21d44e8e96674cf/library/core/src/result.rs:968:27
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9986973Z    3: soroban_sdk::env::internal::reject_err
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9987464Z              at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-sdk-21.7.7/src/env.rs:52:11
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9988021Z    4: <soroban_sdk::env::Env as soroban_env_common::env::Env>::call
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9988575Z              at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-sdk-21.7.7/src/env.rs:1667:13
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9989087Z    5: soroban_sdk::env::Env::invoke_contract
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9989586Z              at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-sdk-21.7.7/src/env.rs:379:18
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9990175Z    6: stellar_market_reputation::ReputationContractClient::submit_review
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9990733Z              at src/lib.rs:146:1
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9991029Z    7: stellar_market_reputation::test::test_get_tier_bronze
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9991338Z              at src/test.rs:352:23
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9991666Z    8: stellar_market_reputation::test::test_get_tier_bronze::{{closure}}
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9992158Z              at src/test.rs:338:26
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9992418Z    9: core::ops::function::FnOnce::call_once
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9992857Z              at /rustc/01f6ddf7588f42ae2d7eb0a2f21d44e8e96674cf/library/core/src/ops/function.rs:250:5
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9993213Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9993217Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9993534Z Writing test snapshot file for test "test::test_get_tier_bronze" to "test_snapshots/test/test_get_tier_bronze.1.json".
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9993949Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9994050Z ---- test::test_get_tier_gold stdout ----
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9994356Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9994825Z thread 'test::test_get_tier_gold' (2622) panicked at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-env-host-21.2.1/src/host.rs:768:9:
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9995557Z HostError: Error(Contract, #11)
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9995712Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9995804Z Event log (newest first):
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9996181Z    0: [Diagnostic Event] topics:[error, Error(Contract, #11)], data:"escalating error to panic"
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9997577Z    1: [Diagnostic Event] topics:[error, Error(Contract, #11)], data:["contract call failed", submit_review, [CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM, CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M, CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAK3IM, 1, 5, "Excellent", 10]]
+Contracts — Tests	Run contract tests	2026-02-25T21:00:45.9999382Z    2: [Failed Diagnostic Event (not emitted)] contract:CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4, topics:[error, Error(Contract, #11)], data:"escalating Ok(ScErrorType::Contract) frame-exit to Err"
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0000927Z    3: [Failed Diagnostic Event (not emitted)] contract:CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4, topics:[fn_return, submit_review], data:Error(Contract, #11)
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0002731Z    4: [Diagnostic Event] topics:[fn_call, Bytes(0000000000000000000000000000000000000000000000000000000000000002), submit_review], data:[CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM, CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M, CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAK3IM, 1, 5, "Excellent", 10]
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0003973Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0004058Z Backtrace (newest first):
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0004440Z    0: <soroban_env_host::host::Host as soroban_env_common::env::EnvBase>::escalate_error_to_panic
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0005109Z              at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-env-host-21.2.1/src/host.rs:767:31
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0005669Z    1: soroban_sdk::env::internal::reject_err::{{closure}}
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0006185Z              at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-sdk-21.7.7/src/env.rs:52:27
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0006678Z    2: core::result::Result<T,E>::map_err
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0007096Z              at /rustc/01f6ddf7588f42ae2d7eb0a2f21d44e8e96674cf/library/core/src/result.rs:968:27
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0007532Z    3: soroban_sdk::env::internal::reject_err
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0008012Z              at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-sdk-21.7.7/src/env.rs:52:11
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0008561Z    4: <soroban_sdk::env::Env as soroban_env_common::env::Env>::call
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0009122Z              at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-sdk-21.7.7/src/env.rs:1667:13
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0009620Z    5: soroban_sdk::env::Env::invoke_contract
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0010103Z              at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-sdk-21.7.7/src/env.rs:379:18
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0010902Z    6: stellar_market_reputation::ReputationContractClient::submit_review
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0011263Z              at src/lib.rs:146:1
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0011540Z    7: stellar_market_reputation::test::test_get_tier_gold
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0011841Z              at src/test.rs:413:23
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0012164Z    8: stellar_market_reputation::test::test_get_tier_gold::{{closure}}
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0012652Z              at src/test.rs:396:24
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0012896Z    9: core::ops::function::FnOnce::call_once
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0013329Z              at /rustc/01f6ddf7588f42ae2d7eb0a2f21d44e8e96674cf/library/core/src/ops/function.rs:250:5
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0013683Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0013688Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0013995Z Writing test snapshot file for test "test::test_get_tier_gold" to "test_snapshots/test/test_get_tier_gold.1.json".
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0014389Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0014496Z ---- test::test_get_tier_silver stdout ----
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0014792Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0015270Z thread 'test::test_get_tier_silver' (2625) panicked at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-env-host-21.2.1/src/host.rs:768:9:
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0015927Z HostError: Error(Contract, #11)
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0016082Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0016173Z Event log (newest first):
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0016545Z    0: [Diagnostic Event] topics:[error, Error(Contract, #11)], data:"escalating error to panic"
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0017916Z    1: [Diagnostic Event] topics:[error, Error(Contract, #11)], data:["contract call failed", submit_review, [CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM, CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M, CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4, 1, 4, "Good", 1]]
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0019697Z    2: [Failed Diagnostic Event (not emitted)] contract:CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4, topics:[error, Error(Contract, #11)], data:"escalating Ok(ScErrorType::Contract) frame-exit to Err"
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0021238Z    3: [Failed Diagnostic Event (not emitted)] contract:CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4, topics:[fn_return, submit_review], data:Error(Contract, #11)
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0023013Z    4: [Diagnostic Event] topics:[fn_call, Bytes(0000000000000000000000000000000000000000000000000000000000000002), submit_review], data:[CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM, CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M, CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4, 1, 4, "Good", 1]
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0024235Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0024325Z Backtrace (newest first):
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0024695Z    0: <soroban_env_host::host::Host as soroban_env_common::env::EnvBase>::escalate_error_to_panic
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0025365Z              at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-env-host-21.2.1/src/host.rs:767:31
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0025916Z    1: soroban_sdk::env::internal::reject_err::{{closure}}
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0026435Z              at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-sdk-21.7.7/src/env.rs:52:27
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0026916Z    2: core::result::Result<T,E>::map_err
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0027336Z              at /rustc/01f6ddf7588f42ae2d7eb0a2f21d44e8e96674cf/library/core/src/result.rs:968:27
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0027772Z    3: soroban_sdk::env::internal::reject_err
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0028251Z              at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-sdk-21.7.7/src/env.rs:52:11
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0028802Z    4: <soroban_sdk::env::Env as soroban_env_common::env::Env>::call
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0029354Z              at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-sdk-21.7.7/src/env.rs:1667:13
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0029851Z    5: soroban_sdk::env::Env::invoke_contract
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0030334Z              at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-sdk-21.7.7/src/env.rs:379:18
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0031061Z    6: stellar_market_reputation::ReputationContractClient::submit_review
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0031427Z              at src/lib.rs:146:1
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0031719Z    7: stellar_market_reputation::test::test_get_tier_silver
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0032022Z              at src/test.rs:381:23
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0032351Z    8: stellar_market_reputation::test::test_get_tier_silver::{{closure}}
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0032826Z              at src/test.rs:367:26
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0033071Z    9: core::ops::function::FnOnce::call_once
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0033517Z              at /rustc/01f6ddf7588f42ae2d7eb0a2f21d44e8e96674cf/library/core/src/ops/function.rs:250:5
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0033878Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0033882Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0034203Z Writing test snapshot file for test "test::test_get_tier_silver" to "test_snapshots/test/test_get_tier_silver.1.json".
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0034618Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0034735Z ---- test::test_get_tier_platinum stdout ----
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0035069Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0035600Z thread 'test::test_get_tier_platinum' (2624) panicked at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-env-host-21.2.1/src/host.rs:768:9:
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0036269Z HostError: Error(Contract, #11)
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0036432Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0036515Z Event log (newest first):
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0036898Z    0: [Diagnostic Event] topics:[error, Error(Contract, #11)], data:"escalating error to panic"
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0038314Z    1: [Diagnostic Event] topics:[error, Error(Contract, #11)], data:["contract call failed", submit_review, [CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM, CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M, CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMDR4, 1, 5, "Outstanding", 100]]
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0040141Z    2: [Failed Diagnostic Event (not emitted)] contract:CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4, topics:[error, Error(Contract, #11)], data:"escalating Ok(ScErrorType::Contract) frame-exit to Err"
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0041688Z    3: [Failed Diagnostic Event (not emitted)] contract:CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4, topics:[fn_return, submit_review], data:Error(Contract, #11)
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0043479Z    4: [Diagnostic Event] topics:[fn_call, Bytes(0000000000000000000000000000000000000000000000000000000000000002), submit_review], data:[CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM, CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M, CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMDR4, 1, 5, "Outstanding", 100]
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0044742Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0044834Z Backtrace (newest first):
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0045218Z    0: <soroban_env_host::host::Host as soroban_env_common::env::EnvBase>::escalate_error_to_panic
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0045880Z              at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-env-host-21.2.1/src/host.rs:767:31
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0046441Z    1: soroban_sdk::env::internal::reject_err::{{closure}}
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0046955Z              at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-sdk-21.7.7/src/env.rs:52:27
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0047441Z    2: core::result::Result<T,E>::map_err
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0047846Z              at /rustc/01f6ddf7588f42ae2d7eb0a2f21d44e8e96674cf/library/core/src/result.rs:968:27
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0048281Z    3: soroban_sdk::env::internal::reject_err
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0048763Z              at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-sdk-21.7.7/src/env.rs:52:11
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0049305Z    4: <soroban_sdk::env::Env as soroban_env_common::env::Env>::call
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0049853Z              at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-sdk-21.7.7/src/env.rs:1667:13
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0050349Z    5: soroban_sdk::env::Env::invoke_contract
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0050947Z              at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-sdk-21.7.7/src/env.rs:379:18
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0051533Z    6: stellar_market_reputation::ReputationContractClient::submit_review
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0051894Z              at src/lib.rs:146:1
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0052192Z    7: stellar_market_reputation::test::test_get_tier_platinum
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0052508Z              at src/test.rs:458:23
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0052833Z    8: stellar_market_reputation::test::test_get_tier_platinum::{{closure}}
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0053319Z              at src/test.rs:438:28
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0053566Z    9: core::ops::function::FnOnce::call_once
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0054003Z              at /rustc/01f6ddf7588f42ae2d7eb0a2f21d44e8e96674cf/library/core/src/ops/function.rs:250:5
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0054372Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0054376Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0054722Z Writing test snapshot file for test "test::test_get_tier_platinum" to "test_snapshots/test/test_get_tier_platinum.1.json".
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0055274Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0055383Z ---- test::test_job_not_completed stdout ----
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0055577Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0056087Z thread 'test::test_job_not_completed' (2627) panicked at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-env-host-21.2.1/src/host.rs:768:9:
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0056763Z HostError: Error(Contract, #11)
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0056917Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0056998Z Event log (newest first):
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0057385Z    0: [Diagnostic Event] topics:[error, Error(Contract, #11)], data:"escalating error to panic"
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0058772Z    1: [Diagnostic Event] topics:[error, Error(Contract, #11)], data:["contract call failed", submit_review, [CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM, CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M, CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4, 1, 5, "Too early", 1]]
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0060688Z    2: [Failed Diagnostic Event (not emitted)] contract:CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4, topics:[error, Error(Contract, #11)], data:"escalating Ok(ScErrorType::Contract) frame-exit to Err"
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0062006Z    3: [Failed Diagnostic Event (not emitted)] contract:CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4, topics:[fn_return, submit_review], data:Error(Contract, #11)
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0063783Z    4: [Diagnostic Event] topics:[fn_call, Bytes(0000000000000000000000000000000000000000000000000000000000000002), submit_review], data:[CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM, CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M, CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4, 1, 5, "Too early", 1]
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0065026Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0065108Z Backtrace (newest first):
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0065485Z    0: <soroban_env_host::host::Host as soroban_env_common::env::EnvBase>::escalate_error_to_panic
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0066155Z              at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-env-host-21.2.1/src/host.rs:767:31
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0066708Z    1: soroban_sdk::env::internal::reject_err::{{closure}}
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0067227Z              at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-sdk-21.7.7/src/env.rs:52:27
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0067716Z    2: core::result::Result<T,E>::map_err
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0068130Z              at /rustc/01f6ddf7588f42ae2d7eb0a2f21d44e8e96674cf/library/core/src/result.rs:968:27
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0068569Z    3: soroban_sdk::env::internal::reject_err
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0069050Z              at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-sdk-21.7.7/src/env.rs:52:11
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0069605Z    4: <soroban_sdk::env::Env as soroban_env_common::env::Env>::call
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0070148Z              at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-sdk-21.7.7/src/env.rs:1667:13
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0070761Z    5: soroban_sdk::env::Env::invoke_contract
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0071263Z              at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-sdk-21.7.7/src/env.rs:379:18
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0071848Z    6: stellar_market_reputation::ReputationContractClient::submit_review
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0072202Z              at src/lib.rs:146:1
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0072502Z    7: stellar_market_reputation::test::test_job_not_completed
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0072814Z              at src/test.rs:258:23
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0073277Z    8: stellar_market_reputation::test::test_job_not_completed::{{closure}}
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0073623Z              at src/test.rs:244:28
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0073878Z    9: core::ops::function::FnOnce::call_once
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0074321Z              at /rustc/01f6ddf7588f42ae2d7eb0a2f21d44e8e96674cf/library/core/src/ops/function.rs:250:5
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0074681Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0074685Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0075020Z Writing test snapshot file for test "test::test_job_not_completed" to "test_snapshots/test/test_job_not_completed.1.json".
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0075658Z note: panic did not contain expected string
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0084943Z       panic message: "HostError: Error(Contract, #11)\n\nEvent log (newest first):\n   0: [Diagnostic Event] topics:[error, Error(Contract, #11)], data:\"escalating error to panic\"\n   1: [Diagnostic Event] topics:[error, Error(Contract, #11)], data:[\"contract call failed\", submit_review, [CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM, CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M, CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4, 1, 5, \"Too early\", 1]]\n   2: [Failed Diagnostic Event (not emitted)] contract:CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4, topics:[error, Error(Contract, #11)], data:\"escalating Ok(ScErrorType::Contract) frame-exit to Err\"\n   3: [Failed Diagnostic Event (not emitted)] contract:CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4, topics:[fn_return, submit_review], data:Error(Contract, #11)\n   4: [Diagnostic Event] topics:[fn_call, Bytes(0000000000000000000000000000000000000000000000000000000000000002), submit_review], data:[CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM, CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M, CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4, 1, 5, \"Too early\", 1]\n\nBacktrace (newest first):\n   0: <soroban_env_host::host::Host as soroban_env_common::env::EnvBase>::escalate_error_to_panic\n             at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-env-host-21.2.1/src/host.rs:767:31\n   1: soroban_sdk::env::internal::reject_err::{{closure}}\n             at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-sdk-21.7.7/src/env.rs:52:27\n   2: core::result::Result<T,E>::map_err\n             at /rustc/01f6ddf7588f42ae2d7eb0a2f21d44e8e96674cf/library/core/src/result.rs:968:27\n   3: soroban_sdk::env::internal::reject_err\n             at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-sdk-21.7.7/src/env.rs:52:11\n   4: <soroban_sdk::env::Env as soroban_env_common::env::Env>::call\n             at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-sdk-21.7.7/src/env.rs:1667:13\n   5: soroban_sdk::env::Env::invoke_contract\n             at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-sdk-21.7.7/src/env.rs:379:18\n   6: stellar_market_reputation::ReputationContractClient::submit_review\n             at src/lib.rs:146:1\n   7: stellar_market_reputation::test::test_job_not_completed\n             at src/test.rs:258:23\n   8: stellar_market_reputation::test::test_job_not_completed::{{closure}}\n             at src/test.rs:244:28\n   9: core::ops::function::FnOnce::call_once\n             at /rustc/01f6ddf7588f42ae2d7eb0a2f21d44e8e96674cf/library/core/src/ops/function.rs:250:5\n\n"
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0094223Z  expected substring: "Error(Contract, #5)"
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0094516Z ---- test::test_job_not_found stdout ----
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0094706Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0095188Z thread 'test::test_job_not_found' (2628) panicked at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-env-host-21.2.1/src/host.rs:768:9:
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0095840Z HostError: Error(Contract, #11)
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0095995Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0096079Z Event log (newest first):
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0096461Z    0: [Diagnostic Event] topics:[error, Error(Contract, #11)], data:"escalating error to panic"
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0098012Z    1: [Diagnostic Event] topics:[error, Error(Contract, #11)], data:["contract call failed", submit_review, [CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM, CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M, CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4, 99, 5, "Does not exist", 1]]
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0099869Z    2: [Failed Diagnostic Event (not emitted)] contract:CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4, topics:[error, Error(Contract, #11)], data:"escalating Ok(ScErrorType::Contract) frame-exit to Err"
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0101491Z    3: [Failed Diagnostic Event (not emitted)] contract:CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4, topics:[fn_return, submit_review], data:Error(Contract, #11)
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0103303Z    4: [Diagnostic Event] topics:[fn_call, Bytes(0000000000000000000000000000000000000000000000000000000000000002), submit_review], data:[CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM, CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M, CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4, 99, 5, "Does not exist", 1]
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0104570Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0104653Z Backtrace (newest first):
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0105042Z    0: <soroban_env_host::host::Host as soroban_env_common::env::EnvBase>::escalate_error_to_panic
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0105719Z              at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-env-host-21.2.1/src/host.rs:767:31
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0106281Z    1: soroban_sdk::env::internal::reject_err::{{closure}}
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0106809Z              at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-sdk-21.7.7/src/env.rs:52:27
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0107300Z    2: core::result::Result<T,E>::map_err
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0107716Z              at /rustc/01f6ddf7588f42ae2d7eb0a2f21d44e8e96674cf/library/core/src/result.rs:968:27
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0108143Z    3: soroban_sdk::env::internal::reject_err
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0108631Z              at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-sdk-21.7.7/src/env.rs:52:11
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0109179Z    4: <soroban_sdk::env::Env as soroban_env_common::env::Env>::call
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0109725Z              at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-sdk-21.7.7/src/env.rs:1667:13
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0110227Z    5: soroban_sdk::env::Env::invoke_contract
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0110819Z              at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-sdk-21.7.7/src/env.rs:379:18
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0111413Z    6: stellar_market_reputation::ReputationContractClient::submit_review
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0111766Z              at src/lib.rs:146:1
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0112042Z    7: stellar_market_reputation::test::test_job_not_found
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0112345Z              at src/test.rs:231:23
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0112674Z    8: stellar_market_reputation::test::test_job_not_found::{{closure}}
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0113012Z              at src/test.rs:219:24
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0113257Z    9: core::ops::function::FnOnce::call_once
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0113697Z              at /rustc/01f6ddf7588f42ae2d7eb0a2f21d44e8e96674cf/library/core/src/ops/function.rs:250:5
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0114056Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0114060Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0114367Z Writing test snapshot file for test "test::test_job_not_found" to "test_snapshots/test/test_job_not_found.1.json".
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0114870Z note: panic did not contain expected string
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0124039Z       panic message: "HostError: Error(Contract, #11)\n\nEvent log (newest first):\n   0: [Diagnostic Event] topics:[error, Error(Contract, #11)], data:\"escalating error to panic\"\n   1: [Diagnostic Event] topics:[error, Error(Contract, #11)], data:[\"contract call failed\", submit_review, [CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM, CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M, CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4, 99, 5, \"Does not exist\", 1]]\n   2: [Failed Diagnostic Event (not emitted)] contract:CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4, topics:[error, Error(Contract, #11)], data:\"escalating Ok(ScErrorType::Contract) frame-exit to Err\"\n   3: [Failed Diagnostic Event (not emitted)] contract:CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4, topics:[fn_return, submit_review], data:Error(Contract, #11)\n   4: [Diagnostic Event] topics:[fn_call, Bytes(0000000000000000000000000000000000000000000000000000000000000002), submit_review], data:[CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM, CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M, CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4, 99, 5, \"Does not exist\", 1]\n\nBacktrace (newest first):\n   0: <soroban_env_host::host::Host as soroban_env_common::env::EnvBase>::escalate_error_to_panic\n             at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-env-host-21.2.1/src/host.rs:767:31\n   1: soroban_sdk::env::internal::reject_err::{{closure}}\n             at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-sdk-21.7.7/src/env.rs:52:27\n   2: core::result::Result<T,E>::map_err\n             at /rustc/01f6ddf7588f42ae2d7eb0a2f21d44e8e96674cf/library/core/src/result.rs:968:27\n   3: soroban_sdk::env::internal::reject_err\n             at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-sdk-21.7.7/src/env.rs:52:11\n   4: <soroban_sdk::env::Env as soroban_env_common::env::Env>::call\n             at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-sdk-21.7.7/src/env.rs:1667:13\n   5: soroban_sdk::env::Env::invoke_contract\n             at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-sdk-21.7.7/src/env.rs:379:18\n   6: stellar_market_reputation::ReputationContractClient::submit_review\n             at src/lib.rs:146:1\n   7: stellar_market_reputation::test::test_job_not_found\n             at src/test.rs:231:23\n   8: stellar_market_reputation::test::test_job_not_found::{{closure}}\n             at src/test.rs:219:24\n   9: core::ops::function::FnOnce::call_once\n             at /rustc/01f6ddf7588f42ae2d7eb0a2f21d44e8e96674cf/library/core/src/ops/function.rs:250:5\n\n"
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0133551Z  expected substring: "Error(Contract, #7)"
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0133856Z ---- test::test_not_job_participant stdout ----
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0134056Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0134565Z thread 'test::test_not_job_participant' (2630) panicked at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-env-host-21.2.1/src/host.rs:768:9:
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0135247Z HostError: Error(Contract, #11)
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0135409Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0135488Z Event log (newest first):
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0135888Z    0: [Diagnostic Event] topics:[error, Error(Contract, #11)], data:"escalating error to panic"
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0137303Z    1: [Diagnostic Event] topics:[error, Error(Contract, #11)], data:["contract call failed", submit_review, [CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM, CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAK3IM, CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMDR4, 1, 5, "Fraudulent review", 1]]
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0139172Z    2: [Failed Diagnostic Event (not emitted)] contract:CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4, topics:[error, Error(Contract, #11)], data:"escalating Ok(ScErrorType::Contract) frame-exit to Err"
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0140569Z    3: [Failed Diagnostic Event (not emitted)] contract:CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4, topics:[fn_return, submit_review], data:Error(Contract, #11)
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0142378Z    4: [Diagnostic Event] topics:[fn_call, Bytes(0000000000000000000000000000000000000000000000000000000000000002), submit_review], data:[CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM, CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAK3IM, CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMDR4, 1, 5, "Fraudulent review", 1]
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0143768Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0143849Z Backtrace (newest first):
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0144216Z    0: <soroban_env_host::host::Host as soroban_env_common::env::EnvBase>::escalate_error_to_panic
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0144876Z              at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-env-host-21.2.1/src/host.rs:767:31
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0145425Z    1: soroban_sdk::env::internal::reject_err::{{closure}}
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0145948Z              at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-sdk-21.7.7/src/env.rs:52:27
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0146552Z    2: core::result::Result<T,E>::map_err
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0146962Z              at /rustc/01f6ddf7588f42ae2d7eb0a2f21d44e8e96674cf/library/core/src/result.rs:968:27
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0147402Z    3: soroban_sdk::env::internal::reject_err
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0147886Z              at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-sdk-21.7.7/src/env.rs:52:11
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0148441Z    4: <soroban_sdk::env::Env as soroban_env_common::env::Env>::call
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0148994Z              at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-sdk-21.7.7/src/env.rs:1667:13
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0149501Z    5: soroban_sdk::env::Env::invoke_contract
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0149983Z              at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-sdk-21.7.7/src/env.rs:379:18
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0150661Z    6: stellar_market_reputation::ReputationContractClient::submit_review
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0151030Z              at src/lib.rs:146:1
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0151333Z    7: stellar_market_reputation::test::test_not_job_participant
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0151655Z              at src/test.rs:287:23
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0151988Z    8: stellar_market_reputation::test::test_not_job_participant::{{closure}}
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0152351Z              at src/test.rs:271:30
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0152599Z    9: core::ops::function::FnOnce::call_once
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0153038Z              at /rustc/01f6ddf7588f42ae2d7eb0a2f21d44e8e96674cf/library/core/src/ops/function.rs:250:5
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0153399Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0153403Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0153758Z Writing test snapshot file for test "test::test_not_job_participant" to "test_snapshots/test/test_not_job_participant.1.json".
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0154307Z note: panic did not contain expected string
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0163543Z       panic message: "HostError: Error(Contract, #11)\n\nEvent log (newest first):\n   0: [Diagnostic Event] topics:[error, Error(Contract, #11)], data:\"escalating error to panic\"\n   1: [Diagnostic Event] topics:[error, Error(Contract, #11)], data:[\"contract call failed\", submit_review, [CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM, CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAK3IM, CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMDR4, 1, 5, \"Fraudulent review\", 1]]\n   2: [Failed Diagnostic Event (not emitted)] contract:CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4, topics:[error, Error(Contract, #11)], data:\"escalating Ok(ScErrorType::Contract) frame-exit to Err\"\n   3: [Failed Diagnostic Event (not emitted)] contract:CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4, topics:[fn_return, submit_review], data:Error(Contract, #11)\n   4: [Diagnostic Event] topics:[fn_call, Bytes(0000000000000000000000000000000000000000000000000000000000000002), submit_review], data:[CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM, CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAK3IM, CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMDR4, 1, 5, \"Fraudulent review\", 1]\n\nBacktrace (newest first):\n   0: <soroban_env_host::host::Host as soroban_env_common::env::EnvBase>::escalate_error_to_panic\n             at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-env-host-21.2.1/src/host.rs:767:31\n   1: soroban_sdk::env::internal::reject_err::{{closure}}\n             at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-sdk-21.7.7/src/env.rs:52:27\n   2: core::result::Result<T,E>::map_err\n             at /rustc/01f6ddf7588f42ae2d7eb0a2f21d44e8e96674cf/library/core/src/result.rs:968:27\n   3: soroban_sdk::env::internal::reject_err\n             at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-sdk-21.7.7/src/env.rs:52:11\n   4: <soroban_sdk::env::Env as soroban_env_common::env::Env>::call\n             at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-sdk-21.7.7/src/env.rs:1667:13\n   5: soroban_sdk::env::Env::invoke_contract\n             at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-sdk-21.7.7/src/env.rs:379:18\n   6: stellar_market_reputation::ReputationContractClient::submit_review\n             at src/lib.rs:146:1\n   7: stellar_market_reputation::test::test_not_job_participant\n             at src/test.rs:287:23\n   8: stellar_market_reputation::test::test_not_job_participant::{{closure}}\n             at src/test.rs:271:30\n   9: core::ops::function::FnOnce::call_once\n             at /rustc/01f6ddf7588f42ae2d7eb0a2f21d44e8e96674cf/library/core/src/ops/function.rs:250:5\n\n"
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0173116Z  expected substring: "Error(Contract, #6)"
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0173469Z ---- test::test_reviewer_not_participant_but_reviewee_is stdout ----
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0173728Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0174290Z thread 'test::test_reviewer_not_participant_but_reviewee_is' (2631) panicked at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-env-host-21.2.1/src/host.rs:768:9:
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0175044Z HostError: Error(Contract, #11)
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0175204Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0175284Z Event log (newest first):
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0175659Z    0: [Diagnostic Event] topics:[error, Error(Contract, #11)], data:"escalating error to panic"
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0177065Z    1: [Diagnostic Event] topics:[error, Error(Contract, #11)], data:["contract call failed", submit_review, [CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM, CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAK3IM, CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4, 1, 5, "I wasn't there", 1]]
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0178915Z    2: [Failed Diagnostic Event (not emitted)] contract:CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4, topics:[error, Error(Contract, #11)], data:"escalating Ok(ScErrorType::Contract) frame-exit to Err"
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0180215Z    3: [Failed Diagnostic Event (not emitted)] contract:CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4, topics:[fn_return, submit_review], data:Error(Contract, #11)
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0182105Z    4: [Diagnostic Event] topics:[fn_call, Bytes(0000000000000000000000000000000000000000000000000000000000000002), submit_review], data:[CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM, CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAK3IM, CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4, 1, 5, "I wasn't there", 1]
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0183363Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0183454Z Backtrace (newest first):
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0183827Z    0: <soroban_env_host::host::Host as soroban_env_common::env::EnvBase>::escalate_error_to_panic
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0184490Z              at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-env-host-21.2.1/src/host.rs:767:31
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0185042Z    1: soroban_sdk::env::internal::reject_err::{{closure}}
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0185565Z              at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-sdk-21.7.7/src/env.rs:52:27
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0186053Z    2: core::result::Result<T,E>::map_err
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0186463Z              at /rustc/01f6ddf7588f42ae2d7eb0a2f21d44e8e96674cf/library/core/src/result.rs:968:27
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0186903Z    3: soroban_sdk::env::internal::reject_err
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0187384Z              at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-sdk-21.7.7/src/env.rs:52:11
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0188064Z    4: <soroban_sdk::env::Env as soroban_env_common::env::Env>::call
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0188613Z              at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-sdk-21.7.7/src/env.rs:1667:13
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0189114Z    5: soroban_sdk::env::Env::invoke_contract
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0189604Z              at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-sdk-21.7.7/src/env.rs:379:18
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0190184Z    6: stellar_market_reputation::ReputationContractClient::submit_review
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0190762Z              at src/lib.rs:146:1
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0191125Z    7: stellar_market_reputation::test::test_reviewer_not_participant_but_reviewee_is
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0191514Z              at src/test.rs:315:23
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0191918Z    8: stellar_market_reputation::test::test_reviewer_not_participant_but_reviewee_is::{{closure}}
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0192345Z              at src/test.rs:300:51
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0192595Z    9: core::ops::function::FnOnce::call_once
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0193245Z              at /rustc/01f6ddf7588f42ae2d7eb0a2f21d44e8e96674cf/library/core/src/ops/function.rs:250:5
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0193894Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0193900Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0194573Z Writing test snapshot file for test "test::test_reviewer_not_participant_but_reviewee_is" to "test_snapshots/test/test_reviewer_not_participant_but_reviewee_is.1.json".
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0195277Z note: panic did not contain expected string
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0204749Z       panic message: "HostError: Error(Contract, #11)\n\nEvent log (newest first):\n   0: [Diagnostic Event] topics:[error, Error(Contract, #11)], data:\"escalating error to panic\"\n   1: [Diagnostic Event] topics:[error, Error(Contract, #11)], data:[\"contract call failed\", submit_review, [CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM, CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAK3IM, CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4, 1, 5, \"I wasn't there\", 1]]\n   2: [Failed Diagnostic Event (not emitted)] contract:CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4, topics:[error, Error(Contract, #11)], data:\"escalating Ok(ScErrorType::Contract) frame-exit to Err\"\n   3: [Failed Diagnostic Event (not emitted)] contract:CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4, topics:[fn_return, submit_review], data:Error(Contract, #11)\n   4: [Diagnostic Event] topics:[fn_call, Bytes(0000000000000000000000000000000000000000000000000000000000000002), submit_review], data:[CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM, CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAK3IM, CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4, 1, 5, \"I wasn't there\", 1]\n\nBacktrace (newest first):\n   0: <soroban_env_host::host::Host as soroban_env_common::env::EnvBase>::escalate_error_to_panic\n             at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-env-host-21.2.1/src/host.rs:767:31\n   1: soroban_sdk::env::internal::reject_err::{{closure}}\n             at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-sdk-21.7.7/src/env.rs:52:27\n   2: core::result::Result<T,E>::map_err\n             at /rustc/01f6ddf7588f42ae2d7eb0a2f21d44e8e96674cf/library/core/src/result.rs:968:27\n   3: soroban_sdk::env::internal::reject_err\n             at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-sdk-21.7.7/src/env.rs:52:11\n   4: <soroban_sdk::env::Env as soroban_env_common::env::Env>::call\n             at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-sdk-21.7.7/src/env.rs:1667:13\n   5: soroban_sdk::env::Env::invoke_contract\n             at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-sdk-21.7.7/src/env.rs:379:18\n   6: stellar_market_reputation::ReputationContractClient::submit_review\n             at src/lib.rs:146:1\n   7: stellar_market_reputation::test::test_reviewer_not_participant_but_reviewee_is\n             at src/test.rs:315:23\n   8: stellar_market_reputation::test::test_reviewer_not_participant_but_reviewee_is::{{closure}}\n             at src/test.rs:300:51\n   9: core::ops::function::FnOnce::call_once\n             at /rustc/01f6ddf7588f42ae2d7eb0a2f21d44e8e96674cf/library/core/src/ops/function.rs:250:5\n\n"
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0214500Z  expected substring: "Error(Contract, #6)"
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0214808Z ---- test::test_multiple_tier_badges stdout ----
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0215008Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0215518Z thread 'test::test_multiple_tier_badges' (2629) panicked at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-env-host-21.2.1/src/host.rs:768:9:
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0216387Z HostError: Error(Contract, #11)
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0216544Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0216632Z Event log (newest first):
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0217016Z    0: [Diagnostic Event] topics:[error, Error(Contract, #11)], data:"escalating error to panic"
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0218394Z    1: [Diagnostic Event] topics:[error, Error(Contract, #11)], data:["contract call failed", submit_review, [CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM, CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M, CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMDR4, 1, 2, "Okay", 1]]
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0220207Z    2: [Failed Diagnostic Event (not emitted)] contract:CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4, topics:[error, Error(Contract, #11)], data:"escalating Ok(ScErrorType::Contract) frame-exit to Err"
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0221622Z    3: [Failed Diagnostic Event (not emitted)] contract:CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4, topics:[fn_return, submit_review], data:Error(Contract, #11)
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0223386Z    4: [Diagnostic Event] topics:[fn_call, Bytes(0000000000000000000000000000000000000000000000000000000000000002), submit_review], data:[CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM, CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M, CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMDR4, 1, 2, "Okay", 1]
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0224606Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0224697Z Backtrace (newest first):
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0225068Z    0: <soroban_env_host::host::Host as soroban_env_common::env::EnvBase>::escalate_error_to_panic
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0225740Z              at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-env-host-21.2.1/src/host.rs:767:31
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0226295Z    1: soroban_sdk::env::internal::reject_err::{{closure}}
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0226812Z              at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-sdk-21.7.7/src/env.rs:52:27
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0227302Z    2: core::result::Result<T,E>::map_err
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0227715Z              at /rustc/01f6ddf7588f42ae2d7eb0a2f21d44e8e96674cf/library/core/src/result.rs:968:27
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0228151Z    3: soroban_sdk::env::internal::reject_err
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0228634Z              at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-sdk-21.7.7/src/env.rs:52:11
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0229185Z    4: <soroban_sdk::env::Env as soroban_env_common::env::Env>::call
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0229737Z              at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-sdk-21.7.7/src/env.rs:1667:13
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0230239Z    5: soroban_sdk::env::Env::invoke_contract
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0230824Z              at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-sdk-21.7.7/src/env.rs:379:18
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0231414Z    6: stellar_market_reputation::ReputationContractClient::submit_review
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0231780Z              at src/lib.rs:146:1
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0232080Z    7: stellar_market_reputation::test::test_multiple_tier_badges
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0232403Z              at src/test.rs:592:23
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0232746Z    8: stellar_market_reputation::test::test_multiple_tier_badges::{{closure}}
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0233113Z              at src/test.rs:574:31
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0233486Z    9: core::ops::function::FnOnce::call_once
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0233920Z              at /rustc/01f6ddf7588f42ae2d7eb0a2f21d44e8e96674cf/library/core/src/ops/function.rs:250:5
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0234285Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0234289Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0234643Z Writing test snapshot file for test "test::test_multiple_tier_badges" to "test_snapshots/test/test_multiple_tier_badges.1.json".
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0235091Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0235261Z ---- test::test_submit_review_freelancer_reviews_client stdout ----
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0235656Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0236228Z thread 'test::test_submit_review_freelancer_reviews_client' (2636) panicked at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-env-host-21.2.1/src/host.rs:768:9:
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0236971Z HostError: Error(Contract, #11)
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0237127Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0237208Z Event log (newest first):
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0237582Z    0: [Diagnostic Event] topics:[error, Error(Contract, #11)], data:"escalating error to panic"
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0239011Z    1: [Diagnostic Event] topics:[error, Error(Contract, #11)], data:["contract call failed", submit_review, [CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM, CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4, CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M, 1, 5, "Easy to work with", 5]]
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0240946Z    2: [Failed Diagnostic Event (not emitted)] contract:CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4, topics:[error, Error(Contract, #11)], data:"escalating Ok(ScErrorType::Contract) frame-exit to Err"
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0242259Z    3: [Failed Diagnostic Event (not emitted)] contract:CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4, topics:[fn_return, submit_review], data:Error(Contract, #11)
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0244073Z    4: [Diagnostic Event] topics:[fn_call, Bytes(0000000000000000000000000000000000000000000000000000000000000002), submit_review], data:[CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM, CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4, CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M, 1, 5, "Easy to work with", 5]
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0245347Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0245428Z Backtrace (newest first):
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0245796Z    0: <soroban_env_host::host::Host as soroban_env_common::env::EnvBase>::escalate_error_to_panic
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0246810Z              at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-env-host-21.2.1/src/host.rs:767:31
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0247667Z    1: soroban_sdk::env::internal::reject_err::{{closure}}
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0248196Z              at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-sdk-21.7.7/src/env.rs:52:27
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0248695Z    2: core::result::Result<T,E>::map_err
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0249109Z              at /rustc/01f6ddf7588f42ae2d7eb0a2f21d44e8e96674cf/library/core/src/result.rs:968:27
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0249551Z    3: soroban_sdk::env::internal::reject_err
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0250047Z              at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-sdk-21.7.7/src/env.rs:52:11
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0250719Z    4: <soroban_sdk::env::Env as soroban_env_common::env::Env>::call
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0251273Z              at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-sdk-21.7.7/src/env.rs:1667:13
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0251783Z    5: soroban_sdk::env::Env::invoke_contract
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0252265Z              at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-sdk-21.7.7/src/env.rs:379:18
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0252856Z    6: stellar_market_reputation::ReputationContractClient::submit_review
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0253214Z              at src/lib.rs:146:1
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0253579Z    7: stellar_market_reputation::test::test_submit_review_freelancer_reviews_client
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0253967Z              at src/test.rs:107:23
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0254365Z    8: stellar_market_reputation::test::test_submit_review_freelancer_reviews_client::{{closure}}
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0254944Z              at src/test.rs:93:50
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0255193Z    9: core::ops::function::FnOnce::call_once
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0255636Z              at /rustc/01f6ddf7588f42ae2d7eb0a2f21d44e8e96674cf/library/core/src/ops/function.rs:250:5
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0256004Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0256008Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0256495Z Writing test snapshot file for test "test::test_submit_review_freelancer_reviews_client" to "test_snapshots/test/test_submit_review_freelancer_reviews_client.1.json".
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0257183Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0257354Z ---- test::test_submit_review_client_reviews_freelancer stdout ----
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0257608Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0258180Z thread 'test::test_submit_review_client_reviews_freelancer' (2635) panicked at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-env-host-21.2.1/src/host.rs:768:9:
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0258931Z HostError: Error(Contract, #11)
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0259101Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0259183Z Event log (newest first):
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0259563Z    0: [Diagnostic Event] topics:[error, Error(Contract, #11)], data:"escalating error to panic"
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0261072Z    1: [Diagnostic Event] topics:[error, Error(Contract, #11)], data:["contract call failed", submit_review, [CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM, CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M, CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4, 1, 4, "Great work!", 10]]
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0262945Z    2: [Failed Diagnostic Event (not emitted)] contract:CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4, topics:[error, Error(Contract, #11)], data:"escalating Ok(ScErrorType::Contract) frame-exit to Err"
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0264267Z    3: [Failed Diagnostic Event (not emitted)] contract:CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4, topics:[fn_return, submit_review], data:Error(Contract, #11)
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0266074Z    4: [Diagnostic Event] topics:[fn_call, Bytes(0000000000000000000000000000000000000000000000000000000000000002), submit_review], data:[CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM, CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M, CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4, 1, 4, "Great work!", 10]
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0267328Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0267411Z Backtrace (newest first):
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0267786Z    0: <soroban_env_host::host::Host as soroban_env_common::env::EnvBase>::escalate_error_to_panic
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0268459Z              at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-env-host-21.2.1/src/host.rs:767:31
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0269017Z    1: soroban_sdk::env::internal::reject_err::{{closure}}
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0269536Z              at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-sdk-21.7.7/src/env.rs:52:27
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0270025Z    2: core::result::Result<T,E>::map_err
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0270532Z              at /rustc/01f6ddf7588f42ae2d7eb0a2f21d44e8e96674cf/library/core/src/result.rs:968:27
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0270981Z    3: soroban_sdk::env::internal::reject_err
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0271463Z              at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-sdk-21.7.7/src/env.rs:52:11
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0272015Z    4: <soroban_sdk::env::Env as soroban_env_common::env::Env>::call
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0272562Z              at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-sdk-21.7.7/src/env.rs:1667:13
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0273067Z    5: soroban_sdk::env::Env::invoke_contract
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0273546Z              at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-sdk-21.7.7/src/env.rs:379:18
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0274115Z    6: stellar_market_reputation::ReputationContractClient::submit_review
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0274473Z              at src/lib.rs:146:1
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0274839Z    7: stellar_market_reputation::test::test_submit_review_client_reviews_freelancer
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0275348Z              at src/test.rs:76:23
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0275740Z    8: stellar_market_reputation::test::test_submit_review_client_reviews_freelancer::{{closure}}
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0276161Z              at src/test.rs:63:50
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0276410Z    9: core::ops::function::FnOnce::call_once
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0276842Z              at /rustc/01f6ddf7588f42ae2d7eb0a2f21d44e8e96674cf/library/core/src/ops/function.rs:250:5
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0277209Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0277320Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0277808Z Writing test snapshot file for test "test::test_submit_review_client_reviews_freelancer" to "test_snapshots/test/test_submit_review_client_reviews_freelancer.1.json".
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0278396Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0278536Z ---- test::test_tier_downgrade_no_badge_removal stdout ----
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0278772Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0279310Z thread 'test::test_tier_downgrade_no_badge_removal' (2637) panicked at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-env-host-21.2.1/src/host.rs:768:9:
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0280037Z HostError: Error(Contract, #11)
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0280188Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0280269Z Event log (newest first):
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0280755Z    0: [Diagnostic Event] topics:[error, Error(Contract, #11)], data:"escalating error to panic"
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0282139Z    1: [Diagnostic Event] topics:[error, Error(Contract, #11)], data:["contract call failed", submit_review, [CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM, CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M, CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAK3IM, 1, 4, "Good", 1]]
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0283957Z    2: [Failed Diagnostic Event (not emitted)] contract:CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4, topics:[error, Error(Contract, #11)], data:"escalating Ok(ScErrorType::Contract) frame-exit to Err"
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0285260Z    3: [Failed Diagnostic Event (not emitted)] contract:CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4, topics:[fn_return, submit_review], data:Error(Contract, #11)
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0287025Z    4: [Diagnostic Event] topics:[fn_call, Bytes(0000000000000000000000000000000000000000000000000000000000000002), submit_review], data:[CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM, CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M, CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAK3IM, 1, 4, "Good", 1]
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0288251Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0288333Z Backtrace (newest first):
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0288713Z    0: <soroban_env_host::host::Host as soroban_env_common::env::EnvBase>::escalate_error_to_panic
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0289383Z              at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-env-host-21.2.1/src/host.rs:767:31
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0289936Z    1: soroban_sdk::env::internal::reject_err::{{closure}}
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0290538Z              at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-sdk-21.7.7/src/env.rs:52:27
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0291060Z    2: core::result::Result<T,E>::map_err
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0291479Z              at /rustc/01f6ddf7588f42ae2d7eb0a2f21d44e8e96674cf/library/core/src/result.rs:968:27
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0291913Z    3: soroban_sdk::env::internal::reject_err
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0292399Z              at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-sdk-21.7.7/src/env.rs:52:11
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0292955Z    4: <soroban_sdk::env::Env as soroban_env_common::env::Env>::call
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0293510Z              at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-sdk-21.7.7/src/env.rs:1667:13
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0294006Z    5: soroban_sdk::env::Env::invoke_contract
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0294486Z              at /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-sdk-21.7.7/src/env.rs:379:18
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0295066Z    6: stellar_market_reputation::ReputationContractClient::submit_review
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0295554Z              at src/lib.rs:146:1
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0295883Z    7: stellar_market_reputation::test::test_tier_downgrade_no_badge_removal
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0296246Z              at src/test.rs:659:23
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0296625Z    8: stellar_market_reputation::test::test_tier_downgrade_no_badge_removal::{{closure}}
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0297366Z              at src/test.rs:643:42
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0297836Z    9: core::ops::function::FnOnce::call_once
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0298483Z              at /rustc/01f6ddf7588f42ae2d7eb0a2f21d44e8e96674cf/library/core/src/ops/function.rs:250:5
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0299152Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0299160Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0299604Z Writing test snapshot file for test "test::test_tier_downgrade_no_badge_removal" to "test_snapshots/test/test_tier_downgrade_no_badge_removal.1.json".
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0300126Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0300130Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0300200Z failures:
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0300512Z     test::test_average_rating
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0300791Z     test::test_badge_awarded_on_tier_crossing
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0301075Z     test::test_badge_not_duplicated
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0301321Z     test::test_badge_timestamp
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0301560Z     test::test_decay_calculation
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0301806Z     test::test_get_tier_bronze
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0302035Z     test::test_get_tier_gold
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0302261Z     test::test_get_tier_platinum
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0302494Z     test::test_get_tier_silver
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0302713Z     test::test_job_not_completed
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0302953Z     test::test_job_not_found
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0303183Z     test::test_multiple_tier_badges
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0303437Z     test::test_not_job_participant
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0303726Z     test::test_reviewer_not_participant_but_reviewee_is
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0304068Z     test::test_submit_review_client_reviews_freelancer
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0304398Z     test::test_submit_review_freelancer_reviews_client
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0304711Z     test::test_tier_downgrade_no_badge_removal
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0304904Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0305161Z test result: FAILED. 6 passed; 17 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.56s
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0305519Z 
+Contracts — Tests	Run contract tests	2026-02-25T21:00:46.0314692Z ##[error]Process completed with exit code 101.
+Contracts — Tests	Post Run actions/checkout@v4	﻿2026-02-25T21:00:46.0401006Z Post job cleanup.
+Contracts — Tests	Post Run actions/checkout@v4	2026-02-25T21:00:46.1352236Z [command]/usr/bin/git version
+Contracts — Tests	Post Run actions/checkout@v4	2026-02-25T21:00:46.1398106Z git version 2.53.0
+Contracts — Tests	Post Run actions/checkout@v4	2026-02-25T21:00:46.1444129Z Temporarily overriding HOME='/home/runner/work/_temp/6199de9a-a5f6-4fa1-80c8-9771c4865798' before making global git config changes
+Contracts — Tests	Post Run actions/checkout@v4	2026-02-25T21:00:46.1445448Z Adding repository directory to the temporary git global config as a safe directory
+Contracts — Tests	Post Run actions/checkout@v4	2026-02-25T21:00:46.1451073Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/stellar-market/stellar-market
+Contracts — Tests	Post Run actions/checkout@v4	2026-02-25T21:00:46.1488723Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+Contracts — Tests	Post Run actions/checkout@v4	2026-02-25T21:00:46.1523603Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+Contracts — Tests	Post Run actions/checkout@v4	2026-02-25T21:00:46.1768406Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+Contracts — Tests	Post Run actions/checkout@v4	2026-02-25T21:00:46.1791384Z http.https://github.com/.extraheader
+Contracts — Tests	Post Run actions/checkout@v4	2026-02-25T21:00:46.1804841Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+Contracts — Tests	Post Run actions/checkout@v4	2026-02-25T21:00:46.1837272Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+Contracts — Tests	Post Run actions/checkout@v4	2026-02-25T21:00:46.2074265Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+Contracts — Tests	Post Run actions/checkout@v4	2026-02-25T21:00:46.2108925Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+Contracts — Tests	Complete job	﻿2026-02-25T21:00:46.2468298Z Cleaning up orphan processes

@@ -10,8 +10,10 @@ export interface AuthenticatedSocket extends Socket {
   };
 }
 
+let io: SocketServer;
+
 export function initSocket(httpServer: HttpServer): SocketServer {
-  const io = new SocketServer(httpServer, {
+  io = new SocketServer(httpServer, {
     cors: {
       origin: config.frontendUrl,
       methods: ["GET", "POST"],
@@ -51,5 +53,12 @@ export function initSocket(httpServer: HttpServer): SocketServer {
     });
   });
 
+  return io;
+}
+
+export function getIo(): SocketServer {
+  if (!io) {
+    throw new Error("Socket.io not initialized!");
+  }
   return io;
 }

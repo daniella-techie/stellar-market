@@ -18,24 +18,24 @@ export default function Pagination({ page, totalPages, total, limit, onPageChang
 
   return (
     <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-8">
-      <p className="text-sm text-dark-text">
+      <p className="text-sm text-theme-text">
         Showing {start}–{end} of {total} results
       </p>
       <div className="flex items-center gap-2">
         <button
           onClick={() => onPageChange(page - 1)}
           disabled={page <= 1}
-          className="p-2 rounded-lg border border-dark-border text-dark-text hover:border-stellar-blue disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          className="p-2 rounded-lg border border-theme-border text-theme-text hover:border-stellar-blue disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
         >
           <ChevronLeft size={18} />
         </button>
-        <span className="text-sm text-dark-heading px-3">
+        <span className="text-sm text-theme-heading px-3">
           Page {page} of {totalPages}
         </span>
         <button
           onClick={() => onPageChange(page + 1)}
           disabled={page >= totalPages}
-          className="p-2 rounded-lg border border-dark-border text-dark-text hover:border-stellar-blue disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          className="p-2 rounded-lg border border-theme-border text-theme-text hover:border-stellar-blue disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
         >
           <ChevronRight size={18} />
         </button>

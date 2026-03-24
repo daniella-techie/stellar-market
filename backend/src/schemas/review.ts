@@ -24,7 +24,7 @@ export const getReviewsQuerySchema = paginationSchema.extend({
   jobId: z.string().uuid().optional(),
   reviewerId: z.string().uuid().optional(),
   revieweeId: z.string().uuid().optional(),
-  rating: reviewRatingSchema.optional(),
+  rating: z.coerce.number().int().min(1).max(5).optional(),
 });
 
 export const getReviewByIdParamSchema = z.object({

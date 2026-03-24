@@ -1,9 +1,23 @@
 #![no_std]
 
 use soroban_sdk::{
-    contract, contractimpl, contracttype, contracterror, symbol_short, Address, Env, String, Vec,
-    Symbol, vec, IntoVal,
+    contract, contracterror, contractimpl, contracttype, symbol_short, vec, Address, Env, IntoVal,
+    String, Symbol, Vec,
 };
+
+// Import reputation contract types for cross-contract calls
+mod reputation {
+    use soroban_sdk::{contracttype, Address};
+
+    #[contracttype]
+    #[derive(Clone, Debug, Eq, PartialEq)]
+    pub struct UserReputation {
+        pub user: Address,
+        pub total_score: u64,
+        pub total_weight: u64,
+        pub review_count: u32,
+    }
+}
 
 #[contracterror]
 #[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
@@ -16,6 +30,11 @@ pub enum DisputeError {
     NotEnoughVotes = 5,
     InvalidParty = 6,
     AlreadyResolved = 7,
+    InsufficientReputation = 8,
+    NotInitialized = 9,
+    ConflictOfInterest = 10,
+    ContractPaused = 11,
+    NotAdmin = 12,
 }
 
 #[contracttype]
@@ -25,6 +44,26 @@ pub enum DisputeStatus {
     Voting,
     ResolvedForClient,
     ResolvedForFreelancer,
+    RefundedBoth,
+    Escalated,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum TieBreakMethod {
+    FavorFreelancer,
+    FavorClient,
+    Escalate,
+    RefundBoth,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum DisputeResolution {
+    ClientWins,
+    FreelancerWins,
+    RefundBoth,
+    Escalate,
 }
 
 #[contracttype]
@@ -56,7 +95,9 @@ pub struct Dispute {
     pub votes_for_client: u32,
     pub votes_for_freelancer: u32,
     pub min_votes: u32,
+    pub tie_break_method: TieBreakMethod,
     pub created_at: u64,
+    pub excluded_voters: Vec<Address>,
 }
 
 #[contracttype]
@@ -66,6 +107,197 @@ enum DataKey {
     DisputeCount,
     Votes(u64),
     HasVoted(u64, Address),
+    ReputationContract,
+    MinVoterReputation,
+    Admin,
+    EscrowContract,
+    Paused,
+}
+
+fn require_not_paused(env: &Env) -> Result<(), DisputeError> {
+    if env
+        .storage()
+        .instance()
+        .get(&DataKey::Paused)
+        .unwrap_or(false)
+    {
+        return Err(DisputeError::ContractPaused);
+    }
+    Ok(())
+}
+
+fn require_admin(env: &Env, admin: &Address) -> Result<(), DisputeError> {
+    let stored_admin: Address = env
+        .storage()
+        .instance()
+        .get(&DataKey::Admin)
+        .ok_or(DisputeError::NotInitialized)?;
+
+    if admin != &stored_admin {
+        return Err(DisputeError::NotAdmin);
+    }
+    Ok(())
+}
+
+const MIN_VOTER_REPUTATION: u32 = 300;
+
+const MIN_TTL_THRESHOLD: u32 = 1_000;
+const MIN_TTL_EXTEND_TO: u32 = 10_000;
+
+fn bump_dispute_ttl(env: &Env, dispute_id: u64) {
+    env.storage().persistent().extend_ttl(
+        &DataKey::Dispute(dispute_id),
+        MIN_TTL_THRESHOLD,
+        MIN_TTL_EXTEND_TO,
+    );
+}
+
+fn bump_votes_ttl(env: &Env, dispute_id: u64) {
+    env.storage().persistent().extend_ttl(
+        &DataKey::Votes(dispute_id),
+        MIN_TTL_THRESHOLD,
+        MIN_TTL_EXTEND_TO,
+    );
+}
+
+fn bump_has_voted_ttl(env: &Env, dispute_id: u64, voter: &Address) {
+    env.storage().persistent().extend_ttl(
+        &DataKey::HasVoted(dispute_id, voter.clone()),
+        MIN_TTL_THRESHOLD,
+        MIN_TTL_EXTEND_TO,
+    );
+}
+
+fn bump_dispute_count_ttl(env: &Env) {
+    env.storage()
+        .instance()
+        .extend_ttl(MIN_TTL_THRESHOLD, MIN_TTL_EXTEND_TO);
+}
+
+// Import Job struct from escrow for cross-contract calls
+mod escrow {
+    use soroban_sdk::{contracttype, Address, String, Vec};
+
+    #[contracttype]
+    #[derive(Clone, Debug, Eq, PartialEq)]
+    pub enum JobStatus {
+        Created,
+        Funded,
+        InProgress,
+        Completed,
+        Cancelled,
+        Disputed,
+    }
+
+    #[contracttype]
+    #[derive(Clone, Debug, Eq, PartialEq)]
+    pub enum MilestoneStatus {
+        Pending,
+        Submitted,
+        Approved,
+        Rejected,
+    }
+
+    #[contracttype]
+    #[derive(Clone, Debug, Eq, PartialEq)]
+    pub struct Milestone {
+        pub id: u32,
+        pub description: String,
+        pub amount: i128,
+        pub status: MilestoneStatus,
+        pub deadline: u64,
+    }
+
+    #[contracttype]
+    #[derive(Clone, Debug, Eq, PartialEq)]
+    pub struct Job {
+        pub id: u64,
+        pub client: Address,
+        pub freelancer: Address,
+        pub token: Address,
+        pub total_amount: i128,
+        pub status: JobStatus,
+        pub milestones: Vec<Milestone>,
+        pub job_deadline: u64,
+        pub auto_refund_after: u64,
+    }
+}
+
+/// Detect conflicts of interest by querying job history from escrow contract.
+/// Returns a deduplicated list of addresses that have worked with either disputing party.
+fn detect_conflicts(
+    env: &Env,
+    escrow_contract: &Address,
+    client: &Address,
+    freelancer: &Address,
+) -> Vec<Address> {
+    let mut conflicts = Vec::<Address>::new(env);
+
+    // Query job count from escrow
+    let job_count_result = env.try_invoke_contract::<u64, soroban_sdk::Error>(
+        escrow_contract,
+        &Symbol::new(env, "get_job_count"),
+        vec![env],
+    );
+
+    let job_count = match job_count_result {
+        Ok(Ok(count)) => count,
+        _ => return conflicts, // Return empty if query fails
+    };
+
+    if job_count == 0 {
+        return conflicts;
+    }
+
+    // Iterate through all jobs
+    for job_id in 1..=job_count {
+        let job_result = env.try_invoke_contract::<escrow::Job, soroban_sdk::Error>(
+            escrow_contract,
+            &Symbol::new(env, "get_job"),
+            vec![env, job_id.into_val(env)],
+        );
+
+        let job = match job_result {
+            Ok(Ok(j)) => j,
+            _ => continue, // Skip failed queries
+        };
+
+        // Check if job involves dispute client
+        if &job.client == client || &job.freelancer == client {
+            // Add the other party if not already in conflicts and not the dispute freelancer
+            if &job.client != client
+                && &job.client != freelancer
+                && !conflicts.contains(&job.client)
+            {
+                conflicts.push_back(job.client.clone());
+            }
+            if &job.freelancer != client
+                && &job.freelancer != freelancer
+                && !conflicts.contains(&job.freelancer)
+            {
+                conflicts.push_back(job.freelancer.clone());
+            }
+        }
+
+        // Check if job involves dispute freelancer
+        if &job.client == freelancer || &job.freelancer == freelancer {
+            // Add the other party if not already in conflicts and not the dispute client
+            if &job.client != freelancer
+                && &job.client != client
+                && !conflicts.contains(&job.client)
+            {
+                conflicts.push_back(job.client.clone());
+            }
+            if &job.freelancer != freelancer
+                && &job.freelancer != client
+                && !conflicts.contains(&job.freelancer)
+            {
+                conflicts.push_back(job.freelancer.clone());
+            }
+        }
+    }
+
+    conflicts
 }
 
 #[contract]
@@ -73,6 +305,142 @@ pub struct DisputeContract;
 
 #[contractimpl]
 impl DisputeContract {
+    /// Initialize the dispute contract with reputation contract address and admin.
+    pub fn initialize(
+        env: Env,
+        admin: Address,
+        reputation_contract: Address,
+        min_voter_reputation: u32,
+        escrow_contract: Address,
+    ) -> Result<(), DisputeError> {
+        admin.require_auth();
+
+        // Check if already initialized
+        if env.storage().instance().has(&DataKey::Admin) {
+            return Err(DisputeError::Unauthorized);
+        }
+
+        env.storage().instance().set(&DataKey::Admin, &admin);
+        env.storage()
+            .instance()
+            .set(&DataKey::ReputationContract, &reputation_contract);
+        env.storage()
+            .instance()
+            .set(&DataKey::MinVoterReputation, &min_voter_reputation);
+        env.storage()
+            .instance()
+            .set(&DataKey::EscrowContract, &escrow_contract);
+        env.storage().instance().set(&DataKey::Paused, &false);
+
+        bump_dispute_count_ttl(&env);
+
+        // Emit event
+        env.events().publish(
+            (symbol_short!("dispute"), symbol_short!("init")),
+            (admin, reputation_contract, min_voter_reputation),
+        );
+
+        Ok(())
+    }
+
+    /// Pause the contract (admin only).
+    pub fn pause(env: Env, admin: Address) -> Result<(), DisputeError> {
+        admin.require_auth();
+        require_admin(&env, &admin)?;
+
+        env.storage().instance().set(&DataKey::Paused, &true);
+        bump_dispute_count_ttl(&env);
+
+        // Emit event
+        env.events().publish(
+            (symbol_short!("dispute"), symbol_short!("paused")),
+            (admin, env.ledger().timestamp()),
+        );
+
+        Ok(())
+    }
+
+    /// Unpause the contract (admin only).
+    pub fn unpause(env: Env, admin: Address) -> Result<(), DisputeError> {
+        admin.require_auth();
+        require_admin(&env, &admin)?;
+
+        env.storage().instance().set(&DataKey::Paused, &false);
+        bump_dispute_count_ttl(&env);
+
+        // Emit event
+        env.events().publish(
+            (symbol_short!("dispute"), symbol_short!("unpaused")),
+            (admin, env.ledger().timestamp()),
+        );
+
+        Ok(())
+    }
+
+    /// Set the minimum voter reputation threshold (admin only).
+    pub fn set_min_voter_reputation(
+        env: Env,
+        admin: Address,
+        min_reputation: u32,
+    ) -> Result<(), DisputeError> {
+        admin.require_auth();
+        require_not_paused(&env)?;
+
+        let stored_admin: Address = env
+            .storage()
+            .instance()
+            .get(&DataKey::Admin)
+            .ok_or(DisputeError::NotInitialized)?;
+
+        if admin != stored_admin {
+            return Err(DisputeError::Unauthorized);
+        }
+
+        env.storage()
+            .instance()
+            .set(&DataKey::MinVoterReputation, &min_reputation);
+        bump_dispute_count_ttl(&env);
+
+        // Emit event
+        env.events().publish(
+            (symbol_short!("dispute"), symbol_short!("minrep")),
+            (admin, min_reputation),
+        );
+
+        Ok(())
+    }
+
+    /// Check if an address is eligible to vote based on reputation.
+    pub fn is_eligible_voter(env: Env, voter: Address) -> Result<bool, DisputeError> {
+        let reputation_contract: Address = env
+            .storage()
+            .instance()
+            .get(&DataKey::ReputationContract)
+            .ok_or(DisputeError::NotInitialized)?;
+
+        let min_reputation: u32 = env
+            .storage()
+            .instance()
+            .get(&DataKey::MinVoterReputation)
+            .unwrap_or(MIN_VOTER_REPUTATION);
+
+        // Call reputation contract to get voter's reputation
+        let reputation_result = env
+            .try_invoke_contract::<reputation::UserReputation, soroban_sdk::Error>(
+                &reputation_contract,
+                &Symbol::new(&env, "get_reputation"),
+                vec![&env, voter.into_val(&env)],
+            );
+
+        match reputation_result {
+            Ok(Ok(rep)) => {
+                // Use total_score as the reputation metric
+                Ok(rep.total_score >= min_reputation as u64)
+            }
+            _ => Ok(false), // User not found or error = not eligible
+        }
+    }
+
     /// Raise a dispute on a job. Either the client or freelancer can initiate.
     pub fn raise_dispute(
         env: Env,
@@ -82,8 +450,10 @@ impl DisputeContract {
         initiator: Address,
         reason: String,
         min_votes: u32,
+        tie_break_method: Option<TieBreakMethod>,
     ) -> Result<u64, DisputeError> {
         initiator.require_auth();
+        require_not_paused(&env)?;
 
         if initiator != client && initiator != freelancer {
             return Err(DisputeError::InvalidParty);
@@ -96,29 +466,43 @@ impl DisputeContract {
             .unwrap_or(0);
         count += 1;
 
+        // Detect conflicts of interest by querying escrow contract
+        let excluded_voters = if let Some(escrow_contract) = env
+            .storage()
+            .instance()
+            .get::<DataKey, Address>(&DataKey::EscrowContract)
+        {
+            detect_conflicts(&env, &escrow_contract, &client, &freelancer)
+        } else {
+            Vec::<Address>::new(&env)
+        };
+
         let dispute = Dispute {
             id: count,
             job_id,
-            client,
-            freelancer,
+            client: client.clone(),
+            freelancer: freelancer.clone(),
             initiator: initiator.clone(),
             reason,
             status: DisputeStatus::Open,
             votes_for_client: 0,
             votes_for_freelancer: 0,
             min_votes: if min_votes < 3 { 3 } else { min_votes },
+            tie_break_method: tie_break_method.unwrap_or(TieBreakMethod::RefundBoth),
             created_at: env.ledger().timestamp(),
+            excluded_voters,
         };
 
         env.storage()
             .persistent()
             .set(&DataKey::Dispute(count), &dispute);
-        env.storage()
-            .instance()
-            .set(&DataKey::DisputeCount, &count);
+        env.storage().instance().set(&DataKey::DisputeCount, &count);
+        bump_dispute_ttl(&env, count);
+        bump_dispute_count_ttl(&env);
         env.storage()
             .persistent()
             .set(&DataKey::Votes(count), &Vec::<Vote>::new(&env));
+        bump_votes_ttl(&env, count);
 
         // Emit event
         env.events().publish(
@@ -130,6 +514,7 @@ impl DisputeContract {
     }
 
     /// Cast a vote on a dispute. Voters cannot be the client or freelancer.
+    /// Voters must have sufficient reputation to participate (if reputation system is initialized).
     pub fn cast_vote(
         env: Env,
         dispute_id: u64,
@@ -138,12 +523,14 @@ impl DisputeContract {
         reason: String,
     ) -> Result<(), DisputeError> {
         voter.require_auth();
+        require_not_paused(&env)?;
 
         let mut dispute: Dispute = env
             .storage()
             .persistent()
             .get(&DataKey::Dispute(dispute_id))
             .ok_or(DisputeError::DisputeNotFound)?;
+        bump_dispute_ttl(&env, dispute_id);
 
         if dispute.status != DisputeStatus::Open && dispute.status != DisputeStatus::Voting {
             return Err(DisputeError::VotingClosed);
@@ -152,6 +539,19 @@ impl DisputeContract {
         // Parties involved cannot vote
         if voter == dispute.client || voter == dispute.freelancer {
             return Err(DisputeError::InvalidParty);
+        }
+
+        // Check if voter is excluded due to conflict of interest
+        if dispute.excluded_voters.contains(&voter) {
+            return Err(DisputeError::ConflictOfInterest);
+        }
+
+        // Check voter reputation eligibility (only if reputation system is initialized)
+        if env.storage().instance().has(&DataKey::ReputationContract) {
+            let is_eligible = Self::is_eligible_voter(env.clone(), voter.clone())?;
+            if !is_eligible {
+                return Err(DisputeError::InsufficientReputation);
+            }
         }
 
         // Check if already voted
@@ -177,6 +577,7 @@ impl DisputeContract {
         env.storage()
             .persistent()
             .set(&DataKey::Votes(dispute_id), &votes);
+        bump_votes_ttl(&env, dispute_id);
 
         match choice {
             VoteChoice::Client => dispute.votes_for_client += 1,
@@ -188,6 +589,8 @@ impl DisputeContract {
             .persistent()
             .set(&DataKey::Dispute(dispute_id), &dispute);
         env.storage().persistent().set(&voted_key, &true);
+        bump_dispute_ttl(&env, dispute_id);
+        bump_has_voted_ttl(&env, dispute_id, &voter);
 
         // Emit event
         env.events().publish(
@@ -198,19 +601,71 @@ impl DisputeContract {
         Ok(())
     }
 
-    pub fn resolve_dispute(
+    /// Add a voter to the exclusion list for a dispute (only during Open status).
+    /// Can only be called by the client or freelancer involved in the dispute.
+    pub fn add_excluded_voter(
         env: Env,
         dispute_id: u64,
-        escrow: Address,
-    ) -> Result<DisputeStatus, DisputeError> {
+        caller: Address,
+        voter: Address,
+    ) -> Result<(), DisputeError> {
+        caller.require_auth();
+        require_not_paused(&env)?;
+
         let mut dispute: Dispute = env
             .storage()
             .persistent()
             .get(&DataKey::Dispute(dispute_id))
             .ok_or(DisputeError::DisputeNotFound)?;
+        bump_dispute_ttl(&env, dispute_id);
+
+        // Verify caller is either client or freelancer
+        if caller != dispute.client && caller != dispute.freelancer {
+            return Err(DisputeError::Unauthorized);
+        }
+
+        // Check dispute status is Open
+        if dispute.status != DisputeStatus::Open {
+            return Err(DisputeError::VotingClosed);
+        }
+
+        // Add voter to excluded list if not already present
+        if !dispute.excluded_voters.contains(&voter) {
+            dispute.excluded_voters.push_back(voter.clone());
+        }
+
+        // Store updated dispute
+        env.storage()
+            .persistent()
+            .set(&DataKey::Dispute(dispute_id), &dispute);
+        bump_dispute_ttl(&env, dispute_id);
+
+        // Emit event
+        env.events().publish(
+            (symbol_short!("dispute"), symbol_short!("excluded")),
+            (dispute_id, voter),
+        );
+
+        Ok(())
+    }
+
+    pub fn resolve_dispute(
+        env: Env,
+        dispute_id: u64,
+        escrow: Address,
+    ) -> Result<DisputeStatus, DisputeError> {
+        require_not_paused(&env)?;
+        
+        let mut dispute: Dispute = env
+            .storage()
+            .persistent()
+            .get(&DataKey::Dispute(dispute_id))
+            .ok_or(DisputeError::DisputeNotFound)?;
+        bump_dispute_ttl(&env, dispute_id);
 
         if dispute.status == DisputeStatus::ResolvedForClient
             || dispute.status == DisputeStatus::ResolvedForFreelancer
+            || dispute.status == DisputeStatus::RefundedBoth
         {
             return Err(DisputeError::AlreadyResolved);
         }
@@ -220,28 +675,47 @@ impl DisputeContract {
             return Err(DisputeError::NotEnoughVotes);
         }
 
-        dispute.status = if dispute.votes_for_client >= dispute.votes_for_freelancer {
-            DisputeStatus::ResolvedForClient
+        if dispute.votes_for_client > dispute.votes_for_freelancer {
+            dispute.status = DisputeStatus::ResolvedForClient;
+        } else if dispute.votes_for_freelancer > dispute.votes_for_client {
+            dispute.status = DisputeStatus::ResolvedForFreelancer;
         } else {
-            DisputeStatus::ResolvedForFreelancer
+            // Tie-break logic
+            match dispute.tie_break_method {
+                TieBreakMethod::FavorClient => dispute.status = DisputeStatus::ResolvedForClient,
+                TieBreakMethod::FavorFreelancer => {
+                    dispute.status = DisputeStatus::ResolvedForFreelancer
+                }
+                TieBreakMethod::RefundBoth => dispute.status = DisputeStatus::RefundedBoth,
+                TieBreakMethod::Escalate => dispute.status = DisputeStatus::Escalated,
+            }
+        }
+
+        let resolution = match dispute.status {
+            DisputeStatus::ResolvedForClient => DisputeResolution::ClientWins,
+            DisputeStatus::ResolvedForFreelancer => DisputeResolution::FreelancerWins,
+            DisputeStatus::RefundedBoth => DisputeResolution::RefundBoth,
+            _ => DisputeResolution::Escalate,
         };
 
-        let resolved_status = dispute.status.clone();
-        let resolved_for_client = resolved_status == DisputeStatus::ResolvedForClient;
-
-        let _ = env.invoke_contract::<()>(
-            &escrow,
-            &Symbol::new(&env, "resolve_dispute_callback"),
-            vec![
-                &env,
-                dispute.job_id.into_val(&env),
-                resolved_for_client.into_val(&env),
-            ],
-        );
+        // Only invoke the escrow callback if the dispute has a concrete resolution.
+        // Escalated disputes are handled out-of-band and must not trigger a payout.
+        if resolution != DisputeResolution::Escalate {
+            env.invoke_contract::<()>(
+                &escrow,
+                &Symbol::new(&env, "resolve_dispute_callback"),
+                vec![
+                    &env,
+                    dispute.job_id.into_val(&env),
+                    resolution.into_val(&env),
+                ],
+            );
+        }
 
         env.storage()
             .persistent()
             .set(&DataKey::Dispute(dispute_id), &dispute);
+        bump_dispute_ttl(&env, dispute_id);
 
         // Emit event
         env.events().publish(
@@ -254,10 +728,13 @@ impl DisputeContract {
 
     /// Get dispute details.
     pub fn get_dispute(env: Env, dispute_id: u64) -> Result<Dispute, DisputeError> {
-        env.storage()
+        let dispute: Dispute = env
+            .storage()
             .persistent()
             .get(&DataKey::Dispute(dispute_id))
-            .ok_or(DisputeError::DisputeNotFound)
+            .ok_or(DisputeError::DisputeNotFound)?;
+        bump_dispute_ttl(&env, dispute_id);
+        Ok(dispute)
     }
 
     /// Get all votes for a dispute.
@@ -274,6 +751,19 @@ impl DisputeContract {
             .instance()
             .get(&DataKey::DisputeCount)
             .unwrap_or(0)
+    }
+
+    /// Check if a voter is excluded from voting on a specific dispute.
+    pub fn is_excluded_voter(env: Env, dispute_id: u64, voter: Address) -> bool {
+        let dispute_result: Option<Dispute> = env
+            .storage()
+            .persistent()
+            .get(&DataKey::Dispute(dispute_id));
+
+        match dispute_result {
+            Some(dispute) => dispute.excluded_voters.contains(&voter),
+            None => false,
+        }
     }
 }
 

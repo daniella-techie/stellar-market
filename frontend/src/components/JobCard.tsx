@@ -18,15 +18,15 @@ export default function JobCard({ job }: JobCardProps) {
           <StatusBadge status={job.status} />
         </div>
 
-        <h3 className="text-lg font-semibold text-dark-heading mb-2">
+        <h3 className="text-lg font-semibold text-theme-heading mb-2">
           {job.title}
         </h3>
 
-        <p className="text-sm text-dark-text mb-4 line-clamp-2">
+        <p className="text-sm text-theme-text mb-4 line-clamp-2">
           {job.description}
         </p>
 
-        <div className="flex items-center gap-4 text-sm text-dark-text">
+        <div className="flex items-center gap-4 text-sm text-theme-text">
           <div className="flex items-center gap-1">
             <DollarSign size={14} />
             <span>{job.budget.toLocaleString()} XLM</span>
@@ -41,9 +41,9 @@ export default function JobCard({ job }: JobCardProps) {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 mt-4 pt-4 border-t border-dark-border">
+        <div className="flex items-center gap-2 mt-4 pt-4 border-t border-theme-border">
           <div className="w-6 h-6 rounded-full bg-gradient-to-br from-stellar-blue to-stellar-purple" />
-          <span className="text-sm text-dark-text">{job.client.username}</span>
+          <span className="text-sm text-theme-text">{job.client.username}</span>
         </div>
       </div>
     </Link>

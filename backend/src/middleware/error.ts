@@ -49,6 +49,18 @@ export const errorHandler = (
     message = 'Token expired';
   }
 
+  if (err.name === 'MulterError') {
+    statusCode = 400;
+    const code = (err as any).code;
+    if (code === 'LIMIT_FILE_SIZE') {
+      message = 'File too large. Avatar must be at most 2MB.';
+    } else if (code === 'LIMIT_UNEXPECTED_FILE') {
+      message = "Unexpected field. Use 'avatar' for the file.";
+    } else {
+      message = 'File upload failed.';
+    }
+  }
+
   // Log error for debugging
   console.error(`[${new Date().toISOString()}] Error:`, {
     message: err.message,

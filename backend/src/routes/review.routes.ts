@@ -1,24 +1,111 @@
-import { Router, Response } from "express";
-import { PrismaClient } from "@prisma/client";
-import { authenticate, AuthRequest } from "../middleware/auth";
-import { validate } from "../middleware/validation";
-import { asyncHandler } from "../middleware/error";
+import { AuthRequest, authenticate } from "../middleware/auth";
+import { Prisma, PrismaClient } from "@prisma/client";
+import { Response, Router } from "express";
 import {
   createReviewSchema,
-  updateReviewSchema,
+  getReviewByIdParamSchema,
   getReviewsQuerySchema,
-  getReviewByIdParamSchema
+  updateReviewSchema
 } from "../schemas";
+import { generateUserCacheKey, invalidateCacheKey } from "../lib/cache";
+
+import { asyncHandler } from "../middleware/error";
+import { validate } from "../middleware/validation";
 
 const router = Router();
+/**
+ * @swagger
+ * tags:
+ *   name: Reviews
+ *   description: Review endpoints
+ */
 const prisma = new PrismaClient();
+
+async function syncUserReviewAggregate (
+  tx: Prisma.TransactionClient,
+  userId: string,
+): Promise<void> {
+  const aggregate = await tx.review.aggregate({
+    where: { revieweeId: userId },
+    _avg: { rating: true },
+    _count: { id: true },
+  });
+
+  const averageRating = aggregate._avg.rating ?? 0;
+  const reviewCount = aggregate._count.id;
+
+  await tx.user.update({
+    where: { id: userId },
+    data: {
+      averageRating: Math.round(averageRating * 100) / 100,
+      reviewCount,
+    },
+  });
+}
 
 // Create a review
 router.post("/",
+  /**
+   * @swagger
+   * /reviews:
+   *   post:
+   *     summary: Create a review
+   *     tags: [Reviews]
+   *     security:
+   *       - bearerAuth: []
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             $ref: '#/components/schemas/CreateReviewRequest'
+   *           examples:
+   *             example:
+   *               value:
+   *                 jobId: "uuid"
+   *                 revieweeId: "uuid"
+   *                 rating: 5
+   *                 comment: "Great work!"
+   *     responses:
+   *       201:
+   *         description: Review created
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/ReviewResponse'
+   *       400:
+   *         description: Can only review completed jobs
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/ErrorResponse'
+   */
+  /**
+   * @swagger
+   * /reviews/user/{userId}:
+   *   get:
+   *     summary: Get reviews for a user
+   *     tags: [Reviews]
+   *     parameters:
+   *       - in: path
+   *         name: userId
+   *         required: true
+   *         schema:
+   *           type: string
+   *         description: User ID
+   *     responses:
+   *       200:
+   *         description: List of reviews
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/ReviewsResponse'
+   */
   authenticate,
   validate({ body: createReviewSchema }),
   asyncHandler(async (req: AuthRequest, res: Response) => {
     const { jobId, revieweeId, rating, comment } = req.body;
+    const parsedRating = typeof rating === "string" ? parseInt(rating, 10) : rating;
 
     // Verify the job exists and is completed
     const job = await prisma.job.findUnique({ where: { id: jobId } });
@@ -34,19 +121,27 @@ router.post("/",
       return res.status(403).json({ error: "Not authorized to review this job." });
     }
 
-    const review = await prisma.review.create({
-      data: {
-        jobId,
-        reviewerId: req.userId!,
-        revieweeId,
-        rating: typeof rating === 'string' ? parseInt(rating) : rating,
-        comment,
-      },
-      include: {
-        reviewer: { select: { id: true, username: true, avatarUrl: true } },
-        reviewee: { select: { id: true, username: true, avatarUrl: true } },
-      },
+    const review = await prisma.$transaction(async (tx) => {
+      const createdReview = await tx.review.create({
+        data: {
+          jobId,
+          reviewerId: req.userId!,
+          revieweeId,
+          rating: parsedRating,
+          comment,
+        },
+        include: {
+          reviewer: { select: { id: true, username: true, avatarUrl: true } },
+          reviewee: { select: { id: true, username: true, avatarUrl: true } },
+        },
+      });
+
+      await syncUserReviewAggregate(tx, revieweeId);
+
+      return createdReview;
     });
+
+    await invalidateCacheKey(generateUserCacheKey(revieweeId));
 
     res.status(201).json(review);
   })
@@ -56,7 +151,7 @@ router.post("/",
 router.get("/user/:userId",
   validate({ params: getReviewByIdParamSchema }),
   asyncHandler(async (req: AuthRequest, res: Response) => {
-    const { id: userId } = req.params;
+    const userId = req.params.userId as string;
     const reviews = await prisma.review.findMany({
       where: { revieweeId: userId },
       include: {
@@ -117,8 +212,8 @@ router.get("/:id",
   authenticate,
   validate({ params: getReviewByIdParamSchema }),
   asyncHandler(async (req: AuthRequest, res: Response) => {
-    const { id } = req.params;
-    
+    const id = req.params.id as string;
+
     const review = await prisma.review.findUnique({
       where: { id },
       include: {
@@ -144,8 +239,18 @@ router.put("/:id",
     body: updateReviewSchema
   }),
   asyncHandler(async (req: AuthRequest, res: Response) => {
-    const { id } = req.params;
-    const updateData = req.body;
+    const id = req.params.id as string;
+    const updateData = {
+      ...req.body,
+      ...(req.body.rating !== undefined
+        ? {
+          rating:
+            typeof req.body.rating === "string"
+              ? parseInt(req.body.rating, 10)
+              : req.body.rating,
+        }
+        : {}),
+    };
 
     const review = await prisma.review.findUnique({
       where: { id },
@@ -158,15 +263,23 @@ router.put("/:id",
       return res.status(403).json({ error: "Not authorized to update this review." });
     }
 
-    const updated = await prisma.review.update({
-      where: { id },
-      data: updateData,
-      include: {
-        reviewer: { select: { id: true, username: true, avatarUrl: true } },
-        reviewee: { select: { id: true, username: true, avatarUrl: true } },
-        job: { select: { id: true, title: true } },
-      },
+    const updated = await prisma.$transaction(async (tx) => {
+      const updatedReview = await tx.review.update({
+        where: { id },
+        data: updateData,
+        include: {
+          reviewer: { select: { id: true, username: true, avatarUrl: true } },
+          reviewee: { select: { id: true, username: true, avatarUrl: true } },
+          job: { select: { id: true, title: true } },
+        },
+      });
+
+      await syncUserReviewAggregate(tx, review.revieweeId);
+
+      return updatedReview;
     });
+
+    await invalidateCacheKey(generateUserCacheKey(review.revieweeId));
 
     res.json(updated);
   })
@@ -177,8 +290,8 @@ router.delete("/:id",
   authenticate,
   validate({ params: getReviewByIdParamSchema }),
   asyncHandler(async (req: AuthRequest, res: Response) => {
-    const { id } = req.params;
-    
+    const id = req.params.id as string;
+
     const review = await prisma.review.findUnique({
       where: { id },
     });
@@ -190,7 +303,13 @@ router.delete("/:id",
       return res.status(403).json({ error: "Not authorized to delete this review." });
     }
 
-    await prisma.review.delete({ where: { id } });
+    await prisma.$transaction(async (tx) => {
+      await tx.review.delete({ where: { id } });
+      await syncUserReviewAggregate(tx, review.revieweeId);
+    });
+
+    await invalidateCacheKey(generateUserCacheKey(review.revieweeId));
+
     res.json({ message: "Review deleted successfully." });
   })
 );

@@ -10,9 +10,11 @@ import {
 } from "react";
 import {
   isConnected as freighterIsConnected,
-  requestAccess,
   getAddress,
+  requestAccess,
+  signTransaction,
 } from "@stellar/freighter-api";
+import { rpc, Transaction } from "@stellar/stellar-sdk";
 
 interface WalletState {
   address: string | null;
@@ -21,6 +23,9 @@ interface WalletState {
   error: string | null;
   connect: () => Promise<void>;
   disconnect: () => void;
+  signAndBroadcastTransaction: (
+    xdr: string
+  ) => Promise<{ hash: string; success: boolean; error?: string }>;
 }
 
 const WalletContext = createContext<WalletState | undefined>(undefined);
@@ -122,6 +127,70 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem(STORAGE_KEY);
   }, []);
 
+  const signAndBroadcastTransaction = useCallback(
+    async (xdr: string) => {
+      try {
+        const signedResult = await signTransaction(xdr, {
+          networkPassphrase: "Test SDF Network ; September 2015",
+        });
+
+        if (signedResult.error) {
+          return {
+            success: false,
+            hash: "",
+            error: signedResult.error,
+          };
+        }
+
+        const server = new rpc.Server("https://soroban-testnet.stellar.org");
+        const tx = new Transaction(signedResult.signedTxXdr, "Test SDF Network ; September 2015");
+        
+        const sendResponse = await server.sendTransaction(tx);
+        
+        if (sendResponse.status !== "PENDING") {
+          return {
+            success: false,
+            hash: sendResponse.hash,
+            error: "Transaction submission failed",
+          };
+        }
+
+        // Poll for success
+        let statusResponse = await server.getTransaction(sendResponse.hash);
+        let attempts = 0;
+        while (
+          statusResponse.status === rpc.Api.GetTransactionStatus.NOT_FOUND ||
+          statusResponse.status === rpc.Api.GetTransactionStatus.SUCCESS
+        ) {
+          if (statusResponse.status === rpc.Api.GetTransactionStatus.SUCCESS) {
+            return {
+              success: true,
+              hash: sendResponse.hash,
+            };
+          }
+          
+          if (attempts > 10) break;
+          attempts++;
+          await new Promise((resolve) => setTimeout(resolve, 2000));
+          statusResponse = await server.getTransaction(sendResponse.hash);
+        }
+
+        return {
+          success: false,
+          hash: sendResponse.hash,
+          error: "Transaction timed out or failed to confirm",
+        };
+      } catch (err: unknown) {
+        return {
+          success: false,
+          hash: "",
+          error: err instanceof Error ? err.message : "An error occurred during transaction",
+        };
+      }
+    },
+    []
+  );
+
   const value = useMemo<WalletState>(
     () => ({
       address,
@@ -130,8 +199,17 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       error,
       connect,
       disconnect,
+      signAndBroadcastTransaction,
     }),
-    [address, isConnecting, isFreighterInstalled, error, connect, disconnect]
+    [
+      address,
+      isConnecting,
+      isFreighterInstalled,
+      error,
+      connect,
+      disconnect,
+      signAndBroadcastTransaction,
+    ]
   );
 
   return (

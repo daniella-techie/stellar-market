@@ -32,7 +32,7 @@ export default function DashboardPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <h1 className="text-3xl font-bold text-dark-heading mb-8">Dashboard</h1>
+      <h1 className="text-3xl font-bold text-theme-heading mb-8">Dashboard</h1>
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
@@ -42,17 +42,17 @@ export default function DashboardPage() {
               <stat.icon size={24} />
             </div>
             <div>
-              <div className="text-2xl font-bold text-dark-heading">
+              <div className="text-2xl font-bold text-theme-heading">
                 {stat.value}
               </div>
-              <div className="text-sm text-dark-text">{stat.label}</div>
+              <div className="text-sm text-theme-text">{stat.label}</div>
             </div>
           </div>
         ))}
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-4 mb-6 border-b border-dark-border">
+      <div className="flex gap-4 mb-6 border-b border-theme-border">
         {tabs.map((tab) => (
           <button
             key={tab}
@@ -60,7 +60,7 @@ export default function DashboardPage() {
             className={`pb-3 px-1 text-sm font-medium transition-colors border-b-2 ${
               activeTab === tab
                 ? "text-stellar-blue border-stellar-blue"
-                : "text-dark-text border-transparent hover:text-dark-heading"
+                : "text-theme-text border-transparent hover:text-theme-heading"
             }`}
           >
             {tab}
@@ -74,8 +74,8 @@ export default function DashboardPage() {
           {activeJobs.map((job) => (
             <div key={job.id} className="card flex items-center justify-between">
               <div>
-                <h3 className="font-semibold text-dark-heading">{job.title}</h3>
-                <p className="text-sm text-dark-text">
+                <h3 className="font-semibold text-theme-heading">{job.title}</h3>
+                <p className="text-sm text-theme-text">
                   Client: {job.client} &middot; Deadline: {job.deadline}
                 </p>
               </div>
@@ -95,8 +95,8 @@ export default function DashboardPage() {
           {applications.map((app) => (
             <div key={app.id} className="card flex items-center justify-between">
               <div>
-                <h3 className="font-semibold text-dark-heading">{app.job}</h3>
-                <p className="text-sm text-dark-text">
+                <h3 className="font-semibold text-theme-heading">{app.job}</h3>
+                <p className="text-sm text-theme-text">
                   Applied: {app.appliedAt}
                 </p>
               </div>
@@ -108,11 +108,11 @@ export default function DashboardPage() {
 
       {activeTab === "Messages" && (
         <div className="card text-center py-12">
-          <MessageSquare className="mx-auto text-dark-text mb-4" size={40} />
-          <h3 className="text-lg font-semibold text-dark-heading mb-2">
+          <MessageSquare className="mx-auto text-theme-text mb-4" size={40} />
+          <h3 className="text-lg font-semibold text-theme-heading mb-2">
             No messages yet
           </h3>
-          <p className="text-dark-text">
+          <p className="text-theme-text">
             Messages from clients and freelancers will appear here.
           </p>
         </div>

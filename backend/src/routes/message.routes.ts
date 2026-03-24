@@ -1,8 +1,9 @@
 import { Router, Response } from "express";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, NotificationType } from "@prisma/client";
 import { authenticate, AuthRequest } from "../middleware/auth";
 import { validate } from "../middleware/validation";
 import { asyncHandler } from "../middleware/error";
+import { NotificationService } from "../services/notification.service";
 import {
   createMessageSchema,
   updateMessageSchema,
@@ -12,10 +13,60 @@ import {
 } from "../schemas";
 
 const router = Router();
+/**
+ * @swagger
+ * tags:
+ *   name: Messages
+ *   description: Messaging endpoints
+ */
 const prisma = new PrismaClient();
 
 // Send a message
 router.post(
+  /**
+   * @swagger
+   * /messages:
+   *   post:
+   *     summary: Send a message
+   *     tags: [Messages]
+   *     security:
+   *       - bearerAuth: []
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             $ref: '#/components/schemas/CreateMessageRequest'
+   *           examples:
+   *             example:
+   *               value:
+   *                 receiverId: "uuid"
+   *                 jobId: "uuid"
+   *                 content: "Hello!"
+   *     responses:
+   *       201:
+   *         description: Message sent
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/MessageResponse'
+   */
+  /**
+   * @swagger
+   * /messages:
+   *   get:
+   *     summary: Get messages
+   *     tags: [Messages]
+   *     security:
+   *       - bearerAuth: []
+   *     responses:
+   *       200:
+   *         description: List of messages
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/MessagesResponse'
+   */
   "/",
   authenticate,
   validate({ body: createMessageSchema }),
@@ -33,6 +84,15 @@ router.post(
         sender: { select: { id: true, username: true, avatarUrl: true } },
         receiver: { select: { id: true, username: true, avatarUrl: true } },
       },
+    });
+
+    // Notify the receiver
+    await NotificationService.sendNotification({
+      userId: receiverId,
+      type: NotificationType.NEW_MESSAGE,
+      title: "New Message",
+      message: `You received a new message from ${message.sender.username}`,
+      metadata: { messageId: message.id, jobId: message.jobId },
     });
 
     res.status(201).json(message);
@@ -112,7 +172,8 @@ router.get("/",
   authenticate,
   validate({ query: getMessagesQuerySchema }),
   asyncHandler(async (req: AuthRequest, res: Response) => {
-    const { jobId, participantId } = req.query as any;
+    const jobId = req.query.jobId as string | undefined;
+    const participantId = req.query.participantId as string | undefined;
 
     if (participantId) {
       const messages = await prisma.message.findMany({
@@ -198,8 +259,8 @@ router.get(
     query: getMessagesQuerySchema.pick({ jobId: true })
   }),
   asyncHandler(async (req: AuthRequest, res: Response) => {
-    const { id: otherUserId } = req.params;
-    const { jobId } = req.query as any;
+    const otherUserId = req.params.id as string;
+    const jobId = req.query.jobId as string | undefined;
 
     const messages = await prisma.message.findMany({
       where: {
@@ -243,7 +304,7 @@ router.put(
     body: markMessageAsReadSchema,
   }),
   asyncHandler(async (req: AuthRequest, res: Response) => {
-    const { id } = req.params;
+    const id = req.params.id as string;
     const { isRead } = req.body;
 
     await prisma.message.update({
@@ -266,7 +327,7 @@ router.put(
     body: updateMessageSchema,
   }),
   asyncHandler(async (req: AuthRequest, res: Response) => {
-    const { id } = req.params;
+    const id = req.params.id as string;
     const { content } = req.body;
 
     const message = await prisma.message.findUnique({
@@ -301,7 +362,7 @@ router.delete(
   authenticate,
   validate({ params: getMessageByIdParamSchema }),
   asyncHandler(async (req: AuthRequest, res: Response) => {
-    const { id } = req.params;
+    const id = req.params.id as string;
 
     const message = await prisma.message.findUnique({
       where: { id },

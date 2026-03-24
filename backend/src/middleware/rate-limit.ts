@@ -22,6 +22,14 @@ export const authRateLimiter = rateLimit({
   handler: sendTooManyRequests,
 });
 
+export const forgotPasswordRateLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 3,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: sendTooManyRequests,
+});
+
 export const apiRateLimiter = rateLimit({
   windowMs: RATE_LIMIT_WINDOW_MS,
   max: 100,

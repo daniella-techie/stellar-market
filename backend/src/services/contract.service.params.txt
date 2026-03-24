@@ -1,0 +1,14 @@
+# Transaction Parameters (Mental Draft)
+- `create_job(env, client: Address, freelancer: Address, token: Address, milestones: Vec<(String, i128, u64)>, job_deadline: u64)`
+- `fund_job(env, job_id: u64, client: Address)`
+- `submit_milestone(env, job_id: u64, milestone_id: u32, freelancer: Address)`
+- `approve_milestone(env, job_id: u64, milestone_id: u32, client: Address)`
+
+I'll need to use `SorobanRpc` and `TransactionBuilder` from `stellar-sdk`.
+Since I'm building for the frontend to sign, I'll return the XDR.
+Wait, if the frontend signs with Freighter, I can build the transaction on the backend and send the XDR to the frontend.
+The backend needs a "source account" to fetch the sequence number, but the frontend's address will be the ACTUAL source account for some operations (or at least the one signing).
+Usually, for Soroban, the client's wallet is the source account.
+So I'll need the client's public key from the frontend to build the transaction.
+
+Let's start implementing `contract.service.ts`.

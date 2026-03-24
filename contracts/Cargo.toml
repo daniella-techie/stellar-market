@@ -1,10 +1,6 @@
 [workspace]
 resolver = "2"
-members = [
-    "escrow",
-    "reputation",
-    "dispute",
-]
+members = ["escrow", "reputation", "dispute", "integration-tests"]
 
 [workspace.dependencies]
 soroban-sdk = "21.7.5"

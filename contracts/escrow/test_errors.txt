@@ -1,0 +1,695 @@
+   Compiling stellar-market-escrow v0.1.0 (/media/stealth_dev/New Volume/PROJECTS/DRIPS PROJECT/task 7/stellar-market/contracts/escrow)
+error: cannot find attribute `contractimpl` in this scope
+  --> escrow/src/test.rs:10:3
+   |
+10 | #[contractimpl]
+   |   ^^^^^^^^^^^^
+   |
+help: consider importing one of these attribute macros
+   |
+ 1 + use crate::contractimpl;
+   |
+ 1 + use soroban_sdk::contractimpl;
+   |
+
+error: cannot find attribute `contract` in this scope
+ --> escrow/src/test.rs:7:3
+  |
+7 | #[contract]
+  |   ^^^^^^^^
+  |
+help: consider importing one of these attribute macros
+  |
+1 + use crate::contract;
+  |
+1 + use soroban_sdk::contract;
+  |
+
+error[E0412]: cannot find type `EscrowContractClient` in this scope
+  --> escrow/src/test.rs:17:30
+   |
+17 | fn setup_test(env: &Env) -> (EscrowContractClient, Address, Address, Address, Address) {
+   |                              ^^^^^^^^^^^^^^^^^^^^ not found in this scope
+   |
+help: consider importing this struct
+   |
+ 1 + use crate::EscrowContractClient;
+   |
+
+error[E0425]: cannot find value `EscrowContract` in this scope
+  --> escrow/src/test.rs:18:51
+   |
+18 |     let contract_id = env.register_contract(None, EscrowContract);
+   |                                                   ^^^^^^^^^^^^^^ not found in this scope
+   |
+help: consider importing this unit struct
+   |
+ 1 + use crate::EscrowContract;
+   |
+
+error[E0433]: failed to resolve: use of undeclared type `EscrowContractClient`
+  --> escrow/src/test.rs:19:18
+   |
+19 |     let client = EscrowContractClient::new(env, &contract_id);
+   |                  ^^^^^^^^^^^^^^^^^^^^ use of undeclared type `EscrowContractClient`
+   |
+help: consider importing this struct
+   |
+ 1 + use crate::EscrowContractClient;
+   |
+
+error[E0433]: failed to resolve: use of undeclared type `JobStatus`
+  --> escrow/src/test.rs:69:28
+   |
+69 |     assert_eq!(job.status, JobStatus::Created);
+   |                            ^^^^^^^^^ use of undeclared type `JobStatus`
+   |
+help: consider importing this enum
+   |
+ 1 + use crate::JobStatus;
+   |
+
+error[E0425]: cannot find value `EscrowContract` in this scope
+   --> escrow/src/test.rs:138:51
+    |
+138 |     let contract_id = env.register_contract(None, EscrowContract);
+    |                                                   ^^^^^^^^^^^^^^ not found in this scope
+    |
+help: consider importing this unit struct
+    |
+  1 + use crate::EscrowContract;
+    |
+
+error[E0433]: failed to resolve: use of undeclared type `EscrowContractClient`
+   --> escrow/src/test.rs:139:18
+    |
+139 |     let client = EscrowContractClient::new(&env, &contract_id);
+    |                  ^^^^^^^^^^^^^^^^^^^^ use of undeclared type `EscrowContractClient`
+    |
+help: consider importing this struct
+    |
+  1 + use crate::EscrowContractClient;
+    |
+
+error[E0425]: cannot find value `EscrowContract` in this scope
+   --> escrow/src/test.rs:169:51
+    |
+169 |     let contract_id = env.register_contract(None, EscrowContract);
+    |                                                   ^^^^^^^^^^^^^^ not found in this scope
+    |
+help: consider importing this unit struct
+    |
+  1 + use crate::EscrowContract;
+    |
+
+error[E0433]: failed to resolve: use of undeclared type `EscrowContractClient`
+   --> escrow/src/test.rs:170:18
+    |
+170 |     let client = EscrowContractClient::new(&env, &contract_id);
+    |                  ^^^^^^^^^^^^^^^^^^^^ use of undeclared type `EscrowContractClient`
+    |
+help: consider importing this struct
+    |
+  1 + use crate::EscrowContractClient;
+    |
+
+error[E0425]: cannot find value `EscrowContract` in this scope
+   --> escrow/src/test.rs:203:51
+    |
+203 |     let contract_id = env.register_contract(None, EscrowContract);
+    |                                                   ^^^^^^^^^^^^^^ not found in this scope
+    |
+help: consider importing this unit struct
+    |
+  1 + use crate::EscrowContract;
+    |
+
+error[E0433]: failed to resolve: use of undeclared type `EscrowContractClient`
+   --> escrow/src/test.rs:204:18
+    |
+204 |     let client = EscrowContractClient::new(&env, &contract_id);
+    |                  ^^^^^^^^^^^^^^^^^^^^ use of undeclared type `EscrowContractClient`
+    |
+help: consider importing this struct
+    |
+  1 + use crate::EscrowContractClient;
+    |
+
+error[E0412]: cannot find type `EscrowContractClient` in this scope
+   --> escrow/src/test.rs:229:36
+    |
+229 | fn setup_refund_env(env: &Env) -> (EscrowContractClient, Address) {
+    |                                    ^^^^^^^^^^^^^^^^^^^^ not found in this scope
+    |
+help: consider importing this struct
+    |
+  1 + use crate::EscrowContractClient;
+    |
+
+error[E0425]: cannot find value `EscrowContract` in this scope
+   --> escrow/src/test.rs:233:51
+    |
+233 |     let contract_id = env.register_contract(None, EscrowContract);
+    |                                                   ^^^^^^^^^^^^^^ not found in this scope
+    |
+help: consider importing this unit struct
+    |
+  1 + use crate::EscrowContract;
+    |
+
+error[E0433]: failed to resolve: use of undeclared type `EscrowContractClient`
+   --> escrow/src/test.rs:234:18
+    |
+234 |     let escrow = EscrowContractClient::new(env, &contract_id);
+    |                  ^^^^^^^^^^^^^^^^^^^^ use of undeclared type `EscrowContractClient`
+    |
+help: consider importing this struct
+    |
+  1 + use crate::EscrowContractClient;
+    |
+
+error[E0433]: failed to resolve: use of undeclared type `JobStatus`
+   --> escrow/src/test.rs:288:28
+    |
+288 |     assert_eq!(job.status, JobStatus::Cancelled);
+    |                            ^^^^^^^^^ use of undeclared type `JobStatus`
+    |
+help: consider importing this enum
+    |
+  1 + use crate::JobStatus;
+    |
+
+error[E0433]: failed to resolve: use of unresolved module or unlinked crate `token`
+   --> escrow/src/test.rs:291:24
+    |
+291 |     let token_client = token::Client::new(&env, &token);
+    |                        ^^^^^ use of unresolved module or unlinked crate `token`
+    |
+    = help: if you wanted to use a crate named `token`, use `cargo add token` to add it to your `Cargo.toml`
+help: consider importing one of these structs
+    |
+  1 + use crate::token::Client;
+    |
+  1 + use soroban_sdk::token::Client;
+    |
+help: if you import `Client`, refer to it directly
+    |
+291 -     let token_client = token::Client::new(&env, &token);
+291 +     let token_client = Client::new(&env, &token);
+    |
+
+error[E0433]: failed to resolve: use of undeclared type `JobStatus`
+   --> escrow/src/test.rs:329:28
+    |
+329 |     assert_eq!(job.status, JobStatus::Cancelled);
+    |                            ^^^^^^^^^ use of undeclared type `JobStatus`
+    |
+help: consider importing this enum
+    |
+  1 + use crate::JobStatus;
+    |
+
+error[E0433]: failed to resolve: use of unresolved module or unlinked crate `token`
+   --> escrow/src/test.rs:332:24
+    |
+332 |     let token_client = token::Client::new(&env, &token);
+    |                        ^^^^^ use of unresolved module or unlinked crate `token`
+    |
+    = help: if you wanted to use a crate named `token`, use `cargo add token` to add it to your `Cargo.toml`
+help: consider importing one of these structs
+    |
+  1 + use crate::token::Client;
+    |
+  1 + use soroban_sdk::token::Client;
+    |
+help: if you import `Client`, refer to it directly
+    |
+332 -     let token_client = token::Client::new(&env, &token);
+332 +     let token_client = Client::new(&env, &token);
+    |
+
+error[E0433]: failed to resolve: use of undeclared type `JobStatus`
+   --> escrow/src/test.rs:367:28
+    |
+367 |     assert_eq!(job.status, JobStatus::InProgress);
+    |                            ^^^^^^^^^ use of undeclared type `JobStatus`
+    |
+help: consider importing this enum
+    |
+  1 + use crate::JobStatus;
+    |
+
+error[E0433]: failed to resolve: use of undeclared type `JobStatus`
+   --> escrow/src/test.rs:374:28
+    |
+374 |     assert_eq!(job.status, JobStatus::Cancelled);
+    |                            ^^^^^^^^^ use of undeclared type `JobStatus`
+    |
+help: consider importing this enum
+    |
+  1 + use crate::JobStatus;
+    |
+
+error[E0433]: failed to resolve: use of undeclared type `JobStatus`
+   --> escrow/src/test.rs:506:28
+    |
+506 |     assert_eq!(job.status, JobStatus::Completed);
+    |                            ^^^^^^^^^ use of undeclared type `JobStatus`
+    |
+help: consider importing this enum
+    |
+  1 + use crate::JobStatus;
+    |
+
+error[E0422]: cannot find struct, variant or union type `Milestone` in this scope
+   --> escrow/src/test.rs:564:9
+    |
+564 |         Milestone {
+    |         ^^^^^^^^^ not found in this scope
+    |
+help: consider importing this struct
+    |
+  1 + use crate::Milestone;
+    |
+
+error[E0433]: failed to resolve: use of undeclared type `MilestoneStatus`
+   --> escrow/src/test.rs:568:21
+    |
+568 |             status: MilestoneStatus::Pending,
+    |                     ^^^^^^^^^^^^^^^ use of undeclared type `MilestoneStatus`
+    |
+help: consider importing this enum
+    |
+  1 + use crate::MilestoneStatus;
+    |
+
+error[E0422]: cannot find struct, variant or union type `Milestone` in this scope
+   --> escrow/src/test.rs:570:9
+    |
+570 |         Milestone {
+    |         ^^^^^^^^^ not found in this scope
+    |
+help: consider importing this struct
+    |
+  1 + use crate::Milestone;
+    |
+
+error[E0433]: failed to resolve: use of undeclared type `MilestoneStatus`
+   --> escrow/src/test.rs:574:21
+    |
+574 |             status: MilestoneStatus::Pending,
+    |                     ^^^^^^^^^^^^^^^ use of undeclared type `MilestoneStatus`
+    |
+help: consider importing this enum
+    |
+  1 + use crate::MilestoneStatus;
+    |
+
+error[E0433]: failed to resolve: use of undeclared type `ProposalStatus`
+   --> escrow/src/test.rs:585:33
+    |
+585 |     assert_eq!(proposal.status, ProposalStatus::Pending);
+    |                                 ^^^^^^^^^^^^^^ use of undeclared type `ProposalStatus`
+    |
+help: consider importing this enum
+    |
+  1 + use crate::ProposalStatus;
+    |
+
+error[E0422]: cannot find struct, variant or union type `Milestone` in this scope
+   --> escrow/src/test.rs:599:9
+    |
+599 |         Milestone {
+    |         ^^^^^^^^^ not found in this scope
+    |
+help: consider importing this struct
+    |
+  1 + use crate::Milestone;
+    |
+
+error[E0433]: failed to resolve: use of undeclared type `MilestoneStatus`
+   --> escrow/src/test.rs:603:21
+    |
+603 |             status: MilestoneStatus::Pending,
+    |                     ^^^^^^^^^^^^^^^ use of undeclared type `MilestoneStatus`
+    |
+help: consider importing this enum
+    |
+  1 + use crate::MilestoneStatus;
+    |
+
+error[E0422]: cannot find struct, variant or union type `Milestone` in this scope
+   --> escrow/src/test.rs:628:9
+    |
+628 |         Milestone {
+    |         ^^^^^^^^^ not found in this scope
+    |
+help: consider importing this struct
+    |
+  1 + use crate::Milestone;
+    |
+
+error[E0433]: failed to resolve: use of undeclared type `MilestoneStatus`
+   --> escrow/src/test.rs:632:21
+    |
+632 |             status: MilestoneStatus::Pending,
+    |                     ^^^^^^^^^^^^^^^ use of undeclared type `MilestoneStatus`
+    |
+help: consider importing this enum
+    |
+  1 + use crate::MilestoneStatus;
+    |
+
+error[E0422]: cannot find struct, variant or union type `Milestone` in this scope
+   --> escrow/src/test.rs:650:9
+    |
+650 |         Milestone {
+    |         ^^^^^^^^^ not found in this scope
+    |
+help: consider importing this struct
+    |
+  1 + use crate::Milestone;
+    |
+
+error[E0433]: failed to resolve: use of undeclared type `MilestoneStatus`
+   --> escrow/src/test.rs:654:21
+    |
+654 |             status: MilestoneStatus::Pending,
+    |                     ^^^^^^^^^^^^^^^ use of undeclared type `MilestoneStatus`
+    |
+help: consider importing this enum
+    |
+  1 + use crate::MilestoneStatus;
+    |
+
+error[E0422]: cannot find struct, variant or union type `Milestone` in this scope
+   --> escrow/src/test.rs:672:9
+    |
+672 |         Milestone {
+    |         ^^^^^^^^^ not found in this scope
+    |
+help: consider importing this struct
+    |
+  1 + use crate::Milestone;
+    |
+
+error[E0433]: failed to resolve: use of undeclared type `MilestoneStatus`
+   --> escrow/src/test.rs:676:21
+    |
+676 |             status: MilestoneStatus::Pending,
+    |                     ^^^^^^^^^^^^^^^ use of undeclared type `MilestoneStatus`
+    |
+help: consider importing this enum
+    |
+  1 + use crate::MilestoneStatus;
+    |
+
+error[E0412]: cannot find type `Milestone` in this scope
+   --> escrow/src/test.rs:700:31
+    |
+700 |     let empty_milestones: Vec<Milestone> = vec![&env];
+    |                               ^^^^^^^^^ not found in this scope
+    |
+help: consider importing this struct
+    |
+  1 + use crate::Milestone;
+    |
+
+error[E0422]: cannot find struct, variant or union type `Milestone` in this scope
+   --> escrow/src/test.rs:715:9
+    |
+715 |         Milestone {
+    |         ^^^^^^^^^ not found in this scope
+    |
+help: consider importing this struct
+    |
+  1 + use crate::Milestone;
+    |
+
+error[E0433]: failed to resolve: use of undeclared type `MilestoneStatus`
+   --> escrow/src/test.rs:719:21
+    |
+719 |             status: MilestoneStatus::Pending,
+    |                     ^^^^^^^^^^^^^^^ use of undeclared type `MilestoneStatus`
+    |
+help: consider importing this enum
+    |
+  1 + use crate::MilestoneStatus;
+    |
+
+error[E0422]: cannot find struct, variant or union type `Milestone` in this scope
+   --> escrow/src/test.rs:721:9
+    |
+721 |         Milestone {
+    |         ^^^^^^^^^ not found in this scope
+    |
+help: consider importing this struct
+    |
+  1 + use crate::Milestone;
+    |
+
+error[E0433]: failed to resolve: use of undeclared type `MilestoneStatus`
+   --> escrow/src/test.rs:725:21
+    |
+725 |             status: MilestoneStatus::Pending,
+    |                     ^^^^^^^^^^^^^^^ use of undeclared type `MilestoneStatus`
+    |
+help: consider importing this enum
+    |
+  1 + use crate::MilestoneStatus;
+    |
+
+error[E0422]: cannot find struct, variant or union type `Milestone` in this scope
+   --> escrow/src/test.rs:749:9
+    |
+749 |         Milestone {
+    |         ^^^^^^^^^ not found in this scope
+    |
+help: consider importing this struct
+    |
+  1 + use crate::Milestone;
+    |
+
+error[E0433]: failed to resolve: use of undeclared type `MilestoneStatus`
+   --> escrow/src/test.rs:753:21
+    |
+753 |             status: MilestoneStatus::Pending,
+    |                     ^^^^^^^^^^^^^^^ use of undeclared type `MilestoneStatus`
+    |
+help: consider importing this enum
+    |
+  1 + use crate::MilestoneStatus;
+    |
+
+error[E0422]: cannot find struct, variant or union type `Milestone` in this scope
+   --> escrow/src/test.rs:755:9
+    |
+755 |         Milestone {
+    |         ^^^^^^^^^ not found in this scope
+    |
+help: consider importing this struct
+    |
+  1 + use crate::Milestone;
+    |
+
+error[E0433]: failed to resolve: use of undeclared type `MilestoneStatus`
+   --> escrow/src/test.rs:759:21
+    |
+759 |             status: MilestoneStatus::Pending,
+    |                     ^^^^^^^^^^^^^^^ use of undeclared type `MilestoneStatus`
+    |
+help: consider importing this enum
+    |
+  1 + use crate::MilestoneStatus;
+    |
+
+error[E0422]: cannot find struct, variant or union type `Milestone` in this scope
+   --> escrow/src/test.rs:790:9
+    |
+790 |         Milestone {
+    |         ^^^^^^^^^ not found in this scope
+    |
+help: consider importing this struct
+    |
+  1 + use crate::Milestone;
+    |
+
+error[E0433]: failed to resolve: use of undeclared type `MilestoneStatus`
+   --> escrow/src/test.rs:794:21
+    |
+794 |             status: MilestoneStatus::Pending,
+    |                     ^^^^^^^^^^^^^^^ use of undeclared type `MilestoneStatus`
+    |
+help: consider importing this enum
+    |
+  1 + use crate::MilestoneStatus;
+    |
+
+error[E0422]: cannot find struct, variant or union type `Milestone` in this scope
+   --> escrow/src/test.rs:821:9
+    |
+821 |         Milestone {
+    |         ^^^^^^^^^ not found in this scope
+    |
+help: consider importing this struct
+    |
+  1 + use crate::Milestone;
+    |
+
+error[E0433]: failed to resolve: use of undeclared type `MilestoneStatus`
+   --> escrow/src/test.rs:825:21
+    |
+825 |             status: MilestoneStatus::Pending,
+    |                     ^^^^^^^^^^^^^^^ use of undeclared type `MilestoneStatus`
+    |
+help: consider importing this enum
+    |
+  1 + use crate::MilestoneStatus;
+    |
+
+error[E0422]: cannot find struct, variant or union type `Milestone` in this scope
+   --> escrow/src/test.rs:846:9
+    |
+846 |         Milestone {
+    |         ^^^^^^^^^ not found in this scope
+    |
+help: consider importing this struct
+    |
+  1 + use crate::Milestone;
+    |
+
+error[E0433]: failed to resolve: use of undeclared type `MilestoneStatus`
+   --> escrow/src/test.rs:850:21
+    |
+850 |             status: MilestoneStatus::Pending,
+    |                     ^^^^^^^^^^^^^^^ use of undeclared type `MilestoneStatus`
+    |
+help: consider importing this enum
+    |
+  1 + use crate::MilestoneStatus;
+    |
+
+error[E0433]: failed to resolve: use of undeclared type `ProposalStatus`
+   --> escrow/src/test.rs:857:33
+    |
+857 |     assert_eq!(proposal.status, ProposalStatus::Rejected);
+    |                                 ^^^^^^^^^^^^^^ use of undeclared type `ProposalStatus`
+    |
+help: consider importing this enum
+    |
+  1 + use crate::ProposalStatus;
+    |
+
+error[E0422]: cannot find struct, variant or union type `Milestone` in this scope
+   --> escrow/src/test.rs:878:9
+    |
+878 |         Milestone {
+    |         ^^^^^^^^^ not found in this scope
+    |
+help: consider importing this struct
+    |
+  1 + use crate::Milestone;
+    |
+
+error[E0433]: failed to resolve: use of undeclared type `MilestoneStatus`
+   --> escrow/src/test.rs:882:21
+    |
+882 |             status: MilestoneStatus::Pending,
+    |                     ^^^^^^^^^^^^^^^ use of undeclared type `MilestoneStatus`
+    |
+help: consider importing this enum
+    |
+  1 + use crate::MilestoneStatus;
+    |
+
+error[E0422]: cannot find struct, variant or union type `Milestone` in this scope
+   --> escrow/src/test.rs:900:9
+    |
+900 |         Milestone {
+    |         ^^^^^^^^^ not found in this scope
+    |
+help: consider importing this struct
+    |
+  1 + use crate::Milestone;
+    |
+
+error[E0433]: failed to resolve: use of undeclared type `MilestoneStatus`
+   --> escrow/src/test.rs:904:21
+    |
+904 |             status: MilestoneStatus::Pending,
+    |                     ^^^^^^^^^^^^^^^ use of undeclared type `MilestoneStatus`
+    |
+help: consider importing this enum
+    |
+  1 + use crate::MilestoneStatus;
+    |
+
+error[E0422]: cannot find struct, variant or union type `Milestone` in this scope
+   --> escrow/src/test.rs:929:9
+    |
+929 |         Milestone {
+    |         ^^^^^^^^^ not found in this scope
+    |
+help: consider importing this struct
+    |
+  1 + use crate::Milestone;
+    |
+
+error[E0433]: failed to resolve: use of undeclared type `MilestoneStatus`
+   --> escrow/src/test.rs:933:21
+    |
+933 |             status: MilestoneStatus::Pending,
+    |                     ^^^^^^^^^^^^^^^ use of undeclared type `MilestoneStatus`
+    |
+help: consider importing this enum
+    |
+  1 + use crate::MilestoneStatus;
+    |
+
+warning: use of deprecated method `soroban_sdk::Env::register_stellar_asset_contract`: use [Env::register_stellar_asset_contract_v2]
+  --> escrow/src/test.rs:25:29
+   |
+25 |     let token_address = env.register_stellar_asset_contract(admin.clone());
+   |                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(deprecated)]` on by default
+
+error[E0277]: the trait bound `MockToken: ContractFunctionSet` is not satisfied
+   --> escrow/src/test.rs:143:45
+    |
+143 |     let token = env.register_contract(None, MockToken);
+    |                     -----------------       ^^^^^^^^^ the trait `ContractFunctionSet` is not implemented for `MockToken`
+    |                     |
+    |                     required by a bound introduced by this call
+    |
+    = help: the following other types implement trait `ContractFunctionSet`:
+              EscrowContract
+              MockAuthContract
+note: required by a bound in `Env::register_contract`
+   --> /home/stealth_dev/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-sdk-21.7.7/src/env.rs:611:37
+    |
+611 |     pub fn register_contract<'a, T: ContractFunctionSet + 'static>(
+    |                                     ^^^^^^^^^^^^^^^^^^^ required by this bound in `Env::register_contract`
+
+warning: use of deprecated method `soroban_sdk::Env::register_stellar_asset_contract`: use [Env::register_stellar_asset_contract_v2]
+   --> escrow/src/test.rs:237:26
+    |
+237 |     let token_addr = env.register_stellar_asset_contract(admin.clone());
+    |                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0609]: no field `topics` on type `(soroban_sdk::Address, soroban_sdk::Vec<soroban_sdk::Val>, soroban_sdk::Val)`
+   --> escrow/src/test.rs:912:20
+    |
+912 |         last_event.topics.get(0).unwrap(),
+    |                    ^^^^^^ unknown field
+
+error[E0609]: no field `topics` on type `(soroban_sdk::Address, soroban_sdk::Vec<soroban_sdk::Val>, soroban_sdk::Val)`
+   --> escrow/src/test.rs:942:20
+    |
+942 |         last_event.topics.get(0).unwrap(),
+    |                    ^^^^^^ unknown field
+
+Some errors have detailed explanations: E0277, E0412, E0422, E0425, E0433, E0609.
+For more information about an error, try `rustc --explain E0277`.
+warning: `stellar-market-escrow` (lib test) generated 2 warnings
+error: could not compile `stellar-market-escrow` (lib test) due to 60 previous errors; 2 warnings emitted

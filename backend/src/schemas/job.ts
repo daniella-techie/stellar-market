@@ -16,6 +16,7 @@ export const createJobSchema = z.object({
     .min(1, "At least one skill is required")
     .max(10, "Cannot have more than 10 skills"),
   deadline: z.string().datetime("Invalid deadline format"),
+  category: z.string().min(2, "Category is required"),
 });
 
 export const updateJobSchema = z.object({
@@ -36,21 +37,34 @@ export const updateJobSchema = z.object({
     .max(10, "Cannot have more than 10 skills")
     .optional(),
   deadline: z.string().datetime("Invalid deadline format").optional(),
+  category: z.string().min(2, "Category is required").optional(),
   status: jobStatusSchema.optional(),
 });
 
 export const getJobsQuerySchema = paginationSchema.extend({
   search: z.string().optional(),
   skill: z.string().optional(),
-  status: jobStatusSchema.optional(),
+  skills: z.string().optional(),
+  status: z.string().optional(),
   minBudget: z.coerce.number().positive().optional(),
   maxBudget: z.coerce.number().positive().optional(),
   clientId: z.string().uuid().optional(),
+  sort: z.enum(["newest", "oldest", "budget_high", "budget_low"]).optional(),
+  postedAfter: z.string().optional(),
 });
 
 export const getJobByIdParamSchema = z.object({
   id: z.string().uuid(),
-});
+})
+  .or(
+    z.object({
+      jobId: z.string().uuid(),
+    }),
+  )
+  .transform((params) => {
+    const id = "id" in params ? params.id : params.jobId;
+    return { id, jobId: id };
+  });
 
 export const updateJobStatusSchema = z.object({
   status: jobStatusSchema,

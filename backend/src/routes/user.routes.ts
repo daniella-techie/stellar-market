@@ -1,14 +1,18 @@
-import { Router, Response } from "express";
-import { PrismaClient } from "@prisma/client";
-import { z } from "zod";
 import { AuthRequest, authenticate } from "../middleware/auth";
-import { validate } from "../middleware/validation";
-import { asyncHandler } from "../middleware/error";
+import { Response, Router } from "express";
+import { cache, generateUserCacheKey, invalidateCacheKey } from "../lib/cache";
 import {
   getUserByIdParamSchema,
-  updateUserProfileSchema,
+  getUserJobsQuerySchema,
   getUsersQuerySchema,
+  updateUserProfileSchema,
 } from "../schemas";
+
+import { PrismaClient } from "@prisma/client";
+import { asyncHandler } from "../middleware/error";
+import { avatarUpload } from "../config/upload";
+import { validate } from "../middleware/validation";
+import { z } from "zod";
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -31,16 +35,9 @@ const updateProfileSchema = z.object({
     .max(500, "Bio must be at most 500 characters")
     .optional()
     .nullable(),
-  avatarUrl: z
-    .string()
-    .url("Invalid URL for avatar")
-    .optional()
-    .nullable(),
-  role: z
-    .enum(["CLIENT", "FREELANCER"], {
-      errorMap: () => ({ message: "Role must be either CLIENT or FREELANCER" }),
-    })
-    .optional(),
+  role: z.enum(["CLIENT", "FREELANCER"]).optional(),
+  skills: z.array(z.string()).max(20).optional(),
+  availability: z.boolean().optional(),
 });
 
 // GET /api/users/me — return current authenticated user's full profile
@@ -56,6 +53,8 @@ router.get("/me", authenticate, async (req: AuthRequest, res: Response) => {
         bio: true,
         avatarUrl: true,
         role: true,
+        skills: true,
+        availability: true,
         createdAt: true,
       },
     });
@@ -78,7 +77,7 @@ router.put("/me", authenticate, async (req: AuthRequest, res: Response) => {
     const parsed = updateProfileSchema.safeParse(req.body);
 
     if (!parsed.success) {
-      const errors = parsed.error.errors.map((e) => ({
+      const errors = (parsed.error as any).issues.map((e: any) => ({
         field: e.path.join("."),
         message: e.message,
       }));
@@ -127,9 +126,16 @@ router.put("/me", authenticate, async (req: AuthRequest, res: Response) => {
         bio: true,
         avatarUrl: true,
         role: true,
+        skills: true,
+        availability: true,
         createdAt: true,
       },
     });
+
+    // Invalidate user profile cache
+    if (req.userId) {
+      await invalidateCacheKey(generateUserCacheKey(req.userId));
+    }
 
     res.json(updatedUser);
   } catch (error) {
@@ -138,62 +144,151 @@ router.put("/me", authenticate, async (req: AuthRequest, res: Response) => {
   }
 });
 
+router.post(
+  "/me/avatar",
+  authenticate,
+  avatarUpload.single("avatar"),
+  async (req: AuthRequest, res: Response) => {
+    try {
+      if (!req.file) {
+        res.status(400).json({ error: "No file uploaded. Use field name 'avatar'." });
+        return;
+      }
+      const avatarUrl = `/api/uploads/avatars/${req.file.filename}`;
+      const updated = await prisma.user.update({
+        where: { id: req.userId },
+        data: { avatarUrl },
+        select: {
+          id: true,
+          username: true,
+          avatarUrl: true,
+        },
+      });
+      res.json(updated);
+    } catch (error) {
+      console.error("Avatar upload error:", error);
+      res.status(500).json({ error: "Internal server error." });
+    }
+  },
+);
+
+router.get(
+  "/:id/jobs",
+  validate({
+    params: getUserByIdParamSchema,
+    query: getUserJobsQuerySchema,
+  }),
+  asyncHandler(async (req: AuthRequest, res: Response) => {
+    const id = req.params.id as string;
+    const query = req.query as { page?: number; limit?: number };
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 10;
+    const skip = (page - 1) * limit;
+
+    const [jobs, total] = await Promise.all([
+      prisma.job.findMany({
+        where: {
+          OR: [{ clientId: id }, { freelancerId: id }],
+        },
+        skip,
+        take: limit,
+        orderBy: { createdAt: "desc" },
+        include: {
+          client: { select: { id: true, username: true, avatarUrl: true } },
+          freelancer: { select: { id: true, username: true, avatarUrl: true } },
+          _count: { select: { applications: true } },
+        },
+      }),
+      prisma.job.count({
+        where: {
+          OR: [{ clientId: id }, { freelancerId: id }],
+        },
+      }),
+    ]);
+
+    res.json({
+      data: jobs,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    });
+  }),
+);
+
 // Get user profile by ID
 router.get(
   "/:id",
   validate({ params: getUserByIdParamSchema }),
   asyncHandler(async (req: AuthRequest, res: Response) => {
-    const { id } = req.params;
+    const id = req.params.id as string;
+    const cacheKey = generateUserCacheKey(id);
 
-    const user = await prisma.user.findUnique({
-      where: { id },
-      select: {
-        id: true,
-        username: true,
-        walletAddress: true,
-        bio: true,
-        avatarUrl: true,
-        role: true,
-        createdAt: true,
-        reviewsReceived: {
-          include: {
-            reviewer: {
+    try {
+      const { data, hit } = await cache(cacheKey, 300, async () => {
+        const user = await prisma.user.findUnique({
+          where: { id },
+          select: {
+            id: true,
+            username: true,
+            bio: true,
+            avatarUrl: true,
+            role: true,
+            skills: true,
+            createdAt: true,
+            reviewsReceived: {
+              orderBy: { createdAt: "desc" as const },
+              select: {
+                rating: true,
+                reviewer: {
+                  select: {
+                    id: true,
+                    username: true,
+                    avatarUrl: true,
+                  },
+                },
+              },
+            },
+            clientJobs: {
+              where: { status: "COMPLETED" },
+              orderBy: { updatedAt: "desc" as const },
               select: {
                 id: true,
-                username: true,
-                avatarUrl: true,
+                title: true,
+                status: true,
+                updatedAt: true,
+              },
+            },
+            freelancerJobs: {
+              where: { status: "COMPLETED" },
+              orderBy: { updatedAt: "desc" as const },
+              select: {
+                id: true,
+                title: true,
+                status: true,
+                updatedAt: true,
               },
             },
           },
-          orderBy: { createdAt: "desc" },
-        },
-        clientJobs: {
-          where: { status: "COMPLETED" },
-          orderBy: { updatedAt: "desc" },
-        },
-        freelancerJobs: {
-          where: { status: "COMPLETED" },
-          orderBy: { updatedAt: "desc" },
-        },
-      },
-    });
+        });
 
-    if (!user) {
-      return res.status(404).json({ error: "User not found." });
+        if (!user) {
+          throw new Error("User not found");
+        }
+
+        return user;
+      });
+
+      res.set("X-Cache-Hit", hit.toString());
+      res.json(data);
+    } catch (error) {
+      if (error instanceof Error && error.message === "User not found") {
+        return res.status(404).json({ error: "User not found." });
+      }
+      throw error;
     }
-
-    // Calculate aggregate rating
-    const ratings: number[] = user.reviewsReceived.map((r: any) => r.rating);
-    const averageRating =
-      ratings.length > 0
-        ? ratings.reduce((a: number, b: number) => a + b, 0) / ratings.length
-        : 0;
-
-    res.json({
-      ...user,
-      averageRating: parseFloat(averageRating.toFixed(1)),
-      reviewCount: ratings.length,
-    });
   }),
 );
 
@@ -255,24 +350,33 @@ router.get(
 // Update user profile
 router.put(
   "/:id",
+  authenticate,
   validate({
     params: getUserByIdParamSchema,
     body: updateUserProfileSchema,
   }),
   asyncHandler(async (req: AuthRequest, res: Response) => {
-    const { id } = req.params;
+    const id = req.params.id as string;
     const updateData = req.body;
 
-    // Check if user is updating their own profile
     if (req.userId !== id) {
       return res
         .status(403)
         .json({ error: "Not authorized to update this profile." });
     }
 
+    const body = updateData as Record<string, unknown>;
+    const data: Record<string, unknown> = {};
+    if (body.email !== undefined) data.email = body.email;
+    if (body.bio !== undefined) data.bio = body.bio;
+    if (body.skills !== undefined) data.skills = body.skills;
+    if (body.availability !== undefined) data.availability = body.availability;
+    if (body.name !== undefined) data.username = body.name;
+    if (body.stellarAddress !== undefined) data.walletAddress = body.stellarAddress;
+
     const user = await prisma.user.update({
       where: { id },
-      data: updateData,
+      data,
       select: {
         id: true,
         username: true,
@@ -282,9 +386,13 @@ router.put(
         avatarUrl: true,
         role: true,
         skills: true,
+        availability: true,
         createdAt: true,
       },
     });
+
+    // Invalidate user profile cache
+    await invalidateCacheKey(generateUserCacheKey(id));
 
     res.json(user);
   }),

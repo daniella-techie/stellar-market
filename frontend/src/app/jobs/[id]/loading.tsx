@@ -33,7 +33,7 @@ export default function JobDetailLoading() {
               {[1, 2, 3].map((i) => (
                 <div
                   key={i}
-                  className="flex items-start gap-4 p-4 bg-dark-bg rounded-lg border border-dark-border"
+                  className="flex items-start gap-4 p-4 bg-theme-bg rounded-lg border border-theme-border"
                 >
                   <Skeleton className="flex-shrink-0 w-8 h-8 rounded-full" />
                   <div className="flex-1">
@@ -82,7 +82,7 @@ export default function JobDetailLoading() {
                   <Skeleton className="h-4 w-16" />
                 </div>
               ))}
-              <div className="border-t border-dark-border pt-2 mt-2 flex justify-between">
+              <div className="border-t border-theme-border pt-2 mt-2 flex justify-between">
                 <Skeleton className="h-5 w-12" />
                 <Skeleton className="h-5 w-24" />
               </div>

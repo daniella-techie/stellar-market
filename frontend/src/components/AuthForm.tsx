@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useWallet } from "@/context/WalletContext";
-import { Loader2, Mail, Lock, User as UserIcon, Wallet } from "lucide-react";
+import { Loader2, Mail, Lock, User as UserIcon, Wallet, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 
 interface AuthFormProps {
@@ -16,6 +16,11 @@ export default function AuthForm({ type }: AuthFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // 2FA state
+  const [twoFactorPending, setTwoFactorPending] = useState(false);
+  const [tempToken, setTempToken] = useState("");
+  const [totpCode, setTotpCode] = useState("");
+
   const [formData, setFormData] = useState({
     username: "",
     email: "",
@@ -25,6 +30,30 @@ export default function AuthForm({ type }: AuthFormProps) {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleTwoFactorSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError(null);
+
+    const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000/api";
+
+    try {
+      const response = await fetch(`${API}/auth/2fa/validate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: totpCode, tempToken }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Verification failed");
+      login(data.token, data.user);
+    } catch (err: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -47,14 +76,24 @@ export default function AuthForm({ type }: AuthFormProps) {
 
         const data = await response.json();
         if (!response.ok) throw new Error(data.message || "Login failed");
+
+        if (data.requiresTwoFactor) {
+          setTwoFactorPending(true);
+          setTempToken(data.tempToken);
+          return;
+        }
+
         login(data.token, data.user);
       } else {
         const response = await fetch(`${API}/auth/register`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            ...formData,
-            walletAddress: address,
+            name: formData.username,
+            email: formData.email,
+            password: formData.password,
+            stellarAddress: address,
+            role: formData.role,
           }),
         });
 
@@ -62,20 +101,85 @@ export default function AuthForm({ type }: AuthFormProps) {
         if (!response.ok) throw new Error(data.message || "Registration failed");
         register(data.token, data.user);
       }
-    } catch (err: any) {
+    } catch (err: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
       setError(err.message);
     } finally {
       setIsLoading(false);
     }
   };
 
+  if (twoFactorPending) {
+    return (
+      <div className="w-full max-w-md p-8 bg-dark-card border border-dark-border rounded-2xl shadow-xl">
+        <div className="text-center mb-8">
+          <ShieldCheck size={48} className="mx-auto mb-4 text-stellar-blue" />
+          <h1 className="text-3xl font-bold text-dark-heading mb-2">Two-Factor Authentication</h1>
+          <p className="text-dark-muted">
+            Enter the 6-digit code from your authenticator app, or use a backup code.
+          </p>
+        </div>
+
+        <form onSubmit={handleTwoFactorSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-dark-text mb-1">
+              Verification Code
+            </label>
+            <div className="relative">
+              <ShieldCheck
+                size={18}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-dark-muted"
+              />
+              <input
+                type="text"
+                required
+                value={totpCode}
+                onChange={(e) => setTotpCode(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 bg-dark-bg border border-dark-border rounded-lg focus:ring-2 focus:ring-stellar-blue outline-none transition-all text-dark-text text-center tracking-widest"
+                placeholder="000000"
+                autoFocus
+                autoComplete="one-time-code"
+              />
+            </div>
+          </div>
+
+          {error && (
+            <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm">
+              {error}
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="w-full btn-primary py-3 flex items-center justify-center gap-2 font-semibold"
+          >
+            {isLoading ? <Loader2 size={20} className="animate-spin" /> : "Verify"}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setTwoFactorPending(false);
+              setTempToken("");
+              setTotpCode("");
+              setError(null);
+            }}
+            className="w-full py-2 text-dark-muted hover:text-dark-text text-sm transition-colors"
+          >
+            Back to login
+          </button>
+        </form>
+      </div>
+    );
+  }
+
   return (
-    <div className="w-full max-w-md p-8 bg-dark-card border border-dark-border rounded-2xl shadow-xl">
+    <div className="w-full max-w-md p-8 bg-theme-card border border-theme-border rounded-2xl shadow-xl">
       <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-dark-heading mb-2">
+        <h1 className="text-3xl font-bold text-theme-heading mb-2">
           {type === "login" ? "Welcome Back" : "Create Account"}
         </h1>
-        <p className="text-dark-muted">
+        <p className="text-theme-text">
           {type === "login"
             ? "Sign in to access your stellar dashboard"
             : "Join the future of decentralized freelance work"}
@@ -86,13 +190,13 @@ export default function AuthForm({ type }: AuthFormProps) {
         {type === "register" && (
           <>
             <div>
-              <label className="block text-sm font-medium text-dark-text mb-1">
+              <label className="block text-sm font-medium text-theme-text mb-1">
                 Username
               </label>
               <div className="relative">
                 <UserIcon
                   size={18}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-dark-muted"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-theme-text"
                 />
                 <input
                   type="text"
@@ -100,21 +204,21 @@ export default function AuthForm({ type }: AuthFormProps) {
                   required
                   value={formData.username}
                   onChange={handleChange}
-                  className="w-full pl-10 pr-4 py-2 bg-dark-bg border border-dark-border rounded-lg focus:ring-2 focus:ring-stellar-blue outline-none transition-all text-dark-text"
+                  className="w-full pl-10 pr-4 py-2 bg-theme-bg border border-theme-border rounded-lg focus:ring-2 focus:ring-stellar-blue outline-none transition-all text-theme-text"
                   placeholder="johndoe"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-dark-text mb-1">
+              <label className="block text-sm font-medium text-theme-text mb-1">
                 Role
               </label>
               <select
                 name="role"
                 value={formData.role}
                 onChange={handleChange}
-                className="w-full px-4 py-2 bg-dark-bg border border-dark-border rounded-lg focus:ring-2 focus:ring-stellar-blue outline-none transition-all text-dark-text"
+                className="w-full px-4 py-2 bg-theme-bg border border-theme-border rounded-lg focus:ring-2 focus:ring-stellar-blue outline-none transition-all text-theme-text"
               >
                 <option value="FREELANCER">Freelancer</option>
                 <option value="CLIENT">Client</option>
@@ -122,20 +226,20 @@ export default function AuthForm({ type }: AuthFormProps) {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-dark-text mb-1">
+              <label className="block text-sm font-medium text-theme-text mb-1">
                 Wallet Address
               </label>
               <div className="flex gap-2">
                 <div className="relative flex-1">
                   <Wallet
                     size={18}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-dark-muted"
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-theme-text"
                   />
                   <input
                     type="text"
                     readOnly
                     value={address || ""}
-                    className="w-full pl-10 pr-4 py-2 bg-dark-bg border border-dark-border rounded-lg text-dark-muted cursor-not-allowed text-sm"
+                    className="w-full pl-10 pr-4 py-2 bg-theme-bg border border-theme-border rounded-lg text-theme-text cursor-not-allowed text-sm"
                     placeholder="Connect wallet..."
                   />
                 </div>
@@ -150,20 +254,20 @@ export default function AuthForm({ type }: AuthFormProps) {
                 )}
               </div>
               {!address && type === "register" && (
-                <p className="text-xs text-red-400 mt-1">Wallet is required for registration</p>
+                <p className="text-xs text-theme-error mt-1">Wallet is required for registration</p>
               )}
             </div>
           </>
         )}
 
         <div>
-          <label className="block text-sm font-medium text-dark-text mb-1">
+          <label className="block text-sm font-medium text-theme-text mb-1">
             Email Address
           </label>
           <div className="relative">
             <Mail
               size={18}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-dark-muted"
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-theme-text"
             />
             <input
               type="email"
@@ -171,20 +275,20 @@ export default function AuthForm({ type }: AuthFormProps) {
               required
               value={formData.email}
               onChange={handleChange}
-              className="w-full pl-10 pr-4 py-2 bg-dark-bg border border-dark-border rounded-lg focus:ring-2 focus:ring-stellar-blue outline-none transition-all text-dark-text"
+              className="w-full pl-10 pr-4 py-2 bg-theme-bg border border-theme-border rounded-lg focus:ring-2 focus:ring-stellar-blue outline-none transition-all text-theme-text"
               placeholder="name@example.com"
             />
           </div>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-dark-text mb-1">
+          <label className="block text-sm font-medium text-theme-text mb-1">
             Password
           </label>
           <div className="relative">
             <Lock
               size={18}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-dark-muted"
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-theme-text"
             />
             <input
               type="password"
@@ -192,14 +296,14 @@ export default function AuthForm({ type }: AuthFormProps) {
               required
               value={formData.password}
               onChange={handleChange}
-              className="w-full pl-10 pr-4 py-2 bg-dark-bg border border-dark-border rounded-lg focus:ring-2 focus:ring-stellar-blue outline-none transition-all text-dark-text"
+              className="w-full pl-10 pr-4 py-2 bg-theme-bg border border-theme-border rounded-lg focus:ring-2 focus:ring-stellar-blue outline-none transition-all text-theme-text"
               placeholder="••••••••"
             />
           </div>
         </div>
 
         {error && (
-          <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm">
+          <div className="p-3 bg-theme-error/10 border border-theme-error/20 rounded-lg text-theme-error text-sm">
             {error}
           </div>
         )}
@@ -219,11 +323,11 @@ export default function AuthForm({ type }: AuthFormProps) {
         </button>
       </form>
 
-      <div className="mt-8 pt-6 border-t border-dark-border text-center">
-        <p className="text-dark-muted">
+      <div className="mt-8 pt-6 border-t border-theme-border text-center">
+        <p className="text-theme-text">
           {type === "login" ? (
             <>
-              Don't have an account?{" "}
+              Don&apos;t have an account?{" "}
               <Link
                 href="/auth/register"
                 className="text-stellar-blue hover:underline font-medium"
