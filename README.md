@@ -21,12 +21,12 @@ stellar-market/
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|-----------|
-| **Frontend** | Next.js 14, TypeScript, Tailwind CSS, Stellar SDK |
-| **Backend** | Express.js, TypeScript, PostgreSQL, Prisma ORM |
-| **Smart Contracts** | Soroban SDK, Rust |
-| **Blockchain** | Stellar Network (Soroban) |
+| Layer               | Technology                                        |
+| ------------------- | ------------------------------------------------- |
+| **Frontend**        | Next.js 14, TypeScript, Tailwind CSS, Stellar SDK |
+| **Backend**         | Express.js, TypeScript, PostgreSQL, Prisma ORM    |
+| **Smart Contracts** | Soroban SDK, Rust                                 |
+| **Blockchain**      | Stellar Network (Soroban)                         |
 
 ## Features
 
@@ -73,6 +73,19 @@ cd backend && npm run dev
 # Start frontend dev server
 cd frontend && npm run dev
 ```
+
+### Post-Deploy Verification
+
+After applying backend migrations, verify persisted user review aggregates with:
+
+```bash
+cd backend && npm run prisma:verify-review-aggregates
+```
+
+The query returns only mismatches between stored `User.averageRating` / `User.reviewCount`
+and values recomputed from the `Review` table. The command prints `No review aggregate
+mismatches found.` when everything is consistent; otherwise it prints the mismatched users
+and exits non-zero.
 
 ## Contributing
 
