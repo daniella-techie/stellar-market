@@ -2,7 +2,7 @@ import { z } from "zod";
 import { paginationSchema, applicationStatusSchema } from "./common";
 
 export const createApplicationSchema = z.object({
-  jobId: z.string().uuid("Invalid job ID"),
+  jobId: z.string().min(1, "Job ID is required"),
   proposal: z
     .string()
     .min(50, "Proposal must be at least 50 characters long")
@@ -36,11 +36,11 @@ export const updateApplicationStatusSchema = z.object({
 });
 
 export const getApplicationsQuerySchema = paginationSchema.extend({
-  jobId: z.string().uuid().optional(),
-  freelancerId: z.string().uuid().optional(),
+  jobId: z.string().min(1).optional(),
+  freelancerId: z.string().min(1).optional(),
   status: applicationStatusSchema.optional(),
 });
 
 export const getApplicationByIdParamSchema = z.object({
-  id: z.string().uuid(),
+  id: z.string().min(1, "ID is required"),
 });

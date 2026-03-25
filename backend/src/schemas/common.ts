@@ -6,7 +6,7 @@ export const paginationSchema = z.object({
 });
 
 export const idParamSchema = z.object({
-  id: z.string().uuid(),
+  id: z.string().min(1, "ID is required"),
 });
 
 export const objectIdSchema = z.string().min(1, "ID is required");
