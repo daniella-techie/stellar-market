@@ -1,34 +1,205 @@
 "use client";
 
-import { useState } from "react";
-import { Briefcase, FileText, MessageSquare, Star } from "lucide-react";
+import { useState, useEffect } from "react";
+import {
+  Briefcase,
+  FileText,
+  MessageSquare,
+  Star,
+  DollarSign,
+  Loader2,
+} from "lucide-react";
 import StatusBadge from "@/components/StatusBadge";
-
-const stats = [
-  { label: "Active Jobs", value: "3", icon: Briefcase, color: "text-stellar-blue" },
-  { label: "Pending Apps", value: "5", icon: FileText, color: "text-yellow-400" },
-  { label: "Earnings", value: "12,500 XLM", icon: Star, color: "text-stellar-purple" },
-  { label: "Rating", value: "4.8/5", icon: Star, color: "text-green-400" },
-];
+import { useAuth } from "@/context/AuthContext";
 
 const activeJobs = [
-  { id: "1", title: "Build Soroban DEX Frontend", client: "stellarbuilder", status: "IN_PROGRESS", budget: 5000, deadline: "2025-03-01" },
-  { id: "2", title: "Smart Contract Audit", client: "defiteam", status: "IN_PROGRESS", budget: 8000, deadline: "2025-02-20" },
-  { id: "3", title: "Mobile App for Payments", client: "mobilestellar", status: "OPEN", budget: 12000, deadline: "2025-04-01" },
+  {
+    id: "1",
+    title: "Build Soroban DEX Frontend",
+    client: "stellarbuilder",
+    status: "IN_PROGRESS",
+    budget: 5000,
+    deadline: "2025-03-01",
+  },
+  {
+    id: "2",
+    title: "Smart Contract Audit",
+    client: "defiteam",
+    status: "IN_PROGRESS",
+    budget: 8000,
+    deadline: "2025-02-20",
+  },
+  {
+    id: "3",
+    title: "Mobile App for Payments",
+    client: "mobilestellar",
+    status: "OPEN",
+    budget: 12000,
+    deadline: "2025-04-01",
+  },
 ];
 
 const applications = [
-  { id: "1", job: "Governance Module for DAO", status: "PENDING", appliedAt: "2025-01-12" },
-  { id: "2", job: "Data Analytics Dashboard", status: "ACCEPTED", appliedAt: "2025-01-10" },
-  { id: "3", job: "Technical Docs Writer", status: "REJECTED", appliedAt: "2025-01-08" },
-  { id: "4", job: "Brand Identity Design", status: "PENDING", appliedAt: "2025-01-14" },
-  { id: "5", job: "NFT Marketplace Backend", status: "PENDING", appliedAt: "2025-01-13" },
+  {
+    id: "1",
+    job: "Governance Module for DAO",
+    status: "PENDING",
+    appliedAt: "2025-01-12",
+  },
+  {
+    id: "2",
+    job: "Data Analytics Dashboard",
+    status: "ACCEPTED",
+    appliedAt: "2025-01-10",
+  },
+  {
+    id: "3",
+    job: "Technical Docs Writer",
+    status: "REJECTED",
+    appliedAt: "2025-01-08",
+  },
+  {
+    id: "4",
+    job: "Brand Identity Design",
+    status: "PENDING",
+    appliedAt: "2025-01-14",
+  },
+  {
+    id: "5",
+    job: "NFT Marketplace Backend",
+    status: "PENDING",
+    appliedAt: "2025-01-13",
+  },
 ];
 
-const tabs = ["Active Jobs", "Applications", "Messages"];
+const postedJobs = [
+  {
+    id: "1",
+    title: "Build Soroban DEX Frontend",
+    status: "IN_PROGRESS",
+    budget: 5000,
+    applicants: 4,
+  },
+  {
+    id: "2",
+    title: "Smart Contract Audit",
+    status: "OPEN",
+    budget: 8000,
+    applicants: 7,
+  },
+  {
+    id: "3",
+    title: "API Integration Project",
+    status: "COMPLETED",
+    budget: 3200,
+    applicants: 2,
+  },
+];
+
+const pendingApplicants = [
+  {
+    id: "1",
+    freelancer: "devstellar",
+    job: "Build Soroban DEX Frontend",
+    bid: 4800,
+    appliedAt: "2025-01-14",
+  },
+  {
+    id: "2",
+    freelancer: "cryptobuilder",
+    job: "Smart Contract Audit",
+    bid: 7500,
+    appliedAt: "2025-01-13",
+  },
+  {
+    id: "3",
+    freelancer: "webmaster99",
+    job: "Smart Contract Audit",
+    bid: 8200,
+    appliedAt: "2025-01-12",
+  },
+];
 
 export default function DashboardPage() {
-  const [activeTab, setActiveTab] = useState("Active Jobs");
+  const { user, isLoading } = useAuth();
+  const isClient = user?.role === "CLIENT";
+
+  const clientTabs = ["My Posted Jobs", "Applicants to Review", "Messages"];
+  const freelancerTabs = ["My Applications", "Active Work", "Messages"];
+  const tabs = isClient ? clientTabs : freelancerTabs;
+
+  const [activeTab, setActiveTab] = useState(freelancerTabs[0]);
+
+  // Sync the active tab whenever the role becomes known so we always start
+  // on a tab that belongs to the current role.
+  useEffect(() => {
+    setActiveTab(isClient ? clientTabs[0] : freelancerTabs[0]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isClient]);
+
+  const clientStats = [
+    {
+      label: "Posted Jobs",
+      value: "3",
+      icon: Briefcase,
+      color: "text-stellar-blue",
+    },
+    {
+      label: "Applicants to Review",
+      value: "5",
+      icon: FileText,
+      color: "text-yellow-400",
+    },
+    {
+      label: "Total Spent",
+      value: "12,500 XLM",
+      icon: DollarSign,
+      color: "text-stellar-purple",
+    },
+    {
+      label: "Rating",
+      value: "4.8/5",
+      icon: Star,
+      color: "text-green-400",
+    },
+  ];
+
+  const freelancerStats = [
+    {
+      label: "Active Work",
+      value: "3",
+      icon: Briefcase,
+      color: "text-stellar-blue",
+    },
+    {
+      label: "My Applications",
+      value: "5",
+      icon: FileText,
+      color: "text-yellow-400",
+    },
+    {
+      label: "Income Received",
+      value: "12,500 XLM",
+      icon: DollarSign,
+      color: "text-stellar-purple",
+    },
+    {
+      label: "Rating",
+      value: "4.8/5",
+      icon: Star,
+      color: "text-green-400",
+    },
+  ];
+
+  const stats = isClient ? clientStats : freelancerStats;
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <Loader2 className="animate-spin text-stellar-blue" size={48} />
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -68,29 +239,8 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      {/* Tab Content */}
-      {activeTab === "Active Jobs" && (
-        <div className="space-y-4">
-          {activeJobs.map((job) => (
-            <div key={job.id} className="card flex items-center justify-between">
-              <div>
-                <h3 className="font-semibold text-theme-heading">{job.title}</h3>
-                <p className="text-sm text-theme-text">
-                  Client: {job.client} &middot; Deadline: {job.deadline}
-                </p>
-              </div>
-              <div className="flex items-center gap-4">
-                <span className="text-sm font-medium text-stellar-purple">
-                  {job.budget.toLocaleString()} XLM
-                </span>
-                <StatusBadge status={job.status} />
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {activeTab === "Applications" && (
+      {/* ── Freelancer tab content ── */}
+      {!isClient && activeTab === "My Applications" && (
         <div className="space-y-4">
           {applications.map((app) => (
             <div key={app.id} className="card flex items-center justify-between">
@@ -106,6 +256,80 @@ export default function DashboardPage() {
         </div>
       )}
 
+      {!isClient && activeTab === "Active Work" && (
+        <div className="space-y-4">
+          {activeJobs
+            .filter((j) => j.status === "IN_PROGRESS")
+            .map((job) => (
+              <div
+                key={job.id}
+                className="card flex items-center justify-between"
+              >
+                <div>
+                  <h3 className="font-semibold text-theme-heading">
+                    {job.title}
+                  </h3>
+                  <p className="text-sm text-theme-text">
+                    Client: {job.client} &middot; Deadline: {job.deadline}
+                  </p>
+                </div>
+                <div className="flex items-center gap-4">
+                  <span className="text-sm font-medium text-stellar-purple">
+                    {job.budget.toLocaleString()} XLM
+                  </span>
+                  <StatusBadge status={job.status} />
+                </div>
+              </div>
+            ))}
+        </div>
+      )}
+
+      {/* ── Client tab content ── */}
+      {isClient && activeTab === "My Posted Jobs" && (
+        <div className="space-y-4">
+          {postedJobs.map((job) => (
+            <div key={job.id} className="card flex items-center justify-between">
+              <div>
+                <h3 className="font-semibold text-theme-heading">{job.title}</h3>
+                <p className="text-sm text-theme-text">
+                  {job.applicants} applicant{job.applicants !== 1 ? "s" : ""}
+                </p>
+              </div>
+              <div className="flex items-center gap-4">
+                <span className="text-sm font-medium text-stellar-purple">
+                  {job.budget.toLocaleString()} XLM
+                </span>
+                <StatusBadge status={job.status} />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {isClient && activeTab === "Applicants to Review" && (
+        <div className="space-y-4">
+          {pendingApplicants.map((app) => (
+            <div key={app.id} className="card flex items-center justify-between">
+              <div>
+                <h3 className="font-semibold text-theme-heading">
+                  {app.freelancer}
+                </h3>
+                <p className="text-sm text-theme-text">
+                  {app.job} &middot; Applied: {app.appliedAt}
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-medium text-stellar-purple">
+                  {app.bid.toLocaleString()} XLM
+                </span>
+                <StatusBadge status="PENDING" />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ── Shared Messages tab ── */}
       {activeTab === "Messages" && (
         <div className="card text-center py-12">
           <MessageSquare className="mx-auto text-theme-text mb-4" size={40} />
@@ -113,7 +337,8 @@ export default function DashboardPage() {
             No messages yet
           </h3>
           <p className="text-theme-text">
-            Messages from clients and freelancers will appear here.
+            Messages from{" "}
+            {isClient ? "freelancers" : "clients"} will appear here.
           </p>
         </div>
       )}

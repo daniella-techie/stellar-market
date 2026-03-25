@@ -1,16 +1,24 @@
+"use client";
+
 import Link from "next/link";
 import { Clock, DollarSign, Users } from "lucide-react";
 import StatusBadge from "./StatusBadge";
 import { Job } from "@/types";
+import { useAuth } from "@/context/AuthContext";
 
 interface JobCardProps {
   job: Job;
 }
 
 export default function JobCard({ job }: JobCardProps) {
+  const { user } = useAuth();
+  const isFreelancer = user?.role === "FREELANCER";
+  const isClient = user?.role === "CLIENT";
+  const isOwnJob = user?.id === job.client.id;
+
   return (
-    <Link href={`/jobs/${job.id}`}>
-      <div className="card hover:border-stellar-blue/50 transition-all duration-200 cursor-pointer">
+    <div className="card hover:border-stellar-blue/50 transition-all duration-200 cursor-pointer">
+      <Link href={`/jobs/${job.id}`} className="block">
         <div className="flex items-start justify-between mb-3">
           <span className="text-xs font-medium text-stellar-purple bg-stellar-purple/10 px-2 py-1 rounded">
             {job.category}
@@ -40,12 +48,34 @@ export default function JobCard({ job }: JobCardProps) {
             <span>{new Date(job.createdAt).toLocaleDateString()}</span>
           </div>
         </div>
+      </Link>
 
-        <div className="flex items-center gap-2 mt-4 pt-4 border-t border-theme-border">
+      <div className="flex items-center justify-between mt-4 pt-4 border-t border-theme-border">
+        <div className="flex items-center gap-2">
           <div className="w-6 h-6 rounded-full bg-gradient-to-br from-stellar-blue to-stellar-purple" />
           <span className="text-sm text-theme-text">{job.client.username}</span>
         </div>
+
+        {/* Freelancers see Apply on open jobs they don't own */}
+        {isFreelancer && job.status === "OPEN" && !isOwnJob && (
+          <Link
+            href={`/jobs/${job.id}`}
+            className="text-xs font-medium px-3 py-1 bg-stellar-blue/10 text-stellar-blue rounded-full hover:bg-stellar-blue/20 transition-colors"
+          >
+            Apply
+          </Link>
+        )}
+
+        {/* Clients see View Applicants on their own jobs */}
+        {isClient && isOwnJob && (
+          <Link
+            href={`/jobs/${job.id}`}
+            className="text-xs font-medium px-3 py-1 bg-stellar-purple/10 text-stellar-purple rounded-full hover:bg-stellar-purple/20 transition-colors"
+          >
+            View Applicants
+          </Link>
+        )}
       </div>
-    </Link>
+    </div>
   );
 }

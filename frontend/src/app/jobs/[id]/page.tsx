@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useParams } from "next/navigation";
-import { Clock, DollarSign, ArrowLeft, MessageSquare, ShieldCheck, AlertCircle, Loader2, CheckCircle } from "lucide-react";
+import { Clock, DollarSign, ArrowLeft, MessageSquare, ShieldCheck, AlertCircle, Loader2, CheckCircle, UserCheck, XCircle } from "lucide-react";
 import Link from "next/link";
 import axios from "axios";
 import { useWallet } from "@/context/WalletContext";
@@ -10,7 +10,7 @@ import { useAuth } from "@/context/AuthContext";
 import StatusBadge from "@/components/StatusBadge";
 import ApplyModal from "@/components/ApplyModal";
 import RaiseDisputeModal from "@/components/RaiseDisputeModal";
-import { Job } from "@/types";
+import { Job, Application } from "@/types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
@@ -25,6 +25,9 @@ export default function JobDetailPage() {
   const [applyModalOpen, setApplyModalOpen] = useState(false);
   const [disputeModalOpen, setDisputeModalOpen] = useState(false);
   const [hasApplied, setHasApplied] = useState(false);
+  const [applications, setApplications] = useState<Application[]>([]);
+  const [loadingApps, setLoadingApps] = useState(false);
+  const [actioningApp, setActioningApp] = useState<string | null>(null);
 
   const fetchJob = useCallback(async () => {
     try {
@@ -43,6 +46,51 @@ export default function JobDetailPage() {
   useEffect(() => {
     fetchJob();
   }, [fetchJob]);
+
+  const fetchApplications = useCallback(async () => {
+    setLoadingApps(true);
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.get<{ data: Application[] }>(
+        `${API_URL}/jobs/${id as string}/applications`,
+        { headers: token ? { Authorization: `Bearer ${token}` } : {} },
+      );
+      setApplications(res.data.data ?? []);
+    } catch {
+      setApplications([]);
+    } finally {
+      setLoadingApps(false);
+    }
+  }, [id]);
+
+  // Fetch applicants once job loads and current user is the owner
+  useEffect(() => {
+    if (job && user && user.id === job.client.id) {
+      void fetchApplications();
+    }
+  }, [job, user, fetchApplications]);
+
+  const handleApplicationStatus = async (
+    appId: string,
+    status: "ACCEPTED" | "REJECTED",
+  ) => {
+    setActioningApp(appId);
+    try {
+      const token = localStorage.getItem("token");
+      await axios.put(
+        `${API_URL}/applications/${appId}/status`,
+        { status },
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+      await fetchApplications();
+    } catch (err: unknown) {
+      setError(
+        err instanceof Error ? err.message : "Failed to update application.",
+      );
+    } finally {
+      setActioningApp(null);
+    }
+  };
 
   const handleEscrowAction = async (action: "init" | "fund" | "approve", milestoneId?: string) => {
     setError(null);
@@ -208,6 +256,81 @@ export default function JobDetailPage() {
               ))}
             </div>
           </div>
+          {/* Applicants — visible to owning client only */}
+          {isOwnJob && (
+            <div className="card mt-8">
+              <h2 className="text-lg font-semibold text-theme-heading mb-4">
+                Applicants
+              </h2>
+              {loadingApps ? (
+                <div className="flex justify-center py-8">
+                  <Loader2 className="animate-spin text-stellar-blue" size={32} />
+                </div>
+              ) : applications.length === 0 ? (
+                <p className="text-theme-text text-sm py-4 text-center">
+                  No applications yet.
+                </p>
+              ) : (
+                <div className="space-y-4">
+                  {applications.map((app) => (
+                    <div
+                      key={app.id}
+                      className="flex items-center justify-between p-4 bg-theme-bg rounded-lg border border-theme-border"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-stellar-blue to-stellar-purple flex items-center justify-center text-white text-sm font-bold">
+                          {app.freelancer.username.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <p className="font-medium text-theme-heading text-sm">
+                            {app.freelancer.username}
+                          </p>
+                          <p className="text-xs text-theme-text">
+                            Bid: {app.bidAmount.toLocaleString()} XLM
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <StatusBadge status={app.status} />
+                        {app.status === "PENDING" && (
+                          <>
+                            <button
+                              disabled={actioningApp === app.id}
+                              onClick={() =>
+                                void handleApplicationStatus(app.id, "ACCEPTED")
+                              }
+                              className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg bg-green-500/10 text-green-400 hover:bg-green-500/20 transition-colors disabled:opacity-50"
+                            >
+                              {actioningApp === app.id ? (
+                                <Loader2 size={12} className="animate-spin" />
+                              ) : (
+                                <UserCheck size={12} />
+                              )}
+                              Accept
+                            </button>
+                            <button
+                              disabled={actioningApp === app.id}
+                              onClick={() =>
+                                void handleApplicationStatus(app.id, "REJECTED")
+                              }
+                              className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg bg-theme-error/10 text-theme-error hover:bg-theme-error/20 transition-colors disabled:opacity-50"
+                            >
+                              {actioningApp === app.id ? (
+                                <Loader2 size={12} className="animate-spin" />
+                              ) : (
+                                <XCircle size={12} />
+                              )}
+                              Reject
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Sidebar */}
@@ -247,7 +370,8 @@ export default function JobDetailPage() {
                 </button>
             )}
 
-            {!isOwnJob && job.status === "OPEN" && (
+            {/* Apply section — freelancers only, non-owners */}
+            {user?.role === "FREELANCER" && !isOwnJob && job.status === "OPEN" && (
               hasApplied ? (
                 <button
                   className="btn-secondary w-full flex items-center justify-center gap-2 cursor-default opacity-80"

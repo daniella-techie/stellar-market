@@ -9,15 +9,20 @@ import {
   ExternalLink,
   ShieldCheck,
   Calendar,
+  Edit,
 } from "lucide-react";
 import axios from "axios";
 import { UserProfile } from "@/types";
 import Skeleton from "@/components/Skeleton";
 import Link from "next/link";
 import Image from "next/image";
+import { useAuth } from "@/context/AuthContext";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
 export default function ProfilePage() {
   const { id } = useParams();
+  const { user: currentUser } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -29,10 +34,7 @@ export default function ProfilePage() {
     const fetchProfile = async () => {
       try {
         setLoading(true);
-        // In a real app, API URL would come from env or config
-        const response = await axios.get(
-          `http://localhost:5001/api/users/${id}`,
-        );
+        const response = await axios.get(`${API_URL}/users/${id}`);
         setProfile(response.data);
       } catch (err) {
         console.error("Fetch profile error:", err);
@@ -46,6 +48,8 @@ export default function ProfilePage() {
       fetchProfile();
     }
   }, [id]);
+
+  const isOwnProfile = currentUser && profile && currentUser.id === profile.id;
 
   if (loading) {
     return (
@@ -121,9 +125,10 @@ export default function ProfilePage() {
             <Image
               src={profile.avatarUrl}
               alt={profile.username}
-              width={64}
-              height={64}
+              width={128}
+              height={128}
               className="w-full h-full object-cover"
+              unoptimized
             />
           ) : (
             <User size={64} className="text-white/50" />
@@ -137,10 +142,39 @@ export default function ProfilePage() {
             <span className="text-sm font-medium text-stellar-purple bg-stellar-purple/10 px-3 py-1 rounded-full border border-stellar-purple/20">
               {profile.role}
             </span>
+            {isOwnProfile && (
+              <Link
+                href="/settings"
+                className="ml-auto btn-secondary flex items-center gap-2 text-sm"
+              >
+                <Edit size={16} />
+                Edit Profile
+              </Link>
+            )}
           </div>
-          <p className="text-lg text-theme-text mb-6 max-w-2xl">
-            {profile.bio || "No bio provided."}
+          <p className="text-lg text-theme-text mb-4 max-w-2xl">
+            {profile.bio || "No bio yet"}
           </p>
+          
+          {/* Skills */}
+          {profile.skills && profile.skills.length > 0 ? (
+            <div className="mb-6">
+              <h3 className="text-sm font-semibold text-theme-heading mb-2">Skills</h3>
+              <div className="flex flex-wrap gap-2">
+                {profile.skills.map((skill, idx) => (
+                  <span
+                    key={idx}
+                    className="px-3 py-1 bg-theme-card border border-theme-border rounded-full text-sm text-theme-text"
+                  >
+                    {skill}
+                  </span>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-theme-text mb-6">No skills listed</p>
+          )}
+
           <div className="flex flex-wrap gap-6 text-sm text-theme-text">
             <div className="flex items-center gap-2">
               <ShieldCheck size={18} className="text-stellar-blue" />
@@ -150,15 +184,15 @@ export default function ProfilePage() {
             </div>
             <div className="flex items-center gap-2">
               <Calendar size={18} className="text-stellar-blue" />
-              Joined {new Date(profile.createdAt).toLocaleDateString()}
+              Member since {new Date(profile.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
             </div>
             <div className="flex items-center gap-2">
               {renderStars(profile.averageRating)}
               <span className="text-theme-heading font-medium">
-                ({profile.averageRating}/5)
+                {profile.averageRating.toFixed(1)}/5
               </span>
               <span>&middot;</span>
-              <span>{profile.reviewCount} reviews</span>
+              <span>{profile.reviewCount} {profile.reviewCount === 1 ? 'review' : 'reviews'}</span>
             </div>
           </div>
         </div>

@@ -192,6 +192,9 @@ function UnreadBadge() {
 
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { user } = useAuth();
+  const isClient = user?.role === "CLIENT";
+  const isFreelancer = user?.role === "FREELANCER";
 
   return (
     <nav className="border-b border-theme-border bg-theme-bg/80 backdrop-blur-md sticky top-0 z-50">
@@ -204,13 +207,16 @@ export default function Navbar() {
             </span>
           </Link>
           <div className="hidden md:flex items-center gap-8">
-            <Link
-              href="/jobs"
-              className="text-theme-text hover:text-theme-heading transition-colors flex items-center gap-2"
-            >
-              <Briefcase size={16} />
-              Jobs
-            </Link>
+            {/* Freelancers and unauthenticated users see the job browsing link */}
+            {!isClient && (
+              <Link
+                href="/jobs"
+                className="text-theme-text hover:text-theme-heading transition-colors flex items-center gap-2"
+              >
+                <Briefcase size={16} />
+                {isFreelancer ? "Find Work" : "Jobs"}
+              </Link>
+            )}
             <Link
               href="/services"
               className="text-theme-text hover:text-theme-heading transition-colors flex items-center gap-2"
@@ -241,13 +247,16 @@ export default function Navbar() {
               Messages
               <UnreadBadge />
             </Link>
-            <Link
-              href="/post-job"
-              className="text-theme-text hover:text-theme-heading transition-colors flex items-center gap-2"
-            >
-              <PenLine size={16} />
-              Post a Job
-            </Link>
+            {/* Only clients see Post a Job */}
+            {isClient && (
+              <Link
+                href="/post-job"
+                className="text-theme-text hover:text-theme-heading transition-colors flex items-center gap-2"
+              >
+                <PenLine size={16} />
+                Post a Job
+              </Link>
+            )}
             <NotificationBell />
             <ThemeToggleButton />
             <UserMenu />
@@ -263,12 +272,15 @@ export default function Navbar() {
 
         {mobileOpen && (
           <div className="md:hidden pb-4 flex flex-col gap-4">
-            <Link
-              href="/jobs"
-              className="text-theme-text hover:text-theme-heading flex items-center gap-2"
-            >
-              <Briefcase size={18} /> Jobs
-            </Link>
+            {!isClient && (
+              <Link
+                href="/jobs"
+                className="text-theme-text hover:text-theme-heading flex items-center gap-2"
+              >
+                <Briefcase size={18} />
+                {isFreelancer ? "Find Work" : "Jobs"}
+              </Link>
+            )}
             <Link
               href="/services"
               className="text-theme-text hover:text-theme-heading flex items-center gap-2"
@@ -295,12 +307,14 @@ export default function Navbar() {
               Messages
               <UnreadBadge />
             </Link>
-            <Link
-              href="/post-job"
-              className="text-theme-text hover:text-theme-heading flex items-center gap-2"
-            >
-              <PenLine size={18} /> Post a Job
-            </Link>
+            {isClient && (
+              <Link
+                href="/post-job"
+                className="text-theme-text hover:text-theme-heading flex items-center gap-2"
+              >
+                <PenLine size={18} /> Post a Job
+              </Link>
+            )}
             <div className="pt-4 border-t border-theme-border flex items-center justify-between px-2">
               <div className="flex items-center gap-4">
                 <span className="text-sm font-medium text-theme-text">Notifications</span>

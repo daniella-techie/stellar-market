@@ -1,7 +1,10 @@
 "use client";
 
-import { useState } from "react";
-import { Plus, Trash2 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Plus, Trash2, Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
+import { useToast } from "@/components/Toast";
 
 interface MilestoneForm {
   title: string;
@@ -10,9 +13,34 @@ interface MilestoneForm {
 }
 
 export default function PostJobPage() {
+  const { user, isLoading } = useAuth();
+  const router = useRouter();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    if (!isLoading && user !== null && user.role !== "CLIENT") {
+      toast.error(
+        "Only clients can post jobs. Switch your role in Settings.",
+      );
+      router.replace("/dashboard");
+    }
+  }, [isLoading, user, router, toast]);
+
   const [milestones, setMilestones] = useState<MilestoneForm[]>([
     { title: "", description: "", amount: "" },
   ]);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <Loader2 className="animate-spin text-stellar-blue" size={48} />
+      </div>
+    );
+  }
+
+  if (user?.role !== "CLIENT") {
+    return null;
+  }
 
   const addMilestone = () => {
     setMilestones([...milestones, { title: "", description: "", amount: "" }]);
