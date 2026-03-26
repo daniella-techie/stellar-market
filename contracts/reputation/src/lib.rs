@@ -548,6 +548,18 @@ impl ReputationContract {
             // Credit the reputation score equivalent to the bonus rating
             // Effectively a high-weight default review.
             // We now store this as a record for decay calculation.
+            let bonus_rating = env
+                .storage()
+                .instance()
+                .get::<DataKey, u64>(&DataKey::ReferralBonus)
+                .unwrap_or(DEFAULT_REFERRAL_BONUS);
+            let min_stake = env
+                .storage()
+                .instance()
+                .get::<DataKey, i128>(&DataKey::MinStake)
+                .unwrap_or(MIN_REVIEW_STAKE_DEFAULT) as u64;
+            let earned_score = bonus_rating * min_stake;
+
             let bonuses_key = DataKey::ReferralBonusList(referrer.clone());
             let mut bonuses: Vec<ReferralBonusRecord> = env
                 .storage()
