@@ -27,6 +27,7 @@ import ProposeRevisionModal, {
   type ProposeRevisionMilestoneInput,
 } from "@/components/ProposeRevisionModal";
 import { Job, Application, PaginatedResponse } from "@/types";
+import { parseJobIdFromResult } from "@/utils/stellar";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
@@ -217,6 +218,18 @@ export default function JobDetailPage() {
       }
 
       // 3. Confirm with backend
+      // For CREATE_JOB, parse the on-chain job ID from the contract return value.
+      // For other actions, use the existing contractJobId stored on the job.
+      let onChainJobId: number | string | undefined;
+      if (action === "init") {
+        if (!txResult.resultXdr) {
+          throw new Error("Transaction succeeded but no return value was found — cannot determine on-chain job ID");
+        }
+        onChainJobId = parseJobIdFromResult(txResult.resultXdr);
+      } else {
+        onChainJobId = job?.contractJobId;
+      }
+
       await axios.post(
         `${API_URL}/escrow/confirm-tx`,
         {
@@ -228,6 +241,7 @@ export default function JobDetailPage() {
             action === "extend-deadline"
               ? extendDeadlineDate[milestoneId!]
               : undefined,
+          onChainJobId,
         },
         {
           headers: { Authorization: `Bearer ${token}` },
