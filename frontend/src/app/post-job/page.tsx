@@ -1,10 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Trash2, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { Plus, Trash2, Tag, Loader2 } from "lucide-react";
+import axios from "axios";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/components/Toast";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
 interface MilestoneForm {
   title: string;
@@ -17,6 +20,19 @@ export default function PostJobPage() {
   const router = useRouter();
   const { toast } = useToast();
 
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [category, setCategory] = useState("");
+  const [deadline, setDeadline] = useState("");
+  const [skills, setSkills] = useState<string[]>([]);
+  const [skillInput, setSkillInput] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+
+  const [milestones, setMilestones] = useState<MilestoneForm[]>([
+    { title: "", description: "", amount: "" },
+  ]);
+
   useEffect(() => {
     if (!isLoading && user !== null && user.role !== "CLIENT") {
       toast.error(
@@ -25,10 +41,6 @@ export default function PostJobPage() {
       router.replace("/dashboard");
     }
   }, [isLoading, user, router, toast]);
-
-  const [milestones, setMilestones] = useState<MilestoneForm[]>([
-    { title: "", description: "", amount: "" },
-  ]);
 
   if (isLoading) {
     return (
@@ -63,6 +75,65 @@ export default function PostJobPage() {
     0
   );
 
+  const handleAddSkill = () => {
+    const trimmed = skillInput.trim();
+    if (trimmed && !skills.includes(trimmed)) {
+      setSkills([...skills, trimmed]);
+      setSkillInput("");
+    }
+  };
+
+  const handleRemoveSkill = (skill: string) => {
+    setSkills(skills.filter((s) => s !== skill));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+    setError("");
+
+    try {
+      const token = localStorage.getItem("token");
+
+      const res = await axios.post(
+        `${API_URL}/jobs`,
+        {
+          title,
+          description,
+          category,
+          deadline: new Date(deadline).toISOString(),
+          skills,
+          budget: totalBudget,
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      for (const m of milestones) {
+        await axios.post(
+          `${API_URL}/milestones`,
+          {
+            jobId: res.data.id,
+            title: m.title,
+            description: m.description,
+            amount: parseFloat(m.amount),
+            dueDate: deadline,
+          },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+      }
+
+      router.push(`/jobs/${res.data.id}`);
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err)) {
+        setError(err.response?.data?.error || "Failed to post job. Please try again.");
+      } else {
+        setError("An unexpected error occurred.");
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <h1 className="text-3xl font-bold text-theme-heading mb-2">Post a Job</h1>
@@ -71,7 +142,13 @@ export default function PostJobPage() {
         when a freelancer is accepted.
       </p>
 
-      <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
+      <form className="space-y-6" onSubmit={handleSubmit}>
+        {error && (
+          <div className="p-3 rounded-lg bg-theme-error/10 border border-theme-error/20 text-theme-error text-sm">
+            {error}
+          </div>
+        )}
+
         {/* Title */}
         <div>
           <label className="block text-sm font-medium text-theme-heading mb-2">
@@ -79,8 +156,11 @@ export default function PostJobPage() {
           </label>
           <input
             type="text"
+            required
             placeholder="e.g., Build Soroban DEX Frontend"
             className="input-field"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
           />
         </div>
 
@@ -90,9 +170,12 @@ export default function PostJobPage() {
             Description
           </label>
           <textarea
+            required
             rows={6}
             placeholder="Describe the project requirements, scope, and deliverables..."
             className="input-field resize-none"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
           />
         </div>
 
@@ -101,7 +184,12 @@ export default function PostJobPage() {
           <label className="block text-sm font-medium text-theme-heading mb-2">
             Category
           </label>
-          <select className="input-field">
+          <select
+            required
+            className="input-field"
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+          >
             <option value="">Select a category</option>
             <option value="Frontend">Frontend</option>
             <option value="Backend">Backend</option>
@@ -111,6 +199,65 @@ export default function PostJobPage() {
             <option value="Documentation">Documentation</option>
             <option value="DevOps">DevOps</option>
           </select>
+        </div>
+
+        {/* Deadline */}
+        <div>
+          <label className="block text-sm font-medium text-theme-heading mb-2">
+            Deadline
+          </label>
+          <input
+            type="date"
+            required
+            className="input-field"
+            value={deadline}
+            onChange={(e) => setDeadline(e.target.value)}
+          />
+        </div>
+
+        {/* Skills */}
+        <div>
+          <label className="block text-sm font-medium text-theme-heading mb-2">
+            Required Skills
+          </label>
+          <div className="flex gap-2 mb-3">
+            <input
+              type="text"
+              placeholder="e.g., Rust"
+              className="input-field"
+              value={skillInput}
+              onChange={(e) => setSkillInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  handleAddSkill();
+                }
+              }}
+            />
+            <button
+              type="button"
+              onClick={handleAddSkill}
+              className="btn-secondary px-4 h-11 flex items-center justify-center"
+            >
+              <Plus size={20} />
+            </button>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {skills.map((skill) => (
+              <span
+                key={skill}
+                className="flex items-center gap-2 bg-theme-card border border-theme-border px-3 py-1.5 rounded-lg text-sm text-theme-text"
+              >
+                <Tag size={14} /> {skill}
+                <button type="button" onClick={() => handleRemoveSkill(skill)}>
+                  <Plus
+                    className="rotate-45 text-theme-error hover:opacity-80 transition-colors"
+                    size={16}
+                  />
+                </button>
+              </span>
+            ))}
+          </div>
         </div>
 
         {/* Milestones */}
@@ -184,8 +331,12 @@ export default function PostJobPage() {
         </div>
 
         {/* Submit */}
-        <button type="submit" className="btn-primary w-full text-lg">
-          Post Job & Fund Escrow
+        <button
+          type="submit"
+          disabled={submitting}
+          className="btn-primary w-full text-lg h-12 flex items-center justify-center gap-2"
+        >
+          {submitting ? <Loader2 className="animate-spin" size={24} /> : "Post Job & Fund Escrow"}
         </button>
       </form>
     </div>
