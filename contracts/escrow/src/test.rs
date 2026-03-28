@@ -625,6 +625,37 @@ fn test_freelancer_can_propose_revision() {
 }
 
 #[test]
+#[should_panic(expected = "Error(Contract, #3)")]
+fn test_propose_revision_fails_for_disputed_job() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let (contract, client, freelancer, token, _) = setup_test(&env);
+
+    let milestones = vec![&env, (String::from_str(&env, "Initial"), 1000_i128, JOB_DEADLINE)];
+    let job_id = contract.create_job(&client, &freelancer, &token, &milestones, &JOB_DEADLINE, &GRACE_PERIOD);
+
+    env.as_contract(&contract.address, || {
+        let key = crate::DataKey::Job(job_id);
+        let mut job: crate::Job = env.storage().persistent().get(&key).unwrap();
+        job.status = JobStatus::Disputed;
+        env.storage().persistent().set(&key, &job);
+    });
+
+    let new_milestones = vec![
+        &env,
+        Milestone {
+            id: 0,
+            description: String::from_str(&env, "Revised"),
+            amount: 1200,
+            status: MilestoneStatus::Pending,
+            deadline: JOB_DEADLINE,
+        },
+    ];
+
+    contract.propose_revision(&client, &job_id, &new_milestones);
+}
+
+#[test]
 #[should_panic(expected = "Error(Contract, #19)")]
 fn test_propose_revision_fails_for_non_party() {
     let env = Env::default();
