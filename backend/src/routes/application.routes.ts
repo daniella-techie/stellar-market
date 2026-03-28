@@ -44,7 +44,7 @@ router.post(
         .json({ error: "Job is not accepting applications." });
     }
     if (job.clientId === req.userId) {
-      return res.status(400).json({ error: "Cannot apply to your own job." });
+      return res.status(400).json({ error: "You cannot apply to your own job." });
     }
 
     const existing = await prisma.application.findUnique({

@@ -192,6 +192,8 @@ export default function JobDetailPage() {
 
   const isClient = address === job.client.walletAddress;
   const isOwnJob = user?.id === job.client.id || isClient;
+  const isOwner = user?.id === job.client.id;
+  const isFreelancer = user?.role === "FREELANCER";
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -453,6 +455,13 @@ export default function JobDetailPage() {
                   Apply for this Job
                 </button>
               )
+            )}
+
+            {isOwner && (
+              <div className="p-3 bg-stellar-purple/10 border border-stellar-purple/20 rounded-lg text-sm text-stellar-purple flex items-center justify-center gap-2">
+                <CheckCircle size={16} />
+                You posted this job
+              </div>
             )}
             
             {job.escrowStatus === "FUNDED" && (
