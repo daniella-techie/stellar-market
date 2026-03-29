@@ -322,3 +322,8 @@ model DisputeVote {
   @@index([disputeId])
   @@index([voterId])
 }
+
+model SystemState {
+  key   String @id
+  value String
+}
