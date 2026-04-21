@@ -92,6 +92,7 @@ beforeEach(() => {
   userMock.findUnique.mockResolvedValue({
     id: USER_TEST_ID,
     role: UserRole.CLIENT,
+    emailVerified: true,
   });
 });
 
@@ -195,6 +196,7 @@ describe("Cache Integration Tests", () => {
       bio: "Test bio",
       avatarUrl: null,
       role: "FREELANCER",
+      emailVerified: true,
       createdAt: new Date().toISOString(),
       reviewsReceived: [],
       clientJobs: [],
@@ -216,6 +218,7 @@ describe("Cache Integration Tests", () => {
         bio: "Test bio",
         avatarUrl: null,
         role: "FREELANCER",
+        emailVerified: true,
         createdAt: new Date(),
         reviewsReceived: [],
         clientJobs: [],

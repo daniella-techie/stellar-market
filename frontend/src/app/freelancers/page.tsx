@@ -235,16 +235,17 @@ function FreelancersContent() {
               icon={UserSearch}
               title="No freelancers found"
               description="Try adjusting your filters or search terms to find what you're looking for."
-              actionLabel="Clear all filters"
-              onAction={clearAll}
+              action={{ label: "Clear all filters", onClick: clearAll }}
             />
           )}
 
           {totalPages > 1 && (
             <div className="mt-12">
               <Pagination
-                currentPage={filters.page}
+                page={filters.page}
                 totalPages={totalPages}
+                total={total}
+                limit={FREELANCERS_PER_PAGE}
                 onPageChange={(page) => updateFilter("page", page)}
               />
             </div>

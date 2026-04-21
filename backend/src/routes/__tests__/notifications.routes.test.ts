@@ -70,6 +70,7 @@ beforeEach(() => {
   prismaMock.user.findUnique.mockResolvedValue({
     id: USER_TEST_ID,
     role: "FREELANCER",
+    emailVerified: true,
   });
 });
 

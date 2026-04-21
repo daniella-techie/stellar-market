@@ -17,6 +17,7 @@ jest.mock("@prisma/client", () => {
       findUnique: jest.fn().mockResolvedValue({
         id: "00000000-0000-4000-8000-000000000001",
         role: "FREELANCER",
+        emailVerified: true,
       }),
     },
     notification: {
@@ -82,6 +83,7 @@ beforeEach(() => {
   userMock.findUnique.mockResolvedValue({
     id: USER_TEST_ID,
     role: "FREELANCER",
+    emailVerified: true,
   });
 });
 

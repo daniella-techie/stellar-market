@@ -36,8 +36,8 @@ jest.mock("@/context/SocketContext", () => ({
 
 // ─── next/link stub ───────────────────────────────────────────────────────────
 jest.mock("next/link", () => {
-  return ({ children, href }: { children: React.ReactNode; href: string }) => (
-    <a href={href}>{children}</a>
+  return ({ children, href, ...rest }: { children: React.ReactNode; href: string; [key: string]: unknown }) => (
+    <a href={href} {...rest}>{children}</a>
   );
 });
 

@@ -39,10 +39,11 @@ describe("authenticate middleware", () => {
   it("sets req.userId and req.userRole for valid token", async () => {
     const req = {
       headers: { authorization: "Bearer valid.token" },
+      path: "/dashboard",
     } as AuthRequest;
 
     (jwt.verify as jest.Mock).mockReturnValue({ userId: "user-123" });
-    prismaMock.user.findUnique.mockResolvedValue({ role: UserRole.CLIENT });
+    prismaMock.user.findUnique.mockResolvedValue({ role: UserRole.CLIENT, emailVerified: true });
 
     await authenticate(req, res, next);
 

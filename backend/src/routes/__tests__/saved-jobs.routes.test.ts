@@ -91,7 +91,7 @@ describe("Saved Jobs API", () => {
 
   describe("POST /api/jobs/:id/save", () => {
     it("should allow freelancer to save a job", async () => {
-      prisma.user.findUnique.mockResolvedValue({ role: "FREELANCER" });
+      prisma.user.findUnique.mockResolvedValue({ role: "FREELANCER", emailVerified: true });
       prisma.job.findUnique.mockResolvedValue({ id: jobId, title: "Test Job" });
       prisma.savedJob.findUnique.mockResolvedValue(null);
       prisma.savedJob.create.mockResolvedValue({
@@ -117,7 +117,7 @@ describe("Saved Jobs API", () => {
     });
 
     it("should return 409 when trying to save an already saved job", async () => {
-      prisma.user.findUnique.mockResolvedValue({ role: "FREELANCER" });
+      prisma.user.findUnique.mockResolvedValue({ role: "FREELANCER", emailVerified: true });
       prisma.job.findUnique.mockResolvedValue({ id: jobId });
       prisma.savedJob.findUnique.mockResolvedValue({
         id: "existing-save",
@@ -135,7 +135,7 @@ describe("Saved Jobs API", () => {
     });
 
     it("should return 404 when trying to save a non-existent job", async () => {
-      prisma.user.findUnique.mockResolvedValue({ role: "FREELANCER" });
+      prisma.user.findUnique.mockResolvedValue({ role: "FREELANCER", emailVerified: true });
       prisma.job.findUnique.mockResolvedValue(null);
 
       const response = await request(app)
@@ -147,7 +147,7 @@ describe("Saved Jobs API", () => {
     });
 
     it("should return 403 when client tries to save a job", async () => {
-      prisma.user.findUnique.mockResolvedValue({ role: "CLIENT" });
+      prisma.user.findUnique.mockResolvedValue({ role: "CLIENT", emailVerified: true });
 
       const response = await request(app)
         .post(`/api/jobs/${jobId}/save`)
@@ -178,7 +178,7 @@ describe("Saved Jobs API", () => {
         _count: { applications: 2 },
       };
 
-      prisma.user.findUnique.mockResolvedValue({ role: "FREELANCER" });
+      prisma.user.findUnique.mockResolvedValue({ role: "FREELANCER", emailVerified: true });
       prisma.savedJob.findMany.mockResolvedValue([
         {
           id: "saved-1",
@@ -205,7 +205,7 @@ describe("Saved Jobs API", () => {
     });
 
     it("should support pagination", async () => {
-      prisma.user.findUnique.mockResolvedValue({ role: "FREELANCER" });
+      prisma.user.findUnique.mockResolvedValue({ role: "FREELANCER", emailVerified: true });
       prisma.savedJob.findMany.mockResolvedValue([]);
       prisma.savedJob.count.mockResolvedValue(0);
 
@@ -224,7 +224,7 @@ describe("Saved Jobs API", () => {
     });
 
     it("should support search filter", async () => {
-      prisma.user.findUnique.mockResolvedValue({ role: "FREELANCER" });
+      prisma.user.findUnique.mockResolvedValue({ role: "FREELANCER", emailVerified: true });
       prisma.savedJob.findMany.mockResolvedValue([]);
       prisma.savedJob.count.mockResolvedValue(0);
 
@@ -247,7 +247,7 @@ describe("Saved Jobs API", () => {
     });
 
     it("should support skill filter", async () => {
-      prisma.user.findUnique.mockResolvedValue({ role: "FREELANCER" });
+      prisma.user.findUnique.mockResolvedValue({ role: "FREELANCER", emailVerified: true });
       prisma.savedJob.findMany.mockResolvedValue([]);
       prisma.savedJob.count.mockResolvedValue(0);
 
@@ -268,7 +268,7 @@ describe("Saved Jobs API", () => {
     });
 
     it("should return 403 when client tries to view saved jobs", async () => {
-      prisma.user.findUnique.mockResolvedValue({ role: "CLIENT" });
+      prisma.user.findUnique.mockResolvedValue({ role: "CLIENT", emailVerified: true });
 
       const response = await request(app)
         .get("/api/jobs/saved")
@@ -287,7 +287,7 @@ describe("Saved Jobs API", () => {
 
   describe("DELETE /api/jobs/:id/save", () => {
     it("should allow freelancer to unsave a job", async () => {
-      prisma.user.findUnique.mockResolvedValue({ role: "FREELANCER" });
+      prisma.user.findUnique.mockResolvedValue({ role: "FREELANCER", emailVerified: true });
       prisma.savedJob.findUnique.mockResolvedValue({
         id: "saved-job-id",
         freelancerId,
@@ -306,7 +306,7 @@ describe("Saved Jobs API", () => {
     });
 
     it("should return 404 when trying to unsave a job that was not saved", async () => {
-      prisma.user.findUnique.mockResolvedValue({ role: "FREELANCER" });
+      prisma.user.findUnique.mockResolvedValue({ role: "FREELANCER", emailVerified: true });
       prisma.savedJob.findUnique.mockResolvedValue(null);
 
       const response = await request(app)
@@ -318,7 +318,7 @@ describe("Saved Jobs API", () => {
     });
 
     it("should return 403 when client tries to unsave a job", async () => {
-      prisma.user.findUnique.mockResolvedValue({ role: "CLIENT" });
+      prisma.user.findUnique.mockResolvedValue({ role: "CLIENT", emailVerified: true });
 
       const response = await request(app)
         .delete(`/api/jobs/${jobId}/save`)

@@ -61,6 +61,7 @@ describe("GET /api/jobs/recommended", () => {
     prismaMock.user.findUnique.mockResolvedValue({
       skills: [],
       role: "CLIENT",
+      emailVerified: true,
     });
 
     const res = await request(app)
@@ -77,6 +78,7 @@ describe("GET /api/jobs/recommended", () => {
     prismaMock.user.findUnique.mockResolvedValue({
       skills: ["React", "TypeScript"],
       role: "FREELANCER",
+      emailVerified: true,
     });
 
     // No completed jobs
@@ -163,6 +165,7 @@ describe("GET /api/jobs/recommended", () => {
     prismaMock.user.findUnique.mockResolvedValue({
       skills: ["React"],
       role: "FREELANCER",
+      emailVerified: true,
     });
 
     prismaMock.job.findMany
@@ -184,6 +187,7 @@ describe("GET /api/jobs/recommended", () => {
     prismaMock.user.findUnique.mockResolvedValue({
       skills: ["React"],
       role: "FREELANCER",
+      emailVerified: true,
     });
 
     prismaMock.job.findMany.mockResolvedValueOnce([]).mockResolvedValueOnce([]);

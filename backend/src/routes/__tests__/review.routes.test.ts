@@ -61,6 +61,7 @@ beforeEach(() => {
   prismaMock.user.findUnique.mockResolvedValue({
     id: REVIEWER_ID,
     role: "CLIENT",
+    emailVerified: true,
   });
   prismaMock.$transaction.mockImplementation(async (callback: any) =>
     callback(prismaMock),

@@ -79,6 +79,7 @@ const baseUser = {
   twoFactorSecret: null,
   twoFactorEnabled: false,
   backupCodes: [] as string[],
+  emailVerified: true,
   createdAt: new Date(),
   updatedAt: new Date(),
 };

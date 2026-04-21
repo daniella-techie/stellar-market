@@ -15,15 +15,12 @@ import {
   Clock,
   CheckCircle2,
   Trash2,
-  CheckCircle2,
-  Clock,
   Send,
   XCircle,
   Eye,
   ChevronRight,
 } from "lucide-react";
 import axios from "axios";
-import Link from "next/link";
 import {
   BarChart,
   Bar,
@@ -35,6 +32,7 @@ import {
 } from "recharts";
 import StatusBadge from "@/components/StatusBadge";
 import { useAuth } from "@/context/AuthContext";
+import { useSocket } from "@/context/SocketContext";
 import { Job, Application, PaginatedResponse } from "@/types";
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000/api";
@@ -74,6 +72,10 @@ interface MilestoneItem {
   contractDeadline?: string;
 }
 
+interface ExtendedApplication extends Application {
+  job?: { id: string; title: string };
+}
+
 export default function DashboardPage() {
   const { user, token, isLoading } = useAuth();
   const { socket } = useSocket();
@@ -94,6 +96,7 @@ export default function DashboardPage() {
 
   const [postedJobs, setPostedJobs] = useState<Job[]>([]);
   const [pendingApplicants, setPendingApplicants] = useState<Application[]>([]);
+  const [applicantsLoading, setApplicantsLoading] = useState(false);
   const [activeJobs, setActiveJobs] = useState<Job[]>([]);
   const [applications, setApplications] = useState<Application[]>([]);
   const [disputes, setDisputes] = useState<Dispute[]>([]);
@@ -104,7 +107,7 @@ export default function DashboardPage() {
   const [withdrawingId, setWithdrawingId] = useState<string | null>(null);
   const [withdrawConfirmId, setWithdrawConfirmId] = useState<string | null>(null);
 
-  const [jobs, setJobs] = useState<ExtendedJob[]>([]);
+  const [jobs, setJobs] = useState<Job[]>([]);
   const [jobsLoading, setJobsLoading] = useState(false);
 
   const fetchDashboardData = useCallback(async () => {
@@ -186,18 +189,18 @@ export default function DashboardPage() {
     if (!token || !user?.id || !isClient) return;
     setApplicantsLoading(true);
     try {
-      const jobsRes = await axios.get(`${API_URL}/jobs/mine`, {
+      const jobsRes = await axios.get(`\${API}/jobs/mine`, {
         params: { limit: 100 },
         headers: { Authorization: `Bearer ${token}` },
       });
-      const clientJobs: ExtendedJob[] = (jobsRes.data.data ?? []).filter(
-        (j: ExtendedJob) => j.client?.id === user.id && j.status === "OPEN"
+      const clientJobs: Job[] = (jobsRes.data.data ?? []).filter(
+        (j: Job) => j.client?.id === user.id && j.status === "OPEN"
       );
 
       const allApps: ExtendedApplication[] = [];
       for (const job of clientJobs) {
         try {
-          const appsRes = await axios.get(`${API_URL}/jobs/${job.id}/applications`, {
+          const appsRes = await axios.get(`\${API}/jobs/${job.id}/applications`, {
             params: { status: "PENDING", limit: 20 },
             headers: { Authorization: `Bearer ${token}` },
           });
@@ -219,11 +222,6 @@ export default function DashboardPage() {
   }, [token, user?.id, isClient]);
 
   useEffect(() => {
-    fetchStats();
-    fetchWeeklyData();
-  }, [fetchStats, fetchWeeklyData]);
-
-  useEffect(() => {
     fetchDashboardData();
   }, [fetchDashboardData]);
 
@@ -234,7 +232,7 @@ export default function DashboardPage() {
         headers: { Authorization: `Bearer ${token}` },
       });
       setApplications((prev) => prev.filter((a) => a.id !== appId));
-      fetchStats();
+      fetchDashboardData();
     } catch {
       // Keep list unchanged on error
     } finally {
@@ -298,8 +296,8 @@ export default function DashboardPage() {
               <div className="text-sm text-theme-text">{stat.label}</div>
               <div className="text-xs text-theme-text/60 mt-0.5">{dataLoading ? "" : stat.detail}</div>
             </div>
-          ))
-        )}
+          </div>
+        ))}
       </div>
 
       {/* Tabs */}
