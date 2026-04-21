@@ -102,7 +102,7 @@ export default function DashboardPage() {
   const [withdrawingId, setWithdrawingId] = useState<string | null>(null);
   const [withdrawConfirmId, setWithdrawConfirmId] = useState<string | null>(null);
 
-  const [jobs, setJobs] = useState<ExtendedJob[]>([]);
+  const [jobs, setJobs] = useState<Job[]>([]);
   const [jobsLoading, setJobsLoading] = useState(false);
 
   const fetchDashboardData = useCallback(async () => {
@@ -188,8 +188,8 @@ export default function DashboardPage() {
         params: { limit: 100 },
         headers: { Authorization: `Bearer ${token}` },
       });
-      const clientJobs: ExtendedJob[] = (jobsRes.data.data ?? []).filter(
-        (j: ExtendedJob) => j.client?.id === user.id && j.status === "OPEN"
+      const clientJobs: Job[] = (jobsRes.data.data ?? []).filter(
+        (j: Job) => j.client?.id === user.id && j.status === "OPEN"
       );
 
       const allApps: ExtendedApplication[] = [];
