@@ -235,8 +235,7 @@ function FreelancersContent() {
               icon={UserSearch}
               title="No freelancers found"
               description="Try adjusting your filters or search terms to find what you're looking for."
-              actionLabel="Clear all filters"
-              onAction={clearAll}
+              action={{ label: "Clear all filters", onClick: clearAll }}
             />
           )}
 
