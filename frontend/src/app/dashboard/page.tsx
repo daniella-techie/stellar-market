@@ -189,7 +189,7 @@ export default function DashboardPage() {
     if (!token || !user?.id || !isClient) return;
     setApplicantsLoading(true);
     try {
-      const jobsRes = await axios.get(`${API_URL}/jobs/mine`, {
+      const jobsRes = await axios.get(`\${API}/jobs/mine`, {
         params: { limit: 100 },
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -200,7 +200,7 @@ export default function DashboardPage() {
       const allApps: ExtendedApplication[] = [];
       for (const job of clientJobs) {
         try {
-          const appsRes = await axios.get(`${API_URL}/jobs/${job.id}/applications`, {
+          const appsRes = await axios.get(`\${API}/jobs/${job.id}/applications`, {
             params: { status: "PENDING", limit: 20 },
             headers: { Authorization: `Bearer ${token}` },
           });
