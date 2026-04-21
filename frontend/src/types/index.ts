@@ -11,6 +11,7 @@ export interface User {
   skills?: string[];
   averageRating?: number;
   reviewCount?: number;
+  availability?: boolean;
 }
 
 export interface Milestone {

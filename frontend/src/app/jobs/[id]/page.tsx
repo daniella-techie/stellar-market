@@ -14,6 +14,7 @@ import {
   UserCheck,
   XCircle,
   PencilLine,
+  Star,
 } from "lucide-react";
 import Link from "next/link";
 import axios from "axios";
@@ -27,7 +28,6 @@ import MilestoneTimeline from "@/components/MilestoneTimeline";
 import ProposeRevisionModal, {
   type ProposeRevisionMilestoneInput,
 } from "@/components/ProposeRevisionModal";
-import { Job, Application, PaginatedResponse, Review } from "@/types";
 import { Job, Application, PaginatedResponse, Review } from "@/types";
 import { parseJobIdFromResult } from "@/utils/stellar";
 
@@ -69,6 +69,7 @@ export default function JobDetailPage() {
   const [recentlyApprovedMilestoneId, setRecentlyApprovedMilestoneId] = useState<
     string | null
   >(null);
+  const [extendDeadlineDate, setExtendDeadlineDate] = useState<Record<string, string>>({});
 
   const isClient = Boolean(job && address === job.client.walletAddress);
 

@@ -242,8 +242,10 @@ function FreelancersContent() {
           {totalPages > 1 && (
             <div className="mt-12">
               <Pagination
-                currentPage={filters.page}
+                page={filters.page}
                 totalPages={totalPages}
+                total={total}
+                limit={FREELANCERS_PER_PAGE}
                 onPageChange={(page) => updateFilter("page", page)}
               />
             </div>
