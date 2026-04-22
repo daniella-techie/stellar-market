@@ -1862,6 +1862,148 @@ fn test_fund_job_overfunding_rejected() {
     escrow.fund_job(&job_id, &user);
 }
 
+// ── expire_job tests (issue #267) ────────────────────────────────────────────
+
+#[test]
+fn test_expire_job_happy_path() {
+    let env = Env::default();
+    let (escrow, token) = setup_refund_env(&env);
+
+    let client = Address::generate(&env);
+    let freelancer = Address::generate(&env);
+    let total: i128 = 3000;
+
+    let milestones = default_milestones(&env);
+    let job_id = escrow.create_job(&client, &freelancer, &token, &milestones, &JOB_DEADLINE, &GRACE_PERIOD);
+
+    mint_tokens(&env, &token, &client, total);
+    escrow.fund_job(&job_id, &client);
+
+    // Advance ledger past the job deadline
+    env.ledger().with_mut(|l| l.timestamp = JOB_DEADLINE + 1);
+
+    escrow.expire_job(&job_id);
+
+    let job = escrow.get_job(&job_id);
+    assert_eq!(job.status, JobStatus::Expired);
+
+    // Full balance refunded to client
+    let token_client = TokenClient::new(&env, &token);
+    assert_eq!(token_client.balance(&client), total);
+
+    // JobExpired event emitted
+    let events = env.events().all();
+    let last_event = events.last().expect("at least one event");
+    let topic1: Symbol = last_event.1.get(1).unwrap().into_val(&env);
+    assert_eq!(topic1, Symbol::new(&env, "job_expired"));
+}
+
+#[test]
+fn test_expire_job_partial_refund_after_approved_milestone() {
+    let env = Env::default();
+    let (escrow, token) = setup_refund_env(&env);
+
+    let client = Address::generate(&env);
+    let freelancer = Address::generate(&env);
+    let m0: i128 = 500;
+    let total: i128 = 500 + 1000 + 1500;
+
+    let milestones = default_milestones(&env);
+    let job_id = escrow.create_job(&client, &freelancer, &token, &milestones, &JOB_DEADLINE, &GRACE_PERIOD);
+
+    mint_tokens(&env, &token, &client, total);
+    escrow.fund_job(&job_id, &client);
+
+    // Approve first milestone
+    escrow.submit_milestone(&job_id, &0, &freelancer);
+    escrow.approve_milestone(&job_id, &0, &client);
+
+    env.ledger().with_mut(|l| l.timestamp = JOB_DEADLINE + 1);
+
+    escrow.expire_job(&job_id);
+
+    let job = escrow.get_job(&job_id);
+    assert_eq!(job.status, JobStatus::Expired);
+
+    let token_client = TokenClient::new(&env, &token);
+    // Client gets back total minus already-approved milestone
+    assert_eq!(token_client.balance(&client), total - m0);
+    // Freelancer keeps the approved amount
+    assert_eq!(token_client.balance(&freelancer), m0);
+}
+
+#[test]
+#[should_panic(expected = "Error(Contract, #26)")] // DeadlineNotPassed
+fn test_expire_job_premature_call_fails() {
+    let env = Env::default();
+    let (escrow, token) = setup_refund_env(&env);
+
+    let client = Address::generate(&env);
+    let freelancer = Address::generate(&env);
+
+    let milestones = default_milestones(&env);
+    let job_id = escrow.create_job(&client, &freelancer, &token, &milestones, &JOB_DEADLINE, &GRACE_PERIOD);
+
+    mint_tokens(&env, &token, &client, 3000);
+    escrow.fund_job(&job_id, &client);
+
+    // Still before the deadline
+    env.ledger().with_mut(|l| l.timestamp = JOB_DEADLINE - 1);
+
+    escrow.expire_job(&job_id);
+}
+
+#[test]
+#[should_panic(expected = "Error(Contract, #3)")] // InvalidStatus
+fn test_expire_job_already_completed_fails() {
+    let env = Env::default();
+    let (escrow, token) = setup_refund_env(&env);
+
+    let client = Address::generate(&env);
+    let freelancer = Address::generate(&env);
+    let amount: i128 = 500;
+
+    let milestones = vec![
+        &env,
+        (String::from_str(&env, "Only task"), amount, 500_000_u64),
+    ];
+    let job_id = escrow.create_job(&client, &freelancer, &token, &milestones, &JOB_DEADLINE, &GRACE_PERIOD);
+
+    mint_tokens(&env, &token, &client, amount);
+    escrow.fund_job(&job_id, &client);
+
+    escrow.submit_milestone(&job_id, &0, &freelancer);
+    escrow.approve_milestone(&job_id, &0, &client);
+
+    let job = escrow.get_job(&job_id);
+    assert_eq!(job.status, JobStatus::Completed);
+
+    env.ledger().with_mut(|l| l.timestamp = JOB_DEADLINE + 1);
+
+    escrow.expire_job(&job_id);
+}
+
+#[test]
+#[should_panic(expected = "Error(Contract, #3)")] // InvalidStatus
+fn test_expire_job_already_cancelled_fails() {
+    let env = Env::default();
+    let (escrow, token) = setup_refund_env(&env);
+
+    let client = Address::generate(&env);
+    let freelancer = Address::generate(&env);
+
+    let milestones = default_milestones(&env);
+    let job_id = escrow.create_job(&client, &freelancer, &token, &milestones, &JOB_DEADLINE, &GRACE_PERIOD);
+
+    mint_tokens(&env, &token, &client, 3000);
+    escrow.fund_job(&job_id, &client);
+    escrow.cancel_job(&job_id, &client);
+
+    env.ledger().with_mut(|l| l.timestamp = JOB_DEADLINE + 1);
+
+    escrow.expire_job(&job_id);
+}
+
 // ── PaymentReleased event tests (issue #218) ─────────────────────────────────
 
 #[test]

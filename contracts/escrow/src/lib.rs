@@ -44,6 +44,8 @@ pub enum EscrowError {
     /// A milestone is currently in progress or submitted — cancel is not allowed;
     /// the client must open a dispute instead.
     WorkInProgress = 25,
+    /// The job deadline has not yet passed; expiry cannot be triggered yet.
+    DeadlineNotPassed = 26,
 }
 
 #[contracttype]
@@ -55,6 +57,7 @@ pub enum JobStatus {
     Completed,
     Disputed,
     Cancelled,
+    Expired,
 }
 
 #[contracttype]
@@ -1227,6 +1230,69 @@ impl EscrowContract {
             .persistent()
             .get::<DataKey, RevisionProposal>(&DataKey::RevisionProposal(job_id))
     }
+    /// Expire a job whose deadline has passed. Callable by anyone.
+    ///
+    /// Asserts that the ledger timestamp has surpassed the job's `job_deadline` and
+    /// that the job has not already reached a terminal state. On success the full
+    /// remaining escrowed balance is refunded to the client and the status is set
+    /// to `Expired`.
+    ///
+    /// # Errors
+    /// * `JobNotFound`       — job does not exist.
+    /// * `DeadlineNotPassed` — `env.ledger().timestamp() <= job.job_deadline`.
+    /// * `InvalidStatus`     — job is already `Completed`, `Cancelled`, or `Expired`.
+    pub fn expire_job(env: Env, job_id: u64) -> Result<(), EscrowError> {
+        require_not_paused(&env)?;
+
+        let mut job: Job = env
+            .storage()
+            .persistent()
+            .get(&get_job_key(job_id))
+            .ok_or(EscrowError::JobNotFound)?;
+        bump_job_ttl(&env, job_id);
+
+        if env.ledger().timestamp() <= job.job_deadline {
+            return Err(EscrowError::DeadlineNotPassed);
+        }
+
+        if job.status == JobStatus::Completed
+            || job.status == JobStatus::Cancelled
+            || job.status == JobStatus::Expired
+        {
+            return Err(EscrowError::InvalidStatus);
+        }
+
+        // Refund remaining escrowed balance (total minus already-approved milestones).
+        let approved_amount: i128 = job
+            .milestones
+            .iter()
+            .filter(|m| m.status == MilestoneStatus::Approved)
+            .map(|m| m.amount)
+            .sum();
+        let refund = job.total_amount - approved_amount;
+
+        // Only transfer if funds are actually held in escrow (job was funded).
+        if refund > 0
+            && (job.status == JobStatus::Funded
+                || job.status == JobStatus::InProgress
+                || job.status == JobStatus::Disputed)
+        {
+            let token_client = token::Client::new(&env, &job.token);
+            token_client.transfer(&env.current_contract_address(), &job.client, &refund);
+        }
+
+        job.status = JobStatus::Expired;
+        env.storage().persistent().set(&get_job_key(job_id), &job);
+        bump_job_ttl(&env, job_id);
+
+        env.events().publish(
+            (symbol_short!("escrow"), Symbol::new(&env, "job_expired")),
+            (job_id, job.client, refund),
+        );
+
+        Ok(())
+    }
+
     /// Get job details by ID.
     pub fn get_job(env: Env, job_id: u64) -> Result<Job, EscrowError> {
         let job: Job = env
