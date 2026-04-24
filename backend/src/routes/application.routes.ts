@@ -4,6 +4,7 @@ import { authenticate, AuthRequest } from "../middleware/auth";
 import { validate } from "../middleware/validation";
 import { asyncHandler } from "../middleware/error";
 import { NotificationService } from "../services/notification.service";
+import { RecommendationService } from "../services/recommendation.service";
 import {
   createApplicationSchema,
   updateApplicationSchema,
@@ -77,6 +78,9 @@ router.post(
       message: `${application.freelancer.username} applied to your job: ${job.title}`,
       metadata: { jobId, applicationId: application.id },
     });
+
+    // Invalidate recommendation cache for the freelancer
+    await RecommendationService.invalidateUserRecommendations(req.userId!);
 
     res.status(201).json(application);
   }),

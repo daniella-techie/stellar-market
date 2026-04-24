@@ -131,6 +131,20 @@ export function generateUserCacheKey(userId: string): string {
 }
 
 /**
+ * Generate cache key for user reviews
+ */
+export function generateUserReviewsCacheKey(userId: string, type: string = "received"): string {
+  return `user:reviews:${type}:${userId}`;
+}
+
+/**
+ * Generate cache key for job recommendations
+ */
+export function generateRecommendationsCacheKey(userId: string, page: number, limit: number): string {
+  return `recommendations:${userId}:${page}:${limit}`;
+}
+
+/**
  * Generate cache key for single job
  */
 export function generateJobCacheKey(jobId: string): string {

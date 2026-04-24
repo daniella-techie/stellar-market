@@ -8,7 +8,12 @@ import {
   getReviewsQuerySchema,
   updateReviewSchema
 } from "../schemas";
-import { generateUserCacheKey, invalidateCacheKey } from "../lib/cache";
+import { 
+  generateUserCacheKey, 
+  generateUserReviewsCacheKey,
+  invalidateCacheKey,
+  cache
+} from "../lib/cache";
 
 import { asyncHandler } from "../middleware/error";
 import { validate } from "../middleware/validation";
@@ -151,6 +156,7 @@ router.post("/",
     });
 
     await invalidateCacheKey(generateUserCacheKey(revieweeId));
+    await invalidateCacheKey(generateUserReviewsCacheKey(revieweeId, "received"));
 
     res.status(201).json(review);
   })
@@ -161,21 +167,32 @@ router.get("/user/:userId",
   validate({ params: getReviewsByUserParamSchema }),
   asyncHandler(async (req: AuthRequest, res: Response) => {
     const userId = req.params.userId as string;
-    const reviews = await prisma.review.findMany({
-      where: { revieweeId: userId },
-      include: {
-        reviewer: { select: { id: true, username: true, avatarUrl: true } },
-        job: { select: { id: true, title: true } },
-      },
-      orderBy: { createdAt: "desc" },
+    const cacheKey = generateUserReviewsCacheKey(userId, "received");
+
+    const { data, hit } = await cache(cacheKey, 120, async () => {
+      const reviews = await prisma.review.findMany({
+        where: { revieweeId: userId },
+        include: {
+          reviewer: { select: { id: true, username: true, avatarUrl: true } },
+          job: { select: { id: true, title: true } },
+        },
+        orderBy: { createdAt: "desc" },
+      });
+
+      const avgRating =
+        reviews.length > 0
+          ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
+          : 0;
+
+      return { 
+        reviews, 
+        averageRating: Math.round(avgRating * 100) / 100, 
+        totalReviews: reviews.length 
+      };
     });
 
-    const avgRating =
-      reviews.length > 0
-        ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
-        : 0;
-
-    res.json({ reviews, averageRating: Math.round(avgRating * 100) / 100, totalReviews: reviews.length });
+    res.set("X-Cache-Hit", hit.toString());
+    res.json(data);
   })
 );
 
@@ -289,6 +306,7 @@ router.put("/:id",
     });
 
     await invalidateCacheKey(generateUserCacheKey(review.revieweeId));
+    await invalidateCacheKey(generateUserReviewsCacheKey(review.revieweeId, "received"));
 
     res.json(updated);
   })
@@ -318,6 +336,7 @@ router.delete("/:id",
     });
 
     await invalidateCacheKey(generateUserCacheKey(review.revieweeId));
+    await invalidateCacheKey(generateUserReviewsCacheKey(review.revieweeId, "received"));
 
     res.json({ message: "Review deleted successfully." });
   })

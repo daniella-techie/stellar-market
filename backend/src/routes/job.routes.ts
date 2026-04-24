@@ -3,6 +3,7 @@ import { PrismaClient } from "@prisma/client";
 import { authenticate, AuthRequest } from "../middleware/auth";
 import { validate } from "../middleware/validation";
 import { asyncHandler } from "../middleware/error";
+import { RecommendationService } from "../services/recommendation.service";
 import {
   createJobSchema,
   updateJobSchema,
@@ -108,7 +109,7 @@ router.get(
       cursor,
     });
 
-    const { data, hit } = await cache(cacheKey, 60, async () => {
+    const { data, hit } = await cache(cacheKey, 30, async () => {
       const where: any = {};
 
       if (search) {
@@ -594,6 +595,8 @@ router.post(
 
     // Invalidate job listings cache when a new job is created
     await invalidateCache("jobs:list:*");
+    // Invalidate all recommendation caches since new job affects recommendations
+    await invalidateCache("recommendations:*");
 
     res.status(201).json(job);
   }),
@@ -634,6 +637,8 @@ router.put(
     // Invalidate job listings cache and single job cache
     await invalidateCache("jobs:list:*");
     await invalidateCacheKey(generateJobCacheKey(id));
+    // Invalidate recommendations since job changes affect recommendations
+    await invalidateCache("recommendations:*");
 
     res.json(updated);
   }),
@@ -662,6 +667,8 @@ router.delete(
     // Invalidate job listings cache and single job cache
     await invalidateCache("jobs:list:*");
     await invalidateCacheKey(generateJobCacheKey(id));
+    // Invalidate recommendations since job deletion affects recommendations
+    await invalidateCache("recommendations:*");
 
     res.json({ message: "Job deleted successfully." });
   }),
@@ -699,6 +706,8 @@ router.patch(
     // Invalidate job listings cache and single job cache
     await invalidateCache("jobs:list:*");
     await invalidateCacheKey(generateJobCacheKey(id));
+    // Invalidate recommendations since job status changes affect recommendations
+    await invalidateCache("recommendations:*");
 
     res.json(updated);
   }),
@@ -767,6 +776,8 @@ router.patch(
     // Invalidate caches
     await invalidateCache("jobs:list:*");
     await invalidateCacheKey(generateJobCacheKey(id));
+    // Invalidate recommendations since job completion affects recommendations
+    await invalidateCache("recommendations:*");
 
     res.json(updated);
   }),
