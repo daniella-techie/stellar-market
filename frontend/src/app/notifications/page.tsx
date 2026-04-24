@@ -4,19 +4,29 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import axios from "axios";
 import { Bell, CheckSquare, Trash2 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { useSocket } from "@/context/SocketContext";
 import { Notification, PaginatedResponse } from "@/types";
 import NotificationItem from "@/components/NotificationItem";
 import Pagination from "@/components/Pagination";
+import EmptyState from "@/components/EmptyState";
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000/api";
 
 export default function NotificationsPage() {
   const { token, user } = useAuth();
+  const { liveNotifications, dismissLiveNotification } = useSocket();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [markingAll, setMarkingAll] = useState(false);
+  const mergedNotifications = [
+    ...liveNotifications,
+    ...notifications.filter(
+      (n) => !liveNotifications.some((ln) => ln.id === n.id),
+    ),
+  ];
+
   const limit = 10;
 
   // Track which notification IDs have already been queued for marking as read
@@ -153,6 +163,7 @@ export default function NotificationsPage() {
         headers: { Authorization: `Bearer ${token}` },
       });
       setNotifications((prev) => prev.filter((n) => n.id !== notificationId));
+      dismissLiveNotification(notificationId);
       setTotal((t) => Math.max(0, t - 1));
     } catch (error) {
       console.error("Failed to delete notification:", error);
@@ -224,10 +235,10 @@ export default function NotificationsPage() {
             <div className="w-12 h-12 border-4 border-stellar-blue border-t-transparent rounded-full animate-spin mx-auto mb-4" />
             <p className="text-theme-text">Loading notifications...</p>
           </div>
-        ) : notifications.length > 0 ? (
+        ) : mergedNotifications.length > 0 ? (
           <>
             <div className="divide-y divide-theme-border">
-              {notifications.map((notification) => (
+              {mergedNotifications.map((notification) => (
                 <div
                   key={notification.id}
                   ref={setRowRef(notification.id)}
@@ -256,18 +267,11 @@ export default function NotificationsPage() {
             )}
           </>
         ) : (
-          <div className="p-20 text-center">
-            <div className="w-16 h-16 bg-theme-border/50 rounded-full flex items-center justify-center mx-auto mb-4 text-theme-text/50">
-              <Bell size={32} />
-            </div>
-            <h3 className="text-lg font-semibold text-theme-heading">
-              No notifications yet
-            </h3>
-            <p className="text-theme-text mt-1 max-w-xs mx-auto">
-              We&apos;ll notify you when something important happens on the
-              platform.
-            </p>
-          </div>
+          <EmptyState
+            icon={Bell}
+            title="No notifications yet"
+            description="We'll notify you when something important happens on the platform."
+          />
         )}
       </div>
     </div>

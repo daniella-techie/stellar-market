@@ -17,6 +17,8 @@ import {
   ShieldCheck,
   Unplug,
   Wallet,
+  ChevronDown,
+  Loader2,
 } from "lucide-react";
 import axios from "axios";
 import { useState, useRef, useEffect } from "react";
@@ -24,22 +26,41 @@ import { useWallet, truncateAddress } from "@/context/WalletContext";
 import { useSocket } from "@/context/SocketContext";
 import { useAuth } from "@/context/AuthContext";
 import { usePathname, useRouter } from "next/navigation";
+import { useToast } from "@/components/Toast";
 import ThemeToggleButton from "./ThemeToggleButton";
 import NotificationBell from "./NotificationBell";
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000/api";
 
 function UserMenu({ className }: { className?: string }) {
-  const { address, disconnect } = useWallet();
+  const { address, disconnect, balance, balances, isLoadingBalance } = useWallet();
   const { user, logout, isLoading } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [balanceDropdownOpen, setBalanceDropdownOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const balanceRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+  const { toast } = useToast();
+
+  // Handle wallet disconnect events
+  useEffect(() => {
+    const handleWalletDisconnected = () => {
+      toast.error("Wallet disconnected — please reconnect");
+    };
+
+    window.addEventListener("stellarmarket:walletDisconnected", handleWalletDisconnected);
+    return () => {
+      window.removeEventListener("stellarmarket:walletDisconnected", handleWalletDisconnected);
+    };
+  }, [toast]);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         setMenuOpen(false);
+      }
+      if (balanceRef.current && !balanceRef.current.contains(e.target as Node)) {
+        setBalanceDropdownOpen(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -181,6 +202,65 @@ function UserMenu({ className }: { className?: string }) {
   );
 }
 
+/** Wallet balance display with dropdown for other assets */
+function WalletBalanceDisplay() {
+  const { address, balance, balances, isLoadingBalance } = useWallet();
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  if (!address || !balance) return null;
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <button
+        onClick={() => setDropdownOpen(!dropdownOpen)}
+        className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-theme-border hover:bg-theme-border/50 transition-colors text-sm"
+        title={`Full balance: ${balance} XLM`}
+      >
+        {isLoadingBalance ? (
+          <Loader2 size={14} className="animate-spin" />
+        ) : (
+          <>
+            <span className="font-medium text-theme-heading">{balance}</span>
+            <span className="text-theme-text">XLM</span>
+            {balances.length > 1 && <ChevronDown size={14} className="text-theme-text" />}
+          </>
+        )}
+      </button>
+
+      {/* Dropdown for other balances */}
+      {dropdownOpen && balances.length > 1 && (
+        <div className="absolute right-0 mt-2 w-56 bg-theme-card border border-theme-border rounded-xl shadow-2xl py-2 z-50 animate-in fade-in slide-in-from-top-2">
+          <div className="px-4 py-2 border-b border-theme-border mb-1">
+            <p className="text-xs font-semibold text-theme-text uppercase">All Balances</p>
+          </div>
+          <div className="max-h-64 overflow-y-auto">
+            {balances.map((b) => (
+              <div
+                key={b.asset}
+                className="flex items-center justify-between px-4 py-2.5 text-sm text-theme-text hover:bg-theme-border/50 transition-colors"
+              >
+                <span className="font-medium">{b.asset}</span>
+                <span className="text-theme-heading">{parseFloat(b.balance).toFixed(2)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /** Real-time unread badge powered by Socket.io + initial REST count */
 function UnreadBadge() {
   const { socket } = useSocket();
@@ -283,6 +363,7 @@ export default function Navbar() {
             ))}
             <NotificationBell />
             <ThemeToggleButton />
+            <WalletBalanceDisplay />
             <UserMenu />
           </div>
 

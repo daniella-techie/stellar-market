@@ -38,13 +38,17 @@ jest.mock("@/context/WalletContext", () => ({
     address: null,
     isConnecting: false,
     error: null,
+    balance: null,
+    balances: [],
+    isLoadingBalance: false,
     connect: jest.fn(),
     disconnect: jest.fn(),
+    refreshBalance: jest.fn(),
   }),
   truncateAddress: (a: string) => a,
 }));
 
-// ─── Socket mock ──────────────────────────────────────────────────────────────
+// ─── Mock Socket mock ──────────────────────────────────────────────────────────
 const mockSocketHandlers: Record<string, ((...args: unknown[]) => void)[]> = {};
 const mockSocket = {
   on: jest.fn((event: string, fn: (...args: unknown[]) => void) => {
@@ -60,6 +64,19 @@ const mockSocket = {
 
 jest.mock("@/context/SocketContext", () => ({
   useSocket: () => ({ socket: mockSocket, isConnected: true }),
+}));
+
+// ─── Mock Toast ───────────────────────────────────────────────────────────────
+jest.mock("@/components/Toast", () => ({
+  useToast: () => ({
+    toast: {
+      success: jest.fn(),
+      error: jest.fn(),
+    },
+  }),
+  ToastProvider: ({ children }: { children: React.ReactNode }) => (
+    <>{children}</>
+  ),
 }));
 
 // ─── next/link stub ───────────────────────────────────────────────────────────
