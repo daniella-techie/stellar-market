@@ -19,6 +19,19 @@ enum JobStatus {
   COMPLETED
   CANCELLED
   DISPUTED
+  EXPIRED
+}
+
+enum ReportTargetType {
+  JOB
+  USER
+  MESSAGE
+}
+
+enum ReportStatus {
+  PENDING
+  REVIEWED
+  DISMISSED
 }
 
 enum MilestoneStatus {
@@ -114,6 +127,7 @@ model User {
   freelancerDisputes Dispute[]      @relation("DisputeFreelancer")
   votesCast          DisputeVote[]  @relation("VotesCast")
   savedJobs          SavedJob[]     @relation("SavedJobs")
+  reportsGiven       Report[]       @relation("ReportsGiven")
 }
 
 model Job {
@@ -364,4 +378,21 @@ model Service {
 model SystemState {
   key   String @id
   value String
+}
+
+model Report {
+  id         String           @id @default(cuid())
+  reporterId String
+  targetType ReportTargetType
+  targetId   String
+  reason     String
+  status     ReportStatus     @default(PENDING)
+  createdAt  DateTime         @default(now())
+
+  reporter User @relation("ReportsGiven", fields: [reporterId], references: [id], onDelete: Cascade)
+
+  @@index([reporterId])
+  @@index([targetType])
+  @@index([status])
+  @@index([createdAt])
 }
