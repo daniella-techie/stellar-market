@@ -90,21 +90,9 @@ router.get(
    */
   validate({ query: getJobsQuerySchema }),
   asyncHandler(async (req: AuthRequest, res: Response) => {
-    const {
-      page,
-      limit,
-      search,
-      skill,
-      skills,
-      status,
-      minBudget,
-      maxBudget,
-      clientId,
-      sort,
-      postedAfter,
-    } = req.query as any;
+    const { page, limit, search, skill, skills, status, minBudget, maxBudget, clientId, sort, postedAfter, cursor } = req.query as any;
 
-    // Generate cache key based on query parameters
+
     const cacheKey = generateJobsCacheKey({
       page,
       limit,
@@ -117,12 +105,10 @@ router.get(
       clientId,
       sort,
       postedAfter,
+      cursor,
     });
 
-    // Cache for 60 seconds
     const { data, hit } = await cache(cacheKey, 60, async () => {
-      const skip = (page - 1) * limit;
-
       const where: any = {};
 
       if (search) {
@@ -166,6 +152,45 @@ router.get(
         where.createdAt = { gte: new Date(postedAfter) };
       }
 
+      // Cursor-based pagination — preferred when `cursor` is supplied.
+      if (cursor) {
+        let cursorId: string;
+        try {
+          ({ id: cursorId } = JSON.parse(Buffer.from(cursor, "base64").toString("utf8")));
+        } catch {
+          cursorId = cursor as string;
+        }
+
+        // Always sort by createdAt desc + id desc for stable cursor ordering
+        const orderBy: any = [{ createdAt: "desc" }, { id: "desc" }];
+
+        const jobs = await prisma.job.findMany({
+          where,
+          include: {
+            client: { select: { id: true, username: true, avatarUrl: true } },
+            freelancer: { select: { id: true, username: true, avatarUrl: true } },
+            milestones: true,
+            _count: { select: { applications: true } },
+          },
+          orderBy,
+          cursor: { id: cursorId },
+          skip: 1,
+          take: limit + 1,
+        });
+
+        const hasMore = jobs.length > limit;
+        const pageData = hasMore ? jobs.slice(0, limit) : jobs;
+        const lastJob = pageData[pageData.length - 1];
+        const nextCursor = hasMore && lastJob
+          ? Buffer.from(JSON.stringify({ id: lastJob.id, createdAt: lastJob.createdAt })).toString("base64")
+          : null;
+
+        return { data: pageData, nextCursor };
+      }
+
+      // Offset-based pagination (legacy / first page with no cursor)
+      const skip = (page - 1) * limit;
+
       let orderBy: any = { createdAt: "desc" };
       if (sort === "oldest") orderBy = { createdAt: "asc" };
       else if (sort === "budget_high") orderBy = { budget: "desc" };
@@ -189,15 +214,20 @@ router.get(
         prisma.job.count({ where }),
       ]);
 
+      const lastJob = jobs[jobs.length - 1];
+      const nextCursor = lastJob
+        ? Buffer.from(JSON.stringify({ id: lastJob.id, createdAt: lastJob.createdAt })).toString("base64")
+        : null;
+
       return {
         data: jobs,
+        nextCursor,
         total,
         page,
         totalPages: Math.ceil(total / limit),
       };
     });
 
-    // Add cache hit status to response headers for debugging
     res.set("X-Cache-Hit", hit.toString());
     res.json(data);
   }),

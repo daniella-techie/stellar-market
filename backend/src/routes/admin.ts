@@ -482,4 +482,91 @@ router.post("/users/:id/restore", async (req: AuthRequest, res: Response): Promi
     }
 });
 
+const REPORT_STATUSES = ["PENDING", "REVIEWED", "DISMISSED"] as const;
+
+/**
+ * GET /api/admin/reports
+ * List all reports, filterable by status and targetType.
+ */
+router.get("/reports", async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+        const page = Math.max(1, parseInt(req.query.page as string) || 1);
+        const limit = Math.min(100, parseInt(req.query.limit as string) || 20);
+        const skip = (page - 1) * limit;
+
+        const where: any = {};
+        if (req.query.status) where.status = req.query.status;
+        if (req.query.targetType) where.targetType = req.query.targetType;
+
+        const [reports, total] = await Promise.all([
+            (prisma as any).report.findMany({
+                where,
+                skip,
+                take: limit,
+                orderBy: { createdAt: "desc" },
+                include: {
+                    reporter: { select: { id: true, username: true } },
+                },
+            }),
+            (prisma as any).report.count({ where }),
+        ]);
+
+        res.json({
+            reports,
+            pagination: { total, page, limit, totalPages: Math.ceil(total / limit) },
+        });
+    } catch (error) {
+        console.error("Error fetching reports:", error);
+        res.status(500).json({ error: "Internal server error" });
+    }
+});
+
+/**
+ * PATCH /api/admin/reports/:id
+ * Update report status; optionally suspend the target user.
+ */
+router.patch("/reports/:id", async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+        const id = req.params.id as string;
+        const { status, suspend, suspendReason } = z.object({
+            status: z.enum(REPORT_STATUSES),
+            suspend: z.boolean().optional(),
+            suspendReason: z.string().optional(),
+        }).parse(req.body);
+
+        const report = await (prisma as any).report.findUnique({ where: { id } });
+        if (!report) {
+            res.status(404).json({ error: "Report not found" });
+            return;
+        }
+
+        const updated = await (prisma as any).report.update({
+            where: { id },
+            data: { status },
+        });
+
+        if (suspend && report.targetType === "USER") {
+            await (prisma.user as any).update({
+                where: { id: report.targetId },
+                data: {
+                    isSuspended: true,
+                    suspendReason: suspendReason ?? `Suspended via report ${id}`,
+                    suspendedAt: new Date(),
+                },
+            });
+            await logAdminAction(req.userId!, "SUSPEND_USER_VIA_REPORT", report.targetId, { reportId: id });
+        }
+
+        await logAdminAction(req.userId!, "UPDATE_REPORT", id, { status });
+
+        res.json({ report: updated });
+    } catch (error) {
+        if (error instanceof ZodError) {
+            res.status(400).json({ error: "Validation error", details: error.issues });
+            return;
+        }
+        res.status(500).json({ error: "Internal server error" });
+    }
+});
+
 export default router;

@@ -356,6 +356,7 @@ describe("Cache Integration Tests", () => {
       expect(res.status).toBe(200);
       expect(res.body).toEqual({
         data: [],
+        nextCursor: null,
         total: 0,
         page: 1,
         totalPages: 0,

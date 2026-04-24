@@ -116,7 +116,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     try {
       // Detect not-installed: window.freighter is undefined before the SDK
       // even attempts a connection.
-      if (typeof window !== "undefined" && !(window as Record<string, unknown>).freighter) {
+      if (typeof window !== "undefined" && !(window as unknown as Record<string, unknown>).freighter) {
         setError("NOT_INSTALLED");
         return;
       }

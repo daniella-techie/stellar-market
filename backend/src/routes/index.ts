@@ -14,6 +14,8 @@ import adminRoutes from "./admin";
 import disputeRoutes from "./dispute.routes";
 import recommendationRoutes from "./recommendation.routes";
 import freelancerRoutes from "./freelancer.routes";
+import platformRoutes from "./platform.routes";
+import reportRoutes from "./report.routes";
 
 const router = Router();
 
@@ -32,5 +34,7 @@ router.use("/uploads", uploadRoutes);
 router.use("/admin", adminRoutes);
 router.use("/disputes", disputeRoutes);
 router.use("/freelancers", freelancerRoutes);
+router.use("/platform", platformRoutes);
+router.use("/reports", reportRoutes);
 
 export default router;
