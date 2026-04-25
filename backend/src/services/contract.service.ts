@@ -11,12 +11,20 @@ import {
 import type { PrismaClient } from "@prisma/client";
 import { MilestoneStatus } from "@prisma/client";
 import { config } from "../config";
+import { getRequestId } from "../lib/request-context";
 
-const server = new rpc.Server(config.stellar.rpcUrl);
 const networkPassphrase = config.stellar.networkPassphrase;
 const contractId = config.stellar.escrowContractId;
 const READONLY_SOURCE = "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF";
 const STROOPS_PER_XLM = 10_000_000n;
+
+function getRpcServer(): rpc.Server {
+  const requestId = getRequestId();
+
+  return new rpc.Server(config.stellar.rpcUrl, {
+    headers: requestId ? { "X-Request-ID": requestId } : undefined,
+  });
+}
 
 export type RevisionProposalView = {
   proposer: string;
@@ -43,6 +51,7 @@ export class ContractService {
     milestones: { description: string; amount: number; deadline: number }[],
     jobDeadline: number
   ) {
+    const server = getRpcServer();
     const contract = new Contract(contractId);
     const sourceAccount = await server.getLatestLedger(); // Dummy to get ledger, we need account seq
     // Note: To build a tx, we need the account's current sequence number.
@@ -86,6 +95,7 @@ export class ContractService {
     jobId: string,
     milestoneId: number,
   ) {
+    const server = getRpcServer();
     const contract = new Contract(contractId);
     const account = await server.getAccount(freelancerPublicKey);
 
@@ -111,6 +121,7 @@ export class ContractService {
    * Builds an un-signed transaction XDR for funding a job.
    */
   static async buildFundJobTx(clientPublicKey: string, jobId: string) {
+    const server = getRpcServer();
     const contract = new Contract(contractId);
     const account = await server.getAccount(clientPublicKey);
 
@@ -135,6 +146,7 @@ export class ContractService {
    * Builds an un-signed transaction XDR for approving a milestone.
    */
   static async buildApproveMilestoneTx(clientPublicKey: string, jobId: string, milestoneId: number) {
+    const server = getRpcServer();
     const contract = new Contract(contractId);
     const account = await server.getAccount(clientPublicKey);
 
@@ -160,6 +172,7 @@ export class ContractService {
    * Verification function to check transaction status on-chain.
    */
   static async verifyTransaction(hash: string) {
+    const server = getRpcServer();
     const response = await server.getTransaction(hash);
     if (response.status === rpc.Api.GetTransactionStatus.SUCCESS) {
         // Extract results if needed
@@ -179,6 +192,7 @@ export class ContractService {
     reason: string,
     minVotes: number
   ) {
+    const server = getRpcServer();
     const contract = new Contract(config.stellar.disputeContractId);
     const account = await server.getAccount(initiatorPublicKey);
 
@@ -212,6 +226,7 @@ export class ContractService {
     choice: number, // 0 for Client, 1 for Freelancer (based on enum in contract)
     reason: string
   ) {
+    const server = getRpcServer();
     const contract = new Contract(config.stellar.disputeContractId);
     const account = await server.getAccount(voterPublicKey);
 
@@ -249,6 +264,7 @@ export class ContractService {
     milestoneId: number,
     newDeadline: number,
   ) {
+    const server = getRpcServer();
     const contract = new Contract(contractId);
     const account = await server.getAccount(clientPublicKey);
 
@@ -277,6 +293,7 @@ export class ContractService {
     callerPublicKey: string,
     disputeId: number,
   ) {
+    const server = getRpcServer();
     const contract = new Contract(config.stellar.disputeContractId);
     const account = await server.getAccount(callerPublicKey);
 
@@ -300,6 +317,7 @@ export class ContractService {
   private static async buildReadonlySimTx(
     operation: xdr.Operation
   ): Promise<ReturnType<TransactionBuilder["build"]>> {
+    const server = getRpcServer();
     const sourceAccount = await server.getAccount(READONLY_SOURCE).catch(() => {
       return {
         accountId: () => READONLY_SOURCE,
@@ -317,6 +335,7 @@ export class ContractService {
   }
 
   private static async simulateContractRead(operation: xdr.Operation): Promise<unknown> {
+    const server = getRpcServer();
     const tx = await this.buildReadonlySimTx(operation);
     const simulation = await server.simulateTransaction(tx);
     if (!rpc.Api.isSimulationSuccess(simulation)) {
@@ -412,6 +431,7 @@ export class ContractService {
     onChainJobId: string,
     milestones: { description: string; amount: number; deadlineUnix: number }[]
   ): Promise<string> {
+    const server = getRpcServer();
     const contract = new Contract(contractId);
     const account = await server.getAccount(callerPublicKey);
     const scMilestones = milestones.map((m, i) =>
@@ -443,6 +463,7 @@ export class ContractService {
     callerPublicKey: string,
     onChainJobId: string
   ): Promise<string> {
+    const server = getRpcServer();
     const contract = new Contract(contractId);
     const account = await server.getAccount(callerPublicKey);
     const tx = new TransactionBuilder(account, {
@@ -465,6 +486,7 @@ export class ContractService {
     callerPublicKey: string,
     onChainJobId: string
   ): Promise<string> {
+    const server = getRpcServer();
     const contract = new Contract(contractId);
     const account = await server.getAccount(callerPublicKey);
     const tx = new TransactionBuilder(account, {

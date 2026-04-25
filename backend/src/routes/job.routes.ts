@@ -3,7 +3,7 @@ import { PrismaClient } from "@prisma/client";
 import { authenticate, AuthRequest } from "../middleware/auth";
 import { validate } from "../middleware/validation";
 import { asyncHandler } from "../middleware/error";
-import { RecommendationService } from "../services/recommendation.service";
+import { RecommendationQueueService } from "../services/recommendation-queue.service";
 import {
   createJobSchema,
   updateJobSchema,
@@ -643,7 +643,7 @@ router.post(
     });
 
     await invalidateCache("jobs:list:*");
-    await invalidateCache("recommendations:*");
+    void RecommendationQueueService.enqueueRebuild(job.id);
 
     res.status(201).json(job);
   }),
@@ -688,7 +688,7 @@ router.put(
 
     await invalidateCache("jobs:list:*");
     await invalidateCacheKey(generateJobCacheKey(id));
-    await invalidateCache("recommendations:*");
+    void RecommendationQueueService.enqueueRebuild(id);
 
     res.json(updated);
   }),
@@ -724,7 +724,7 @@ router.delete(
 
     await invalidateCache("jobs:list:*");
     await invalidateCacheKey(generateJobCacheKey(id));
-    await invalidateCache("recommendations:*");
+    void RecommendationQueueService.enqueueRebuild(id);
 
     res.json({ message: "Job deleted successfully." });
   }),
@@ -766,7 +766,7 @@ router.patch(
 
     await invalidateCache("jobs:list:*");
     await invalidateCacheKey(generateJobCacheKey(id));
-    await invalidateCache("recommendations:*");
+    void RecommendationQueueService.enqueueRebuild(id);
 
     res.json(updated);
   }),
@@ -832,7 +832,7 @@ router.patch(
 
     await invalidateCache("jobs:list:*");
     await invalidateCacheKey(generateJobCacheKey(id));
-    await invalidateCache("recommendations:*");
+    void RecommendationQueueService.enqueueRebuild(id);
 
     res.json(updated);
   }),

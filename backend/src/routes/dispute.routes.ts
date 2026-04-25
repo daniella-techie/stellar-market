@@ -2,10 +2,14 @@ import { Router, Request, Response } from "express";
 import { DisputeStatus, UserRole } from "@prisma/client";
 import { authenticate, AuthRequest } from "../middleware/auth";
 import { asyncHandler } from "../middleware/error";
+import { validate } from "../middleware/validation";
 import { DisputeService } from "../services/dispute.service";
 import {
+  confirmDisputeTransactionSchema,
   createDisputeSchema,
   castVoteSchema,
+  disputeIdParamSchema,
+  initRaiseDisputeSchema,
   queryDisputesSchema,
   resolveDisputeSchema,
   webhookPayloadSchema,
@@ -20,8 +24,9 @@ const router = Router();
 router.get(
   "/",
   authenticate,
+  validate({ query: queryDisputesSchema }),
   asyncHandler(async (req: AuthRequest, res: Response) => {
-    const query = queryDisputesSchema.parse(req.query);
+    const query = req.query as unknown as { page: number; limit: number };
 
     const result = await DisputeService.getDisputes(
       { status: DisputeStatus.OPEN },
@@ -55,6 +60,7 @@ router.get(
 router.get(
   "/:id",
   authenticate,
+  validate({ params: disputeIdParamSchema }),
   asyncHandler(async (req: AuthRequest, res: Response) => {
     const dispute = (await DisputeService.getDisputeById(
       req.params.id as string,
@@ -90,8 +96,9 @@ router.get(
 router.post(
   "/",
   authenticate,
+  validate({ body: createDisputeSchema }),
   asyncHandler(async (req: AuthRequest, res: Response) => {
-    const data = createDisputeSchema.parse(req.body);
+    const data = req.body as { jobId: string; reason: string };
 
     const dispute = await DisputeService.createDispute(
       data.jobId,
@@ -110,6 +117,7 @@ router.post(
 router.post(
   "/init-raise",
   authenticate,
+  validate({ body: initRaiseDisputeSchema }),
   asyncHandler(async (req: AuthRequest, res: Response) => {
     const { jobId, reason, minVotes } = req.body;
 
@@ -131,6 +139,7 @@ router.post(
 router.post(
   "/confirm-tx",
   authenticate,
+  validate({ body: confirmDisputeTransactionSchema }),
   asyncHandler(async (req: AuthRequest, res: Response) => {
     const { hash, type, jobId, onChainDisputeId, respondentId, reason } =
       req.body;
@@ -156,6 +165,7 @@ router.post(
 router.post(
   "/:id/votes",
   authenticate,
+  validate({ params: disputeIdParamSchema, body: castVoteSchema }),
   asyncHandler(async (req: AuthRequest, res: Response) => {
     const dispute = await DisputeService.getDisputeById(
       req.params.id as string,
@@ -174,7 +184,7 @@ router.post(
           "Job participants (client or freelancer) cannot vote on their own dispute.",
       });
     }
-    const data = castVoteSchema.parse(req.body);
+    const data = req.body as { choice: "CLIENT" | "FREELANCER"; reason: string };
 
     const vote = await DisputeService.castVote(
       req.params.id as string,
@@ -194,8 +204,9 @@ router.post(
 router.put(
   "/:id/resolve",
   authenticate,
+  validate({ params: disputeIdParamSchema, body: resolveDisputeSchema }),
   asyncHandler(async (req: AuthRequest, res: Response) => {
-    const data = resolveDisputeSchema.parse(req.body);
+    const data = req.body as { outcome: string };
 
     const dispute = await DisputeService.resolveDispute(
       req.params.id as string,
@@ -212,6 +223,7 @@ router.put(
  */
 router.get(
   "/:id/stats",
+  validate({ params: disputeIdParamSchema }),
   asyncHandler(async (req: Request, res: Response) => {
     const stats = await DisputeService.getVoteStats(req.params.id as string);
     res.json(stats);
@@ -224,8 +236,9 @@ router.get(
  */
 router.post(
   "/webhook",
+  validate({ body: webhookPayloadSchema }),
   asyncHandler(async (req: Request, res: Response) => {
-    const payload = webhookPayloadSchema.parse(req.body);
+    const payload = req.body;
 
     const result = await DisputeService.processWebhook(payload);
 
