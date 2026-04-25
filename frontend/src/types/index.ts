@@ -59,6 +59,7 @@ export interface Job {
   escrowStatus: "UNFUNDED" | "FUNDED" | "COMPLETED" | "CANCELLED" | "DISPUTED";
   revisionProposal?: RevisionProposal | null;
   createdAt: string;
+  updatedAt?: string;
   _count?: { applications: number };
 }
 
