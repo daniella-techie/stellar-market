@@ -63,6 +63,7 @@ export const errorHandler = (
 
   // Log error for debugging
   console.error(`[${new Date().toISOString()}] Error:`, {
+    requestId: req.requestId,
     message: err.message,
     stack: err.stack,
     url: req.url,
@@ -73,6 +74,7 @@ export const errorHandler = (
   // Send consistent error response
   res.status(statusCode).json({
     error: message,
+    requestId: req.requestId,
     ...(details && { details }),
   });
 };

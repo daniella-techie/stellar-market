@@ -8,7 +8,7 @@ import {
   getJobsAdminQuerySchema,
   overrideDisputeSchema,
 } from "../schemas/admin";
-import { ZodError, z } from "zod";
+import { z } from "zod";
 import { logAdminAction } from "../utils/auditLogger";
 import { NotificationService } from "../services/notification.service";
 import { validate } from "../middleware/validation";
@@ -23,72 +23,71 @@ router.use(requireAdmin);
  * GET /api/admin/users
  * List all users with filters (search, role, isSuspended, isVerified)
  */
-router.get("/users", async (req: AuthRequest, res: Response): Promise<void> => {
-  try {
-    const query = getUsersAdminQuerySchema.parse(req.query);
-    const {
-      page = 1,
-      limit = 10,
-      search,
-      role,
-      isSuspended,
-      isVerified,
-    } = query;
-    const skip = (page - 1) * limit;
+router.get(
+  "/users",
+  validate({ query: getUsersAdminQuerySchema }),
+  async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+      const query = req.query as unknown as z.infer<
+        typeof getUsersAdminQuerySchema
+      >;
+      const {
+        page = 1,
+        limit = 10,
+        search,
+        role,
+        isSuspended,
+        isVerified,
+      } = query;
+      const skip = (page - 1) * limit;
 
-    const where: any = {};
+      const where: any = {};
 
-    if (search) {
-      where.OR = [
-        { username: { contains: search, mode: "insensitive" } },
-        { email: { contains: search, mode: "insensitive" } },
-        { walletAddress: { contains: search, mode: "insensitive" } },
-      ];
-    }
+      if (search) {
+        where.OR = [
+          { username: { contains: search, mode: "insensitive" } },
+          { email: { contains: search, mode: "insensitive" } },
+          { walletAddress: { contains: search, mode: "insensitive" } },
+        ];
+      }
 
-    if (role) where.role = role;
-    if (isSuspended !== undefined) where.isSuspended = isSuspended;
-    if (isVerified !== undefined) where.emailVerified = isVerified;
+      if (role) where.role = role;
+      if (isSuspended !== undefined) where.isSuspended = isSuspended;
+      if (isVerified !== undefined) where.emailVerified = isVerified;
 
-    const [users, total] = await Promise.all([
-      prisma.user.findMany({
-        where,
-        skip,
-        take: limit,
-        select: {
-          id: true,
-          username: true,
-          email: true,
-          walletAddress: true,
-          role: true,
-          isSuspended: true,
-          emailVerified: true,
-          createdAt: true,
+      const [users, total] = await Promise.all([
+        prisma.user.findMany({
+          where,
+          skip,
+          take: limit,
+          select: {
+            id: true,
+            username: true,
+            email: true,
+            walletAddress: true,
+            role: true,
+            isSuspended: true,
+            emailVerified: true,
+            createdAt: true,
+          },
+          orderBy: { createdAt: "desc" },
+        }),
+        prisma.user.count({ where }),
+      ]);
+
+      res.json({
+        users,
+        pagination: {
+          total,
+          page,
+          limit,
+          totalPages: Math.ceil(total / limit),
         },
-        orderBy: { createdAt: "desc" },
-      }),
-      prisma.user.count({ where }),
-    ]);
-
-    res.json({
-      users,
-      pagination: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-      },
-    });
-  } catch (error) {
-    if (error instanceof ZodError) {
-      res
-        .status(400)
-        .json({ error: "Validation error", details: error.issues });
-      return;
+      });
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      res.status(500).json({ error: "Internal server error" });
     }
-    console.error("Error fetching users:", error);
-    res.status(500).json({ error: "Internal server error" });
-  }
 });
 
 /**
@@ -97,15 +96,20 @@ router.get("/users", async (req: AuthRequest, res: Response): Promise<void> => {
  */
 router.patch(
   "/users/:id/suspend",
+  validate({
+    params: z.object({ id: z.string().min(1, "User ID is required") }),
+    body: z.object({
+      suspendReason: z.string().optional(),
+      isSuspended: z.boolean(),
+    }),
+  }),
   async (req: AuthRequest, res: Response): Promise<void> => {
     try {
       const id = req.params.id as string;
-      const { suspendReason, isSuspended } = z
-        .object({
-          suspendReason: z.string().optional(),
-          isSuspended: z.boolean(),
-        })
-        .parse(req.body);
+      const { suspendReason, isSuspended } = req.body as {
+        suspendReason?: string;
+        isSuspended: boolean;
+      };
 
       const user = await prisma.user.findUnique({ where: { id } });
       if (!user) {
@@ -137,13 +141,7 @@ router.patch(
           isSuspended: updatedUser.isSuspended,
         },
       });
-    } catch (error) {
-      if (error instanceof ZodError) {
-        res
-          .status(400)
-          .json({ error: "Validation error", details: error.issues });
-        return;
-      }
+    } catch {
       res.status(500).json({ error: "Internal server error" });
     }
   },
@@ -326,10 +324,14 @@ router.get(
  */
 router.patch(
   "/disputes/:id/override",
+  validate({
+    params: z.object({ id: z.string().min(1, "Dispute ID is required") }),
+    body: overrideDisputeSchema,
+  }),
   async (req: AuthRequest, res: Response): Promise<void> => {
     try {
       const id = req.params.id as string;
-      const { outcome, status } = overrideDisputeSchema.parse(req.body);
+      const { outcome, status } = req.body as z.infer<typeof overrideDisputeSchema>;
 
       const dispute = await prisma.dispute.findUnique({ where: { id } });
       if (!dispute) {
@@ -355,13 +357,7 @@ router.patch(
         message: "Dispute outcome overridden successfully",
         dispute: updatedDispute,
       });
-    } catch (error) {
-      if (error instanceof ZodError) {
-        res
-          .status(400)
-          .json({ error: "Validation error", details: error.issues });
-        return;
-      }
+    } catch {
       res.status(500).json({ error: "Internal server error" });
     }
   },
@@ -491,10 +487,14 @@ router.get("/stats", async (req: AuthRequest, res: Response): Promise<void> => {
  */
 router.post(
   "/jobs/:id/flag",
+  validate({
+    params: z.object({ id: z.string().min(1, "Job ID is required") }),
+    body: flagJobSchema,
+  }),
   async (req: AuthRequest, res: Response): Promise<void> => {
     try {
       const id = req.params.id as string;
-      const validatedData = flagJobSchema.parse(req.body);
+      const validatedData = req.body as z.infer<typeof flagJobSchema>;
 
       const job = await prisma.job.findUnique({ where: { id } });
       if (!job) {
@@ -517,13 +517,7 @@ router.post(
       });
 
       res.json({ message: "Job flagged successfully", job: updatedJob });
-    } catch (error) {
-      if (error instanceof ZodError) {
-        res
-          .status(400)
-          .json({ error: "Validation error", details: error.issues });
-        return;
-      }
+    } catch {
       res.status(500).json({ error: "Internal server error" });
     }
   },
@@ -590,10 +584,14 @@ router.post(
  */
 router.post(
   "/users/:id/suspend",
+  validate({
+    params: z.object({ id: z.string().min(1, "User ID is required") }),
+    body: suspendUserSchema,
+  }),
   async (req: AuthRequest, res: Response): Promise<void> => {
     try {
       const id = req.params.id as string;
-      const validatedData = suspendUserSchema.parse(req.body);
+      const validatedData = req.body as z.infer<typeof suspendUserSchema>;
 
       const updatedUser = await prisma.user.update({
         where: { id },
@@ -702,16 +700,22 @@ router.get(
  */
 router.patch(
   "/reports/:id",
+  validate({
+    params: z.object({ id: z.string().min(1, "Report ID is required") }),
+    body: z.object({
+      status: z.enum(REPORT_STATUSES),
+      suspend: z.boolean().optional(),
+      suspendReason: z.string().optional(),
+    }),
+  }),
   async (req: AuthRequest, res: Response): Promise<void> => {
     try {
       const id = req.params.id as string;
-      const { status, suspend, suspendReason } = z
-        .object({
-          status: z.enum(REPORT_STATUSES),
-          suspend: z.boolean().optional(),
-          suspendReason: z.string().optional(),
-        })
-        .parse(req.body);
+      const { status, suspend, suspendReason } = req.body as {
+        status: (typeof REPORT_STATUSES)[number];
+        suspend?: boolean;
+        suspendReason?: string;
+      };
 
       const report = await (prisma as any).report.findUnique({ where: { id } });
       if (!report) {
@@ -744,13 +748,7 @@ router.patch(
       await logAdminAction(req.userId!, "UPDATE_REPORT", id, { status });
 
       res.json({ report: updated });
-    } catch (error) {
-      if (error instanceof ZodError) {
-        res
-          .status(400)
-          .json({ error: "Validation error", details: error.issues });
-        return;
-      }
+    } catch {
       res.status(500).json({ error: "Internal server error" });
     }
   },
