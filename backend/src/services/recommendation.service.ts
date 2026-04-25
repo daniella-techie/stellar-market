@@ -213,6 +213,32 @@ export class RecommendationService {
     return data;
   }
 
+  static async rebuildRecommendationsForJob(jobId: string): Promise<void> {
+    const job = await prisma.job.findUnique({
+      where: { id: jobId },
+      select: { id: true, status: true, deletedAt: true },
+    });
+
+    if (!job || job.deletedAt || job.status !== "OPEN") {
+      await invalidateCache("recommendations:*");
+      return;
+    }
+
+    await invalidateCache("recommendations:*");
+
+    const freelancers = await prisma.user.findMany({
+      where: {
+        role: "FREELANCER",
+        emailVerified: true,
+      },
+      select: { id: true },
+    });
+
+    for (const freelancer of freelancers) {
+      await RecommendationService.getRecommendedJobs(freelancer.id, 1, 10);
+    }
+  }
+
   /**
    * Invalidate recommendation cache for a user when they apply to a job
    */

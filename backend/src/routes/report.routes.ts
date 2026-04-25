@@ -4,6 +4,7 @@ import rateLimit from "express-rate-limit";
 import { z } from "zod";
 import { authenticate, AuthRequest } from "../middleware/auth";
 import { asyncHandler } from "../middleware/error";
+import { validate } from "../middleware/validation";
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -37,13 +38,13 @@ router.post(
   "/",
   authenticate,
   reportRateLimiter,
+  validate({ body: createReportSchema }),
   asyncHandler(async (req: AuthRequest, res: Response) => {
-    const body = createReportSchema.safeParse(req.body);
-    if (!body.success) {
-      return res.status(400).json({ error: "Validation error", details: body.error.issues });
-    }
-
-    const { targetType, targetId, reason } = body.data;
+    const { targetType, targetId, reason } = req.body as {
+      targetType: (typeof TARGET_TYPES)[number];
+      targetId: string;
+      reason: string;
+    };
 
     const report = await (prisma as any).report.create({
       data: {

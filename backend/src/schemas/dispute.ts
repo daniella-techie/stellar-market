@@ -8,6 +8,32 @@ export const createDisputeSchema = z.object({
     .max(2000, { message: "Reason must not exceed 2000 characters" }),
 });
 
+export const disputeIdParamSchema = z.object({
+  id: z.string().min(1, { message: "Dispute ID is required" }),
+});
+
+export const initRaiseDisputeSchema = z.object({
+  jobId: z.string().min(1, { message: "Job ID is required" }),
+  reason: z
+    .string()
+    .min(10, { message: "Reason must be at least 10 characters long" })
+    .max(2000, { message: "Reason must not exceed 2000 characters" }),
+  minVotes: z.coerce.number().int().min(1).optional(),
+});
+
+export const confirmDisputeTransactionSchema = z.object({
+  hash: z.string().min(1, { message: "Transaction hash is required" }),
+  type: z.string().min(1, { message: "Transaction type is required" }),
+  jobId: z.string().min(1, { message: "Job ID is required" }),
+  onChainDisputeId: z.string().min(1, {
+    message: "On-chain dispute ID is required",
+  }),
+  respondentId: z.string().min(1, { message: "Respondent ID is required" }),
+  reason: z
+    .string()
+    .min(10, { message: "Reason must be at least 10 characters long" }),
+});
+
 export const castVoteSchema = z.object({
   choice: z.enum(["CLIENT", "FREELANCER"], { 
     message: "Choice must be either CLIENT or FREELANCER" 
