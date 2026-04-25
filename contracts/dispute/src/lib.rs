@@ -36,6 +36,7 @@ pub enum DisputeError {
     ContractPaused = 11,
     NotAdmin = 12,
     DisputeCooldown = 13,
+    VotingPeriodNotExpired = 14,
 }
 
 #[contracttype]
@@ -98,6 +99,7 @@ pub struct Dispute {
     pub min_votes: u32,
     pub tie_break_method: TieBreakMethod,
     pub created_at: u64,
+    pub voting_deadline: u64,
     pub excluded_voters: Vec<Address>,
 }
 
@@ -148,6 +150,7 @@ const MIN_VOTER_REPUTATION: u32 = 300;
 /// Default reputation points slashed from the losing party after a resolved dispute.
 const DEFAULT_SLASH_AMOUNT: u64 = 50;
 const DISPUTE_COOLDOWN_SECS: u64 = 86_400;
+const VOTING_PERIOD_SECS: u64 = 604_800; // 7 days
 
 const MIN_TTL_THRESHOLD: u32 = 1_000;
 const MIN_TTL_EXTEND_TO: u32 = 10_000;
@@ -530,6 +533,7 @@ impl DisputeContract {
             min_votes: if min_votes < 3 { 3 } else { min_votes },
             tie_break_method: tie_break_method.unwrap_or(TieBreakMethod::RefundBoth),
             created_at: env.ledger().timestamp(),
+            voting_deadline: env.ledger().timestamp().saturating_add(VOTING_PERIOD_SECS),
             excluded_voters,
         };
 
@@ -704,22 +708,56 @@ impl DisputeContract {
     ) -> Result<DisputeStatus, DisputeError> {
         require_not_paused(&env)?;
 
-        let mut dispute: Dispute = env
+        let dispute: Dispute = env
             .storage()
             .persistent()
             .get(&DataKey::Dispute(dispute_id))
             .ok_or(DisputeError::DisputeNotFound)?;
         bump_dispute_ttl(&env, dispute_id);
 
+        Self::internal_resolve(&env, dispute_id, dispute, escrow, false)
+    }
+
+    /// Force resolution of a dispute after the voting deadline has passed,
+    /// even if the minimum number of votes has not been reached.
+    pub fn force_resolve_timeout(
+        env: Env,
+        dispute_id: u64,
+        escrow: Address,
+    ) -> Result<DisputeStatus, DisputeError> {
+        require_not_paused(&env)?;
+
+        let dispute: Dispute = env
+            .storage()
+            .persistent()
+            .get(&DataKey::Dispute(dispute_id))
+            .ok_or(DisputeError::DisputeNotFound)?;
+        bump_dispute_ttl(&env, dispute_id);
+
+        if env.ledger().timestamp() < dispute.voting_deadline {
+            return Err(DisputeError::VotingPeriodNotExpired);
+        }
+
+        Self::internal_resolve(&env, dispute_id, dispute, escrow, true)
+    }
+
+    fn internal_resolve(
+        env: &Env,
+        dispute_id: u64,
+        mut dispute: Dispute,
+        escrow: Address,
+        force: bool,
+    ) -> Result<DisputeStatus, DisputeError> {
         if dispute.status == DisputeStatus::ResolvedForClient
             || dispute.status == DisputeStatus::ResolvedForFreelancer
             || dispute.status == DisputeStatus::RefundedBoth
+            || dispute.status == DisputeStatus::Escalated
         {
             return Err(DisputeError::AlreadyResolved);
         }
 
         let total_votes = dispute.votes_for_client + dispute.votes_for_freelancer;
-        if total_votes < dispute.min_votes {
+        if !force && total_votes < dispute.min_votes {
             return Err(DisputeError::NotEnoughVotes);
         }
 
@@ -728,7 +766,7 @@ impl DisputeContract {
         } else if dispute.votes_for_freelancer > dispute.votes_for_client {
             dispute.status = DisputeStatus::ResolvedForFreelancer;
         } else {
-            // Tie-break logic
+            // Tie-break logic (applies if votes are tied OR if total_votes is 0 in force mode)
             match dispute.tie_break_method {
                 TieBreakMethod::FavorClient => dispute.status = DisputeStatus::ResolvedForClient,
                 TieBreakMethod::FavorFreelancer => {
@@ -747,22 +785,18 @@ impl DisputeContract {
         };
 
         // Only invoke the escrow callback if the dispute has a concrete resolution.
-        // Escalated disputes are handled out-of-band and must not trigger a payout.
         if resolution != DisputeResolution::Escalate {
             env.invoke_contract::<()>(
                 &escrow,
-                &Symbol::new(&env, "resolve_dispute_callback"),
+                &Symbol::new(env, "resolve_dispute_callback"),
                 vec![
-                    &env,
-                    dispute.job_id.into_val(&env),
-                    resolution.into_val(&env),
+                    env,
+                    dispute.job_id.into_val(env),
+                    resolution.into_val(env),
                 ],
             );
-        }
 
-        // Slash the losing party's staked reputation (best-effort: skip if reputation
-        // contract is not configured or the call fails).
-        if resolution != DisputeResolution::Escalate {
+            // Slash the losing party's staked reputation
             if let Some(reputation_contract) = env
                 .storage()
                 .instance()
@@ -783,27 +817,24 @@ impl DisputeContract {
                 let loser = match resolution {
                     DisputeResolution::ClientWins => dispute.freelancer.clone(),
                     DisputeResolution::FreelancerWins => dispute.client.clone(),
-                    // RefundBoth: slash the initiator as the bad-faith party
                     DisputeResolution::RefundBoth => dispute.initiator.clone(),
                     DisputeResolution::Escalate => unreachable!(),
                 };
 
-                // Best-effort cross-contract call — ignore errors so resolution is never blocked
                 let _ = env.try_invoke_contract::<(), soroban_sdk::Error>(
                     &reputation_contract,
-                    &Symbol::new(&env, "slash_stake"),
+                    &Symbol::new(env, "slash_stake"),
                     vec![
-                        &env,
-                        admin.into_val(&env),
-                        loser.clone().into_val(&env),
-                        dispute.job_id.into_val(&env),
-                        slash_amount.into_val(&env),
+                        env,
+                        admin.into_val(env),
+                        loser.clone().into_val(env),
+                        dispute.job_id.into_val(env),
+                        slash_amount.into_val(env),
                     ],
                 );
 
-                // Emit StakeSlashed event regardless of whether the cross-contract call succeeded
                 env.events().publish(
-                    (symbol_short!("dispute"), Symbol::new(&env, "stk_slashed")),
+                    (symbol_short!("dispute"), Symbol::new(env, "stk_slashed")),
                     (dispute.job_id, loser, slash_amount),
                 );
             }
@@ -811,15 +842,14 @@ impl DisputeContract {
             env.storage()
                 .persistent()
                 .set(&DataKey::LastDisputeClosedAt(dispute.job_id), &env.ledger().timestamp());
-            bump_last_dispute_closed_ttl(&env, dispute.job_id);
+            bump_last_dispute_closed_ttl(env, dispute.job_id);
         }
 
         env.storage()
             .persistent()
             .set(&DataKey::Dispute(dispute_id), &dispute);
-        bump_dispute_ttl(&env, dispute_id);
+        bump_dispute_ttl(env, dispute_id);
 
-        // Emit event
         env.events().publish(
             (symbol_short!("dispute"), symbol_short!("resolved")),
             (dispute_id, dispute.status.clone()),
