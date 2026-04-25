@@ -212,9 +212,7 @@ fn require_not_paused(env: &Env) -> Result<(), EscrowError> {
     Ok(())
 }
 
-/// Validates that every address in `callers` is a registered signer, calls
-
-
+/// Validates that every address in `callers` is a registered signer.
 fn is_signer(env: &Env, address: &Address) -> bool {
     if let Some(signers) = env.storage().instance().get::<_, Vec<Address>>(&DataKey::MultiSigSigners) {
         signers.iter().any(|s| s == *address)
