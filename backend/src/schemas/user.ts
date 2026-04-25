@@ -33,6 +33,27 @@ export const getUserByIdParamSchema = z.object({
   id: z.string().min(1, "User ID is required"),
 });
 
+export const updateCurrentUserProfileSchema = z.object({
+  username: z
+    .string()
+    .min(3, "Username must be at least 3 characters")
+    .max(30, "Username must be at most 30 characters")
+    .regex(
+      /^[a-zA-Z0-9_-]+$/,
+      "Username can only contain letters, numbers, hyphens, and underscores",
+    )
+    .optional(),
+  email: z.string().email("Invalid email address").optional().nullable(),
+  bio: z
+    .string()
+    .max(500, "Bio must be at most 500 characters")
+    .optional()
+    .nullable(),
+  role: z.enum(["CLIENT", "FREELANCER"]).optional(),
+  skills: z.array(z.string()).max(20).optional(),
+  availability: z.boolean().optional(),
+});
+
 /** Normalizes `skills[]` query keys from Express into `skills`. */
 function normalizeFreelancerSearchQuery(raw: unknown): unknown {
   if (!raw || typeof raw !== "object") return raw;
