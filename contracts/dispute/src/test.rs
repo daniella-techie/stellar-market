@@ -1166,3 +1166,113 @@ fn test_raise_dispute_allowed_after_cooldown() {
 
     assert_eq!(second_dispute_id, 2);
 }
+
+#[test]
+#[should_panic(expected = "Error(Contract, #14)")] // VotingPeriodNotExpired
+fn test_force_resolve_timeout_not_expired_fails() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.ledger().with_mut(|l| l.timestamp = 1000);
+
+    let dispute_contract_id = env.register_contract(None, DisputeContract);
+    let client = DisputeContractClient::new(&env, &dispute_contract_id);
+    let escrow_contract_id = env.register_contract(None, DummyEscrow);
+    let reputation_contract_id = env.register_contract(None, MockReputationContract);
+    let admin = Address::generate(&env);
+
+    client.initialize(&admin, &reputation_contract_id, &300, &escrow_contract_id);
+
+    let user_client = Address::generate(&env);
+    let freelancer = Address::generate(&env);
+
+    let dispute_id = client.raise_dispute(
+        &1u64,
+        &user_client,
+        &freelancer,
+        &user_client,
+        &String::from_str(&env, "Issue"),
+        &10u32,
+        &None,
+    );
+
+    // Try to force resolve before deadline (Deadline is 1000 + 604_800 = 605_800)
+    env.ledger().with_mut(|l| l.timestamp = 600_000);
+    client.force_resolve_timeout(&dispute_id, &escrow_contract_id);
+}
+
+#[test]
+fn test_force_resolve_timeout_expired_success() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.ledger().with_mut(|l| l.timestamp = 1000);
+
+    let dispute_contract_id = env.register_contract(None, DisputeContract);
+    let client = DisputeContractClient::new(&env, &dispute_contract_id);
+    let escrow_contract_id = env.register_contract(None, DummyEscrow);
+    let reputation_contract_id = env.register_contract(None, MockReputationContract);
+    let admin = Address::generate(&env);
+
+    client.initialize(&admin, &reputation_contract_id, &300, &escrow_contract_id);
+
+    let user_client = Address::generate(&env);
+    let freelancer = Address::generate(&env);
+
+    let dispute_id = client.raise_dispute(
+        &1u64,
+        &user_client,
+        &freelancer,
+        &user_client,
+        &String::from_str(&env, "Issue"),
+        &10u32,
+        &None,
+    );
+
+    // 1 vote for freelancer
+    let voter = Address::generate(&env);
+    client.cast_vote(
+        &dispute_id,
+        &voter,
+        &VoteChoice::Freelancer,
+        &String::from_str(&env, "Reason"),
+    );
+
+    // Advance past deadline (1000 + 604_800 = 605_800)
+    env.ledger().with_mut(|l| l.timestamp = 605_801);
+
+    let status = client.force_resolve_timeout(&dispute_id, &escrow_contract_id);
+    assert_eq!(status, DisputeStatus::ResolvedForFreelancer);
+}
+
+#[test]
+fn test_force_resolve_timeout_tie_break_success() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.ledger().with_mut(|l| l.timestamp = 1000);
+
+    let dispute_contract_id = env.register_contract(None, DisputeContract);
+    let client = DisputeContractClient::new(&env, &dispute_contract_id);
+    let escrow_contract_id = env.register_contract(None, DummyEscrow);
+    let reputation_contract_id = env.register_contract(None, MockReputationContract);
+    let admin = Address::generate(&env);
+
+    client.initialize(&admin, &reputation_contract_id, &300, &escrow_contract_id);
+
+    let user_client = Address::generate(&env);
+    let freelancer = Address::generate(&env);
+
+    let dispute_id = client.raise_dispute(
+        &1u64,
+        &user_client,
+        &freelancer,
+        &user_client,
+        &String::from_str(&env, "Issue"),
+        &10u32,
+        &Some(TieBreakMethod::FavorClient),
+    );
+
+    // Advance past deadline
+    env.ledger().with_mut(|l| l.timestamp = 605_801);
+
+    let status = client.force_resolve_timeout(&dispute_id, &escrow_contract_id);
+    assert_eq!(status, DisputeStatus::ResolvedForClient);
+}
