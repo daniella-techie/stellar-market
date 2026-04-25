@@ -528,11 +528,11 @@ router.get(
 );
 
 /**
- * GET /api/transactions/history/export
- * Export transaction history as CSV for authenticated user
+ * GET /api/transactions/export
+ * Export transaction history as CSV/JSON for authenticated user (streamed)
  */
 router.get(
-  "/history/export",
+  "/export",
   authenticate,
   validate({
     query: z.object({
@@ -591,79 +591,116 @@ router.get(
         }
       }
 
-      // Get all transactions (no pagination for export)
-      const transactions = await prisma.transaction.findMany({
-        where,
-        orderBy: { createdAt: "desc" },
-        include: {
-          job: {
-            select: {
-              id: true,
-              title: true,
-            },
-          },
-          milestone: {
-            select: {
-              id: true,
-              title: true,
-            },
-          },
-        },
-      });
-
       if (format === "json") {
         res.setHeader("Content-Type", "application/json");
         res.setHeader(
           "Content-Disposition",
           `attachment; filename="transactions-${Date.now()}.json"`,
         );
-        return res.json(transactions);
+        res.write("[\n");
+      } else {
+        res.setHeader("Content-Type", "text/csv");
+        res.setHeader(
+          "Content-Disposition",
+          `attachment; filename="transactions-${Date.now()}.csv"`,
+        );
+        res.write(
+          [
+            "Date",
+            "Type",
+            "Direction",
+            "Amount",
+            "Token Address",
+            "From Address",
+            "To Address",
+            "Job Title",
+            "Milestone",
+            "Transaction Hash",
+          ].join(",") + "\n"
+        );
       }
 
-      // Generate CSV
-      const csvRows = [
-        [
-          "Date",
-          "Type",
-          "Direction",
-          "Amount",
-          "Token Address",
-          "From Address",
-          "To Address",
-          "Job Title",
-          "Milestone",
-          "Transaction Hash",
-        ].join(","),
-      ];
+      const BATCH_SIZE = 500;
+      let cursor: string | undefined = undefined;
+      let hasMore = true;
+      let isFirst = true;
 
-      for (const tx of transactions) {
-        const isIncoming = tx.toAddress === user.walletAddress;
-        const row = [
-          tx.createdAt.toISOString(),
-          tx.type,
-          isIncoming ? "incoming" : "outgoing",
-          tx.amount,
-          tx.tokenAddress,
-          tx.fromAddress,
-          tx.toAddress,
-          `"${tx.job.title.replace(/"/g, '""')}"`,
-          tx.milestone ? `"${tx.milestone.title.replace(/"/g, '""')}"` : "",
-          tx.txHash,
-        ].join(",");
-        csvRows.push(row);
+      while (hasMore) {
+        const transactions: any[] = await prisma.transaction.findMany({
+          take: BATCH_SIZE,
+          skip: cursor ? 1 : 0,
+          cursor: cursor ? { id: cursor } : undefined,
+          where,
+          orderBy: { createdAt: "desc" },
+          include: {
+            job: {
+              select: {
+                id: true,
+                title: true,
+              },
+            },
+            milestone: {
+              select: {
+                id: true,
+                title: true,
+              },
+            },
+          },
+        });
+
+        if (transactions.length === 0) {
+          hasMore = false;
+          break;
+        }
+
+        cursor = transactions[transactions.length - 1].id;
+
+        if (format === "json") {
+          for (let i = 0; i < transactions.length; i++) {
+            if (!isFirst) {
+              res.write(",\n");
+            }
+            res.write(JSON.stringify(transactions[i]));
+            isFirst = false;
+          }
+        } else {
+          let csvChunk = "";
+          for (const tx of transactions) {
+            const isIncoming = tx.toAddress === user.walletAddress;
+            const row = [
+              tx.createdAt.toISOString(),
+              tx.type,
+              isIncoming ? "incoming" : "outgoing",
+              tx.amount,
+              tx.tokenAddress,
+              tx.fromAddress,
+              tx.toAddress,
+              `"${tx.job.title.replace(/"/g, '""')}"`,
+              tx.milestone ? `"${tx.milestone.title.replace(/"/g, '""')}"` : "",
+              tx.txHash,
+            ].join(",");
+            csvChunk += row + "\n";
+          }
+          res.write(csvChunk);
+        }
+
+        if (transactions.length < BATCH_SIZE) {
+          hasMore = false;
+        }
       }
 
-      const csv = csvRows.join("\n");
-
-      res.setHeader("Content-Type", "text/csv");
-      res.setHeader(
-        "Content-Disposition",
-        `attachment; filename="transactions-${Date.now()}.csv"`,
-      );
-      res.send(csv);
+      if (format === "json") {
+        res.write("\n]");
+      }
+      
+      res.end();
     } catch (error) {
-      console.error("Error exporting transaction history:", error);
-      res.status(500).json({ error: "Failed to export transaction history" });
+      console.error("Error exporting transaction stream:", error);
+      if (!res.headersSent) {
+        res.status(500).json({ error: "Failed to export transaction history" });
+      } else {
+        res.end();
+      }
     }
   },
 );
