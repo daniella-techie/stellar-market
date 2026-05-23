@@ -41,7 +41,13 @@ fn setup_test(env: &Env) -> (EscrowContractClient<'_>, Address, Address, Address
 }
 
 fn pause_escrow(env: &Env, client: &EscrowContractClient<'_>, admin: &Address) {
-    client.propose_admin_action(admin, &AdminAction::Pause);
+    // Pause proposals have a 48-hour time lock and cannot auto-execute with a single signer.
+    // Add a temp signer (no time lock), then advance past the lock and approve with it.
+    let temp_signer = Address::generate(env);
+    client.propose_admin_action(admin, &AdminAction::AddSigner(temp_signer.clone()));
+    let proposal_id = client.propose_admin_action(admin, &AdminAction::Pause);
+    env.ledger().with_mut(|l| l.timestamp += 48 * 60 * 60 + 1);
+    client.approve_admin_action(&temp_signer, &proposal_id);
 }
 
 fn unpause_escrow(env: &Env, client: &EscrowContractClient<'_>, admin: &Address) {
@@ -2293,7 +2299,10 @@ fn test_multisig_pause_flow() {
     // Proposal exists but not executed yet (needs 2/2)
     assert_eq!(contract.is_paused(), false);
 
-    // signer2 approves
+    // Advance past the 48-hour time lock required for Pause proposals
+    env.ledger().with_mut(|l| l.timestamp += 48 * 60 * 60 + 1);
+
+    // signer2 approves — threshold met and time lock passed, so proposal executes
     contract.approve_admin_action(&signer2, &proposal_id);
 
     // Execution should be automatic after second approval
