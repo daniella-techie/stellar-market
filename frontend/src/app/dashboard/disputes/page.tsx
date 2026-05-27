@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { ShieldCheck, Loader2, Gavel, Vote, AlertCircle } from "lucide-react";
+import { ShieldCheck, Loader2, Gavel, Vote } from "lucide-react";
 import Link from "next/link";
 import axios from "axios";
 import StatusBadge from "@/components/StatusBadge";
@@ -158,8 +158,10 @@ export default function DisputesDashboardPage() {
           {totalPages > 1 && (
             <div className="mt-8">
               <Pagination
-                currentPage={page}
+                page={page}
                 totalPages={totalPages}
+                total={total}
+                limit={ITEMS_PER_PAGE}
                 onPageChange={setPage}
               />
             </div>
