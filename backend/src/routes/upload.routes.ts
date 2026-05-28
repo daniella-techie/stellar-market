@@ -5,8 +5,15 @@ import fs from "fs";
 import path from "path";
 import { authenticate, AuthRequest } from "../middleware/auth";
 import { validate } from "../middleware/validation";
-import { upload, UPLOAD_DIR, MAX_FILE_SIZE, AVATAR_UPLOAD_DIR } from "../config/upload";
+import {
+  upload,
+  UPLOAD_DIR,
+  MAX_FILE_SIZE,
+  AVATAR_UPLOAD_DIR,
+} from "../config/upload";
 import { validateFileMimeType, formatFileSize } from "../utils/fileValidation";
+import { scanFile } from "../utils/virusScanner";
+import { auditLogger } from "../utils/auditLogger";
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -40,7 +47,10 @@ router.get("/avatars/:filename", (req, res) => {
   if (!fs.existsSync(filePath)) {
     return res.status(404).json({ error: "Avatar not found" });
   }
-  res.setHeader("Content-Type", filename.endsWith(".png") ? "image/png" : "image/jpeg");
+  res.setHeader(
+    "Content-Type",
+    filename.endsWith(".png") ? "image/png" : "image/jpeg",
+  );
   const fileStream = fs.createReadStream(filePath);
   fileStream.pipe(res);
 });
@@ -78,6 +88,44 @@ router.post(
         fs.unlinkSync(req.file.path);
         return res.status(400).json({
           error: validation.error || "Invalid file type",
+        });
+      }
+
+      // Scan file for viruses
+      const scanResult = await scanFile(req.file.path);
+      if (scanResult.isInfected) {
+        // Delete infected file immediately
+        fs.unlinkSync(req.file.path);
+
+        // Log the incident
+        auditLogger.log({
+          action: "INFECTED_FILE_UPLOAD_BLOCKED",
+          userId: req.userId!,
+          details: {
+            filename: req.file.originalname,
+            viruses: scanResult.viruses,
+            jobId,
+            disputeId,
+          },
+          ipAddress: req.ip || "unknown",
+        });
+
+        return res.status(422).json({
+          error: "File contains malware and has been rejected",
+          viruses: scanResult.viruses,
+        });
+      }
+
+      // Log if scan was skipped (for monitoring)
+      if (scanResult.skipped) {
+        auditLogger.log({
+          action: "VIRUS_SCAN_SKIPPED",
+          userId: req.userId!,
+          details: {
+            filename: req.file.originalname,
+            reason: scanResult.error || "ClamAV not available",
+          },
+          ipAddress: req.ip || "unknown",
         });
       }
 

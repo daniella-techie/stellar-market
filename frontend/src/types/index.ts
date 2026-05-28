@@ -206,3 +206,35 @@ export interface Dispute {
   respondent: User;
   votes: Vote[];
 }
+
+export interface Transaction {
+  id: string;
+  jobId: string;
+  milestoneId?: string;
+  fromAddress: string;
+  toAddress: string;
+  amount: number;
+  tokenAddress: string;
+  txHash: string;
+  type: "DEPOSIT" | "RELEASE" | "REFUND" | "DISPUTE_PAYOUT";
+  createdAt: string;
+  updatedAt?: string;
+  job?: {
+    id: string;
+    title: string;
+  };
+  milestone?: {
+    id: string;
+    title: string;
+  };
+}
+
+export interface TransactionResponse {
+  transactions: Transaction[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}

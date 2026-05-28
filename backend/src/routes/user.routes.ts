@@ -267,6 +267,75 @@ router.get(
   }),
 );
 
+// GET /api/users/public/:username — public profile by username (no auth, no sensitive fields)
+router.get(
+  "/public/:username",
+  asyncHandler(async (_req: AuthRequest, res: Response) => {
+    const username = _req.params.username as string;
+
+    const user = await prisma.user.findUnique({
+      where: { username },
+      select: {
+        id: true,
+        username: true,
+        bio: true,
+        avatarUrl: true,
+        role: true,
+        skills: true,
+        averageRating: true,
+        reviewCount: true,
+        createdAt: true,
+        reviewsReceived: {
+          orderBy: { createdAt: "desc" as const },
+          take: 10,
+          select: {
+            id: true,
+            rating: true,
+            comment: true,
+            createdAt: true,
+            reviewer: {
+              select: {
+                id: true,
+                username: true,
+                avatarUrl: true,
+              },
+            },
+          },
+        },
+        freelancerJobs: {
+          where: { status: "COMPLETED" },
+          orderBy: { updatedAt: "desc" as const },
+          take: 10,
+          select: {
+            id: true,
+            title: true,
+            category: true,
+            createdAt: true,
+          },
+        },
+        portfolioItems: {
+          where: {},
+          orderBy: { displayOrder: "asc" as const },
+          select: {
+            id: true,
+            title: true,
+            description: true,
+            fileUrl: true,
+            fileName: true,
+            mimeType: true,
+          },
+        },
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found." });
+    }
+
+    res.json(user);
+  }),
+);
+
 // Get user profile by ID
 router.get(
   "/:id",

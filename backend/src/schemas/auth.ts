@@ -51,3 +51,7 @@ export const twoFactorValidateSchema = z.object({
   code: z.string().min(1, "Code is required"),
   tempToken: z.string().min(1, "Temporary token is required"),
 });
+
+export const refreshTokenSchema = z.object({
+  refreshToken: z.string().min(1, "Refresh token is required").optional(),
+});
