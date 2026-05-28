@@ -1,5 +1,6 @@
 import express from "express";
 import cors from "cors";
+import cookieParser from "cookie-parser";
 import helmet from "helmet";
 import { createServer } from "http";
 import { PrismaClient } from "@prisma/client";
@@ -52,6 +53,7 @@ if (process.env.NODE_ENV !== "production") {
   });
 }
 app.use(cors(corsOptions));
+app.use(cookieParser());
 app.use(requestIdMiddleware);
 app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: true, limit: "1mb" }));

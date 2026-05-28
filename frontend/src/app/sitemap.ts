@@ -1,9 +1,24 @@
 import type { MetadataRoute } from 'next'
 
-export default function sitemap(): MetadataRoute.Sitemap {
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'
+
+async function getPublicFreelancerUsernames(): Promise<string[]> {
+    try {
+        const res = await fetch(`${API_URL}/freelancers/search?limit=1000`, {
+            next: { revalidate: 3600 },
+        })
+        if (!res.ok) return []
+        const data = await res.json()
+        return (data.freelancers ?? data.data ?? []).map((u: { username: string }) => u.username)
+    } catch {
+        return []
+    }
+}
+
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://stellarmarket.io'
 
-    return [
+    const staticRoutes: MetadataRoute.Sitemap = [
         {
             url: baseUrl,
             lastModified: new Date(),
@@ -41,4 +56,14 @@ export default function sitemap(): MetadataRoute.Sitemap {
             priority: 0.5,
         },
     ]
+
+    const usernames = await getPublicFreelancerUsernames()
+    const profileRoutes: MetadataRoute.Sitemap = usernames.map((username) => ({
+        url: `${baseUrl}/profile/${encodeURIComponent(username)}`,
+        lastModified: new Date(),
+        changeFrequency: 'weekly' as const,
+        priority: 0.7,
+    }))
+
+    return [...staticRoutes, ...profileRoutes]
 }

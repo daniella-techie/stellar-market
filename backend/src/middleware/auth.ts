@@ -56,6 +56,8 @@ export const authenticate = async (
       "/auth/2fa/validate",
       "/auth/forgot-password",
       "/auth/reset-password",
+      "/auth/refresh",
+      "/auth/logout",
     ];
 
     const isExempt = exemptRoutes.some((route) => req.path.includes(route));

@@ -25,11 +25,48 @@ function newRow(): Row {
   };
 }
 
+type DiffEntry =
+  | { kind: "removed"; milestone: ProposeRevisionMilestoneInput }
+  | { kind: "added"; milestone: ProposeRevisionMilestoneInput }
+  | {
+      kind: "changed";
+      title: string;
+      current: ProposeRevisionMilestoneInput;
+      proposed: ProposeRevisionMilestoneInput;
+    };
+
+function computeDiff(
+  current: ProposeRevisionMilestoneInput[],
+  proposed: ProposeRevisionMilestoneInput[]
+): DiffEntry[] {
+  const entries: DiffEntry[] = [];
+  const currentByTitle = new Map(current.map((m) => [m.title.trim(), m]));
+  const proposedByTitle = new Map(proposed.map((m) => [m.title.trim(), m]));
+
+  for (const [title, cur] of currentByTitle) {
+    const prop = proposedByTitle.get(title);
+    if (!prop) {
+      entries.push({ kind: "removed", milestone: cur });
+    } else if (cur.amount !== prop.amount || cur.deadline !== prop.deadline) {
+      entries.push({ kind: "changed", title, current: cur, proposed: prop });
+    }
+  }
+
+  for (const [title, prop] of proposedByTitle) {
+    if (!currentByTitle.has(title)) {
+      entries.push({ kind: "added", milestone: prop });
+    }
+  }
+
+  return entries;
+}
+
 type Props = {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (milestones: ProposeRevisionMilestoneInput[]) => Promise<void>;
   initialRows: ProposeRevisionMilestoneInput[];
+  currentMilestones?: ProposeRevisionMilestoneInput[];
   processing: boolean;
 };
 
@@ -38,6 +75,7 @@ export default function ProposeRevisionModal({
   onClose,
   onSubmit,
   initialRows,
+  currentMilestones = [],
   processing,
 }: Props) {
   const [rows, setRows] = useState<Row[]>([]);
@@ -64,6 +102,18 @@ export default function ProposeRevisionModal({
       return sum + (Number.isFinite(n) ? n : 0);
     }, 0);
   }, [rows]);
+
+  const diffEntries = useMemo<DiffEntry[]>(() => {
+    if (currentMilestones.length === 0) return [];
+    const proposed = rows
+      .filter((r) => r.title.trim().length > 0)
+      .map((r) => ({
+        title: r.title.trim(),
+        amount: parseFloat(r.amount) || 0,
+        deadline: r.deadline,
+      }));
+    return computeDiff(currentMilestones, proposed);
+  }, [currentMilestones, rows]);
 
   if (!isOpen) return null;
 
@@ -117,6 +167,90 @@ export default function ProposeRevisionModal({
             Edit milestones and budget. The on-chain escrow will use the sum of
             milestone amounts as the new total if the other party accepts.
           </p>
+
+          {diffEntries.length > 0 && (
+            <div
+              className="rounded-lg border border-theme-border bg-theme-bg p-3 space-y-2"
+              aria-label="Milestone changes summary"
+              role="region"
+            >
+              <p className="text-xs font-semibold text-theme-heading uppercase tracking-wide">
+                Changes vs current milestones
+              </p>
+              <ul className="space-y-1.5" aria-label="List of milestone changes">
+                {diffEntries.map((entry, idx) => {
+                  if (entry.kind === "removed") {
+                    return (
+                      <li
+                        key={idx}
+                        className="flex items-start gap-2 text-sm text-red-500"
+                        aria-label={`Removed milestone: ${entry.milestone.title}`}
+                      >
+                        <span className="mt-0.5 font-bold select-none" aria-hidden>−</span>
+                        <span>
+                          <span className="line-through">{entry.milestone.title}</span>
+                          <span className="ml-2 text-red-400 text-xs">
+                            {entry.milestone.amount.toLocaleString()} XLM
+                          </span>
+                        </span>
+                      </li>
+                    );
+                  }
+                  if (entry.kind === "added") {
+                    return (
+                      <li
+                        key={idx}
+                        className="flex items-start gap-2 text-sm text-green-600 dark:text-green-400"
+                        aria-label={`Added milestone: ${entry.milestone.title}`}
+                      >
+                        <span className="mt-0.5 font-bold select-none" aria-hidden>+</span>
+                        <span>
+                          {entry.milestone.title}
+                          <span className="ml-2 text-green-500 text-xs">
+                            {entry.milestone.amount.toLocaleString()} XLM
+                          </span>
+                        </span>
+                      </li>
+                    );
+                  }
+                  return (
+                    <li
+                      key={idx}
+                      className="flex items-start gap-2 text-sm text-amber-600 dark:text-amber-400"
+                      aria-label={`Changed milestone: ${entry.title}`}
+                    >
+                      <span className="mt-0.5 font-bold select-none" aria-hidden>~</span>
+                      <span>
+                        <span className="font-medium">{entry.title}</span>
+                        {entry.current.amount !== entry.proposed.amount && (
+                          <span className="ml-2 text-xs">
+                            <span className="line-through text-red-400">
+                              {entry.current.amount.toLocaleString()} XLM
+                            </span>
+                            {" → "}
+                            <span className="text-green-600 dark:text-green-400">
+                              {entry.proposed.amount.toLocaleString()} XLM
+                            </span>
+                          </span>
+                        )}
+                        {entry.current.deadline !== entry.proposed.deadline && (
+                          <span className="ml-2 text-xs">
+                            <span className="line-through text-red-400">
+                              {entry.current.deadline.slice(0, 10)}
+                            </span>
+                            {" → "}
+                            <span className="text-green-600 dark:text-green-400">
+                              {entry.proposed.deadline.slice(0, 10)}
+                            </span>
+                          </span>
+                        )}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          )}
 
           <div className="flex items-center justify-between text-sm">
             <span className="text-theme-text">Proposed budget (XLM)</span>

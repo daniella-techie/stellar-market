@@ -169,6 +169,10 @@ pub struct Job {
     pub freelancer: Address,
     pub token: Address,
     pub total_amount: i128,
+    /// Total tokens actually deposited into this contract for this job.
+    /// Starts at 0, set to `total_amount` by `fund_job`, and updated by
+    /// `top_up_escrow` and `accept_revision` budget adjustments.
+    pub funded_amount: i128,
     pub status: JobStatus,
     pub milestones: Vec<Milestone>,
     pub job_deadline: u64,
@@ -682,6 +686,7 @@ impl EscrowContract {
             freelancer: freelancer.clone(),
             token: token.clone(),
             total_amount: total,
+            funded_amount: 0,
             status: JobStatus::Created,
             milestones: milestone_vec,
             job_deadline,
@@ -740,6 +745,7 @@ impl EscrowContract {
         let token_client = token::Client::new(&env, &job.token);
         token_client.transfer(&client, &env.current_contract_address(), &job.total_amount);
 
+        job.funded_amount = job.total_amount;
         job.status = JobStatus::Funded;
         env.storage().persistent().set(&get_job_key(job_id), &job);
         bump_job_ttl(&env, job_id);
@@ -748,6 +754,67 @@ impl EscrowContract {
         env.events().publish(
             (symbol_short!("escrow"), symbol_short!("funded")),
             (job_id, client, job.freelancer, job.token, job.total_amount),
+        );
+
+        Ok(())
+    }
+
+    /// Incrementally top up the escrow balance for an already-funded job.
+    ///
+    /// Useful when a revision proposal has increased `total_amount` and the
+    /// client wants to pay the difference in multiple instalments rather than
+    /// a single lump sum.  The job status is **not** changed by this call.
+    ///
+    /// # Errors
+    /// - `JobNotFound`      — no job with the given id
+    /// - `Unauthorized`     — caller is not the job client
+    /// - `InvalidStatus`    — job is not Funded or InProgress
+    /// - `AlreadyFunded`    — adding `amount` would exceed `total_amount`
+    /// - `ContractPaused`   — the contract is paused
+    pub fn top_up_escrow(
+        env: Env,
+        client: Address,
+        job_id: u64,
+        amount: i128,
+    ) -> Result<(), EscrowError> {
+        require_not_paused(&env)?;
+
+        client.require_auth();
+
+        let mut job: Job = env
+            .storage()
+            .persistent()
+            .get(&get_job_key(job_id))
+            .ok_or(EscrowError::JobNotFound)?;
+        bump_job_ttl(&env, job_id);
+
+        if job.client != client {
+            return Err(EscrowError::Unauthorized);
+        }
+
+        if job.status != JobStatus::Funded && job.status != JobStatus::InProgress {
+            return Err(EscrowError::InvalidStatus);
+        }
+
+        let new_funded = job
+            .funded_amount
+            .checked_add(amount)
+            .ok_or(EscrowError::AlreadyFunded)?;
+
+        if new_funded > job.total_amount {
+            return Err(EscrowError::AlreadyFunded);
+        }
+
+        let token_client = token::Client::new(&env, &job.token);
+        token_client.transfer(&client, &env.current_contract_address(), &amount);
+
+        job.funded_amount = new_funded;
+        env.storage().persistent().set(&get_job_key(job_id), &job);
+        bump_job_ttl(&env, job_id);
+
+        env.events().publish(
+            (symbol_short!("escrow"), symbol_short!("top_up")),
+            (job_id, client, amount, new_funded),
         );
 
         Ok(())
@@ -1875,6 +1942,10 @@ impl EscrowContract {
                 &env.current_contract_address(), // to: this contract
                 &delta,
             );
+            job.funded_amount = job
+                .funded_amount
+                .checked_add(delta)
+                .ok_or(EscrowError::InsufficientTopUp)?;
         } else if delta < 0 {
             // Budget decreased — refund the absolute difference to client
             let refund_amount = delta.checked_abs().ok_or(EscrowError::InsufficientTopUp)?;
@@ -1883,6 +1954,7 @@ impl EscrowContract {
                 &job.client,                     // to: client
                 &refund_amount,
             );
+            job.funded_amount = job.funded_amount.saturating_sub(refund_amount);
         }
         // delta == 0: no token movement needed
 

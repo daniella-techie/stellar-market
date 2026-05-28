@@ -2521,3 +2521,123 @@ fn test_release_partial_payment_unauthorized_rejected() {
     assert!(result.is_err()); // Unauthorized (#2)
 }
 
+// ── top_up_escrow tests (issue #489) ─────────────────────────────────────────
+
+#[test]
+fn test_top_up_escrow_partial_top_up() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.ledger().with_mut(|l| l.timestamp = 1000);
+
+    let (contract, client, freelancer, token, _admin) = setup_test(&env);
+
+    // Mint extra tokens so client can top up
+    let token_admin = StellarAssetClient::new(&env, &token);
+    token_admin.mint(&client, &5000);
+
+    let milestones = vec![&env, (String::from_str(&env, "Work"), 1000_i128, JOB_DEADLINE)];
+    let job_id = contract.create_job(&client, &freelancer, &token, &milestones, &JOB_DEADLINE, &GRACE_PERIOD);
+
+    contract.fund_job(&job_id, &client);
+
+    // Simulate revision increasing total_amount so there is room to top up
+    env.as_contract(&contract.address, || {
+        let key = crate::DataKey::Job(job_id);
+        let mut job: crate::Job = env.storage().persistent().get(&key).unwrap();
+        job.total_amount = 1500;
+        env.storage().persistent().set(&key, &job);
+    });
+
+    // Partial top-up: add 300 (funded_amount goes from 1000 → 1300)
+    contract.top_up_escrow(&client, &job_id, &300_i128);
+
+    let job: crate::Job = env.as_contract(&contract.address, || {
+        env.storage().persistent().get(&crate::DataKey::Job(job_id)).unwrap()
+    });
+    assert_eq!(job.funded_amount, 1300);
+}
+
+#[test]
+fn test_top_up_escrow_completing_funding() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.ledger().with_mut(|l| l.timestamp = 1000);
+
+    let (contract, client, freelancer, token, _admin) = setup_test(&env);
+
+    let token_admin = StellarAssetClient::new(&env, &token);
+    token_admin.mint(&client, &5000);
+
+    let milestones = vec![&env, (String::from_str(&env, "Work"), 1000_i128, JOB_DEADLINE)];
+    let job_id = contract.create_job(&client, &freelancer, &token, &milestones, &JOB_DEADLINE, &GRACE_PERIOD);
+
+    contract.fund_job(&job_id, &client);
+
+    env.as_contract(&contract.address, || {
+        let key = crate::DataKey::Job(job_id);
+        let mut job: crate::Job = env.storage().persistent().get(&key).unwrap();
+        job.total_amount = 1500;
+        env.storage().persistent().set(&key, &job);
+    });
+
+    // Top up the full remaining 500
+    contract.top_up_escrow(&client, &job_id, &500_i128);
+
+    let job: crate::Job = env.as_contract(&contract.address, || {
+        env.storage().persistent().get(&crate::DataKey::Job(job_id)).unwrap()
+    });
+    assert_eq!(job.funded_amount, job.total_amount);
+}
+
+#[test]
+#[should_panic(expected = "Error(Contract, #6)")]
+fn test_top_up_escrow_overfund_rejection() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.ledger().with_mut(|l| l.timestamp = 1000);
+
+    let (contract, client, freelancer, token, _admin) = setup_test(&env);
+
+    let token_admin = StellarAssetClient::new(&env, &token);
+    token_admin.mint(&client, &5000);
+
+    let milestones = vec![&env, (String::from_str(&env, "Work"), 1000_i128, JOB_DEADLINE)];
+    let job_id = contract.create_job(&client, &freelancer, &token, &milestones, &JOB_DEADLINE, &GRACE_PERIOD);
+    contract.fund_job(&job_id, &client);
+
+    // Trying to top up on a fully-funded job should fail with AlreadyFunded (#6)
+    contract.top_up_escrow(&client, &job_id, &1_i128);
+}
+
+#[test]
+fn test_top_up_escrow_emits_event() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.ledger().with_mut(|l| l.timestamp = 1000);
+
+    let (contract, client, freelancer, token, _admin) = setup_test(&env);
+
+    let token_admin = StellarAssetClient::new(&env, &token);
+    token_admin.mint(&client, &5000);
+
+    let milestones = vec![&env, (String::from_str(&env, "Work"), 1000_i128, JOB_DEADLINE)];
+    let job_id = contract.create_job(&client, &freelancer, &token, &milestones, &JOB_DEADLINE, &GRACE_PERIOD);
+    contract.fund_job(&job_id, &client);
+
+    env.as_contract(&contract.address, || {
+        let key = crate::DataKey::Job(job_id);
+        let mut job: crate::Job = env.storage().persistent().get(&key).unwrap();
+        job.total_amount = 1500;
+        env.storage().persistent().set(&key, &job);
+    });
+
+    contract.top_up_escrow(&client, &job_id, &200_i128);
+
+    let events = env.events().all();
+    let last_event = events.last().expect("top_up event should be emitted");
+    let topic0: Symbol = last_event.1.get(0).unwrap().into_val(&env);
+    let topic1: Symbol = last_event.1.get(1).unwrap().into_val(&env);
+    assert_eq!(topic0, symbol_short!("escrow"));
+    assert_eq!(topic1, symbol_short!("top_up"));
+}
+
