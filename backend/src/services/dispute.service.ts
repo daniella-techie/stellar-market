@@ -327,6 +327,103 @@ export class DisputeService {
   }
 
   /**
+   * Get user's dispute history (initiated or involved)
+   */
+  static async getUserDisputeHistory(
+    userId: string,
+    filter: "all" | "initiated" | "involved" = "all",
+    sortBy: "recent" | "oldest" = "recent",
+    pagination: { page: number; limit: number } = { page: 1, limit: 20 },
+  ) {
+    const { page, limit } = pagination;
+    const skip = (page - 1) * limit;
+
+    // Build where clause based on filter
+    let where: any = {
+      OR: [
+        { clientId: userId },
+        { freelancerId: userId },
+        { initiatorId: userId },
+      ],
+    };
+
+    if (filter === "initiated") {
+      where = { initiatorId: userId };
+    } else if (filter === "involved") {
+      where = {
+        AND: [
+          { initiatorId: { not: userId } },
+          {
+            OR: [{ clientId: userId }, { freelancerId: userId }],
+          },
+        ],
+      };
+    }
+
+    // Determine sort order
+    const orderBy =
+      sortBy === "recent"
+        ? { createdAt: "desc" as const }
+        : { createdAt: "asc" as const };
+
+    const [disputes, total] = await Promise.all([
+      prisma.dispute.findMany({
+        where,
+        include: {
+          job: { select: { id: true, title: true, budget: true } },
+          client: {
+            select: {
+              id: true,
+              username: true,
+              walletAddress: true,
+              avatarUrl: true,
+            },
+          },
+          freelancer: {
+            select: {
+              id: true,
+              username: true,
+              walletAddress: true,
+              avatarUrl: true,
+            },
+          },
+          initiator: {
+            select: {
+              id: true,
+              username: true,
+              walletAddress: true,
+              avatarUrl: true,
+            },
+          },
+          _count: { select: { votes: true } },
+        },
+        orderBy,
+        skip,
+        take: limit,
+      }),
+      prisma.dispute.count({ where }),
+    ]);
+
+    // Transform disputes to include jobTitle and otherPartyName
+    const transformedDisputes = disputes.map((dispute) => {
+      // Determine the other party (not the current user)
+      let otherParty = dispute.client;
+      if (dispute.clientId === userId) {
+        otherParty = dispute.freelancer;
+      }
+
+      return {
+        ...dispute,
+        jobTitle: dispute.job.title,
+        otherPartyName: otherParty.username,
+        otherPartyAvatar: otherParty.avatarUrl,
+      };
+    });
+
+    return transformedDisputes;
+  }
+
+  /**
    * Get disputes with filtering and pagination
    */
   static async getDisputes(
