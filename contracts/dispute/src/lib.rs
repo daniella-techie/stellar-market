@@ -37,6 +37,9 @@ pub enum DisputeError {
     NotAdmin = 12,
     DisputeCooldown = 13,
     VotingPeriodNotExpired = 14,
+    DelegationNotFound = 15,
+    AlreadyDelegated = 16,
+    DelegateAlreadyVoted = 17,
 }
 
 #[contracttype]
@@ -125,6 +128,10 @@ enum DataKey {
     ReputationSlashBps,
     JobDispute(u64),
     JobDisputes(u64),
+    /// Maps (owner, job_id) → delegate address. Lets the owner look up who they delegated to.
+    VoteDelegation(Address, u64),
+    /// Maps (delegate, job_id) → owner address. Used in cast_vote to resolve the owner.
+    DelegationOwner(Address, u64),
 }
 
 fn require_not_paused(env: &Env) -> Result<(), DisputeError> {
@@ -215,6 +222,22 @@ fn bump_job_dispute_ttl(env: &Env, job_id: u64) {
 fn bump_job_disputes_ttl(env: &Env, job_id: u64) {
     env.storage().persistent().extend_ttl(
         &DataKey::JobDisputes(job_id),
+        MIN_TTL_THRESHOLD,
+        MIN_TTL_EXTEND_TO,
+    );
+}
+
+fn bump_vote_delegation_ttl(env: &Env, owner: &Address, job_id: u64) {
+    env.storage().persistent().extend_ttl(
+        &DataKey::VoteDelegation(owner.clone(), job_id),
+        MIN_TTL_THRESHOLD,
+        MIN_TTL_EXTEND_TO,
+    );
+}
+
+fn bump_delegation_owner_ttl(env: &Env, delegate: &Address, job_id: u64) {
+    env.storage().persistent().extend_ttl(
+        &DataKey::DelegationOwner(delegate.clone(), job_id),
         MIN_TTL_THRESHOLD,
         MIN_TTL_EXTEND_TO,
     );
@@ -640,18 +663,33 @@ impl DisputeContract {
             return Err(DisputeError::ConflictOfInterest);
         }
 
-        // Check voter reputation eligibility (only if reputation system is initialized)
+        // Resolve delegation: if the voter is acting as a delegate for this job's dispute,
+        // look up the stake owner so eligibility and double-vote checks use the owner.
+        let delegation_owner: Option<Address> = env
+            .storage()
+            .persistent()
+            .get(&DataKey::DelegationOwner(voter.clone(), dispute.job_id));
+
+        let stake_owner = delegation_owner.as_ref().unwrap_or(&voter);
+
+        // Check voter reputation eligibility against the stake owner (owner if delegated).
         if env.storage().instance().has(&DataKey::ReputationContract) {
-            let is_eligible = Self::is_eligible_voter(env.clone(), voter.clone())?;
+            let is_eligible = Self::is_eligible_voter(env.clone(), stake_owner.clone())?;
             if !is_eligible {
                 return Err(DisputeError::InsufficientReputation);
             }
         }
 
-        // Check if already voted
+        // Prevent double-vote: check both the physical voter and the stake owner.
         let voted_key = DataKey::HasVoted(dispute_id, voter.clone());
         if env.storage().persistent().has(&voted_key) {
             return Err(DisputeError::AlreadyVoted);
+        }
+        if delegation_owner.is_some() {
+            let owner_voted_key = DataKey::HasVoted(dispute_id, stake_owner.clone());
+            if env.storage().persistent().has(&owner_voted_key) {
+                return Err(DisputeError::AlreadyVoted);
+            }
         }
 
         // Record vote
@@ -693,6 +731,14 @@ impl DisputeContract {
         env.storage().persistent().set(&voted_key, &true);
         bump_dispute_ttl(&env, dispute_id);
         bump_has_voted_ttl(&env, dispute_id, &voter);
+
+        // When voting via delegation, also mark the owner as having voted so they
+        // cannot vote again directly and the delegation cannot be reused.
+        if let Some(ref owner) = delegation_owner {
+            let owner_voted_key = DataKey::HasVoted(dispute_id, owner.clone());
+            env.storage().persistent().set(&owner_voted_key, &true);
+            bump_has_voted_ttl(&env, dispute_id, owner);
+        }
 
         // Emit event
         env.events().publish(
@@ -890,6 +936,127 @@ impl DisputeContract {
             .instance()
             .get(&DataKey::DisputeCount)
             .unwrap_or(0)
+    }
+
+    /// Delegate vote rights for a specific job's dispute to another address.
+    /// The owner retains token ownership; only the right to cast the vote is transferred.
+    /// The delegation is scoped to a single job so the delegate cannot vote on other jobs.
+    pub fn delegate_vote(
+        env: Env,
+        owner: Address,
+        delegate: Address,
+        job_id: u64,
+    ) -> Result<(), DisputeError> {
+        owner.require_auth();
+        require_not_paused(&env)?;
+
+        if owner == delegate {
+            return Err(DisputeError::InvalidParty);
+        }
+
+        // Reject if the owner already set up a delegation for this job.
+        let del_key = DataKey::VoteDelegation(owner.clone(), job_id);
+        if env.storage().persistent().has(&del_key) {
+            return Err(DisputeError::AlreadyDelegated);
+        }
+
+        // If a dispute already exists for this job, ensure voting is still open and
+        // the delegate hasn't voted yet.
+        if let Some(dispute_id) = env
+            .storage()
+            .persistent()
+            .get::<DataKey, u64>(&DataKey::JobDispute(job_id))
+        {
+            if let Some(dispute) = env
+                .storage()
+                .persistent()
+                .get::<DataKey, Dispute>(&DataKey::Dispute(dispute_id))
+            {
+                if dispute.status != DisputeStatus::Open
+                    && dispute.status != DisputeStatus::Voting
+                {
+                    return Err(DisputeError::VotingClosed);
+                }
+
+                // Reject if the delegate already cast a vote on this dispute.
+                let voted_key = DataKey::HasVoted(dispute_id, delegate.clone());
+                if env.storage().persistent().has(&voted_key) {
+                    return Err(DisputeError::DelegateAlreadyVoted);
+                }
+
+                // Reject if the owner already voted directly.
+                let owner_voted_key = DataKey::HasVoted(dispute_id, owner.clone());
+                if env.storage().persistent().has(&owner_voted_key) {
+                    return Err(DisputeError::AlreadyVoted);
+                }
+            }
+        }
+
+        env.storage().persistent().set(&del_key, &delegate);
+        bump_vote_delegation_ttl(&env, &owner, job_id);
+
+        let owner_key = DataKey::DelegationOwner(delegate.clone(), job_id);
+        env.storage().persistent().set(&owner_key, &owner);
+        bump_delegation_owner_ttl(&env, &delegate, job_id);
+
+        env.events().publish(
+            (symbol_short!("dispute"), symbol_short!("delegated")),
+            (owner, delegate, job_id),
+        );
+
+        Ok(())
+    }
+
+    /// Revoke a previously granted vote delegation for a job, provided the delegate
+    /// has not yet cast a vote on the associated dispute.
+    pub fn revoke_delegation(
+        env: Env,
+        owner: Address,
+        job_id: u64,
+    ) -> Result<(), DisputeError> {
+        owner.require_auth();
+        require_not_paused(&env)?;
+
+        let del_key = DataKey::VoteDelegation(owner.clone(), job_id);
+        let delegate: Address = env
+            .storage()
+            .persistent()
+            .get(&del_key)
+            .ok_or(DisputeError::DelegationNotFound)?;
+
+        // Block revocation once the delegate has already voted.
+        if let Some(dispute_id) = env
+            .storage()
+            .persistent()
+            .get::<DataKey, u64>(&DataKey::JobDispute(job_id))
+        {
+            let voted_key = DataKey::HasVoted(dispute_id, delegate.clone());
+            if env.storage().persistent().has(&voted_key) {
+                return Err(DisputeError::DelegateAlreadyVoted);
+            }
+        }
+
+        env.storage().persistent().remove(&del_key);
+
+        let owner_key = DataKey::DelegationOwner(delegate.clone(), job_id);
+        env.storage().persistent().remove(&owner_key);
+
+        env.events().publish(
+            (symbol_short!("dispute"), symbol_short!("del_revkd")),
+            (owner, delegate, job_id),
+        );
+
+        Ok(())
+    }
+
+    /// Return the current delegate for an owner / job pair, if one exists.
+    pub fn get_delegation(env: Env, owner: Address, job_id: u64) -> Option<Address> {
+        let del_key = DataKey::VoteDelegation(owner.clone(), job_id);
+        let delegate: Option<Address> = env.storage().persistent().get(&del_key);
+        if delegate.is_some() {
+            bump_vote_delegation_ttl(&env, &owner, job_id);
+        }
+        delegate
     }
 
     /// Check if a voter is excluded from voting on a specific dispute.

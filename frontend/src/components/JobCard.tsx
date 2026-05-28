@@ -1,41 +1,46 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Clock, DollarSign, Users } from "lucide-react";
 import StatusBadge from "./StatusBadge";
 import EscrowStatusBadge from "./EscrowStatusBadge";
-import Skeleton from "./Skeleton";
 import { Job } from "@/types";
 import { useAuth } from "@/context/AuthContext";
 
 interface JobCardProps {
   job: Job;
+  /**
+   * Position of this card in the list (0-based).
+   * The first 3 cards (index 0-2) load eagerly with priority;
+   * all others are lazy-loaded.
+   */
+  index?: number;
 }
 
-export default function JobCard({ job }: JobCardProps) {
+export default function JobCard({ job, index = 0 }: JobCardProps) {
   const { user } = useAuth();
-  const [imageLoading, setImageLoading] = useState(true);
   const isFreelancer = user?.role === "FREELANCER";
   const isClient = user?.role === "CLIENT";
   const isOwnJob = user?.id === job.client.id;
+
+  // First 3 cards are above-the-fold — load eagerly with priority
+  const isPriority = index < 3;
 
   return (
     <div className="card hover:border-stellar-blue/50 transition-all duration-200 cursor-pointer">
       <Link href={`/jobs/${job.id}`} className="block">
         {job.imageUrl && (
-          <div className="relative w-full h-48 mb-4 rounded-lg overflow-hidden">
-            {imageLoading && (
-              <Skeleton className="absolute inset-0 w-full h-full" />
-            )}
+          <div className="relative w-full h-48 mb-4 rounded-lg overflow-hidden bg-theme-card">
             <Image
               src={job.imageUrl}
               alt={job.title}
               fill
-              className="object-cover"
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-              onLoad={() => setImageLoading(false)}
+              priority={isPriority}
+              loading={isPriority ? undefined : "lazy"}
+              placeholder="empty"
+              className="object-cover"
             />
           </div>
         )}

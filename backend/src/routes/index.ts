@@ -17,6 +17,7 @@ import freelancerRoutes from "./freelancer.routes";
 import platformRoutes from "./platform.routes";
 import portfolioRoutes from "./portfolio.routes";
 import webhookRoutes from "./webhook.routes";
+import reportRoutes from "./report.routes";
 
 const router = Router();
 
@@ -38,5 +39,6 @@ router.use("/freelancers", freelancerRoutes);
 router.use("/platform", platformRoutes);
 router.use("/portfolio", portfolioRoutes);
 router.use("/webhooks", webhookRoutes);
+router.use("/reports", reportRoutes);
 
 export default router;

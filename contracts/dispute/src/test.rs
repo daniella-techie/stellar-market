@@ -1276,3 +1276,254 @@ fn test_force_resolve_timeout_tie_break_success() {
     let status = client.force_resolve_timeout(&dispute_id);
     assert_eq!(status, DisputeStatus::ResolvedForClient);
 }
+
+// ── Vote delegation tests (#479) ──────────────────────────────────────────────
+
+fn setup_initialized_dispute_contract(
+    env: &Env,
+) -> (DisputeContractClient, Address, Address, Address) {
+    let dispute_contract_id = env.register_contract(None, DisputeContract);
+    let client = DisputeContractClient::new(env, &dispute_contract_id);
+    let escrow_contract_id = env.register_contract(None, DummyEscrow);
+    let reputation_contract_id = env.register_contract(None, MockReputationContract);
+    let admin = Address::generate(env);
+    client.initialize(&admin, &reputation_contract_id, &300, &escrow_contract_id);
+    (client, dispute_contract_id, escrow_contract_id, admin)
+}
+
+#[test]
+fn test_delegate_vote_stored_and_readable() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let (client, _dispute_id, _escrow_id, _admin) = setup_initialized_dispute_contract(&env);
+
+    let owner = Address::generate(&env);
+    let delegate = Address::generate(&env);
+
+    client.delegate_vote(&owner, &delegate, &42u64);
+
+    let stored = client.get_delegation(&owner, &42u64);
+    assert_eq!(stored, Some(delegate));
+}
+
+#[test]
+fn test_delegate_can_cast_vote_on_behalf_of_owner() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let (client, _dispute_id, _escrow_id, _admin) = setup_initialized_dispute_contract(&env);
+
+    let job_client = Address::generate(&env);
+    let freelancer = Address::generate(&env);
+    let owner = Address::generate(&env);
+    let delegate = Address::generate(&env);
+
+    let dispute_id = client.raise_dispute(
+        &1u64,
+        &job_client,
+        &freelancer,
+        &job_client,
+        &String::from_str(&env, "Issue"),
+        &1u32,
+        &None,
+    );
+
+    // Owner delegates their vote rights for job 1 to delegate.
+    client.delegate_vote(&owner, &delegate, &1u64);
+
+    // Delegate casts the vote — should succeed and count for the dispute.
+    client.cast_vote(
+        &dispute_id,
+        &delegate,
+        &VoteChoice::Client,
+        &String::from_str(&env, "Voting on behalf of owner"),
+    );
+
+    let dispute = client.get_dispute(&dispute_id);
+    assert_eq!(dispute.votes_for_client, 1);
+}
+
+#[test]
+fn test_revoke_delegation_removes_entry() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let (client, _dispute_id, _escrow_id, _admin) = setup_initialized_dispute_contract(&env);
+
+    let owner = Address::generate(&env);
+    let delegate = Address::generate(&env);
+
+    client.delegate_vote(&owner, &delegate, &10u64);
+    assert!(client.get_delegation(&owner, &10u64).is_some());
+
+    client.revoke_delegation(&owner, &10u64);
+    assert!(client.get_delegation(&owner, &10u64).is_none());
+}
+
+#[test]
+#[should_panic(expected = "Error(Contract, #3)")] // AlreadyVoted
+fn test_owner_cannot_vote_directly_after_delegate_voted() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let (client, _dispute_id, _escrow_id, _admin) = setup_initialized_dispute_contract(&env);
+
+    let job_client = Address::generate(&env);
+    let freelancer = Address::generate(&env);
+    let owner = Address::generate(&env);
+    let delegate = Address::generate(&env);
+
+    let dispute_id = client.raise_dispute(
+        &1u64,
+        &job_client,
+        &freelancer,
+        &job_client,
+        &String::from_str(&env, "Issue"),
+        &1u32,
+        &None,
+    );
+
+    client.delegate_vote(&owner, &delegate, &1u64);
+
+    // Delegate votes first.
+    client.cast_vote(
+        &dispute_id,
+        &delegate,
+        &VoteChoice::Freelancer,
+        &String::from_str(&env, "Delegate vote"),
+    );
+
+    // Owner tries to vote directly — must fail with AlreadyVoted.
+    client.cast_vote(
+        &dispute_id,
+        &owner,
+        &VoteChoice::Client,
+        &String::from_str(&env, "Direct vote after delegate"),
+    );
+}
+
+#[test]
+#[should_panic(expected = "Error(Contract, #3)")] // AlreadyVoted
+fn test_delegate_cannot_vote_if_owner_voted_directly() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let (client, _dispute_id, _escrow_id, _admin) = setup_initialized_dispute_contract(&env);
+
+    let job_client = Address::generate(&env);
+    let freelancer = Address::generate(&env);
+    let owner = Address::generate(&env);
+    let delegate = Address::generate(&env);
+
+    let dispute_id = client.raise_dispute(
+        &1u64,
+        &job_client,
+        &freelancer,
+        &job_client,
+        &String::from_str(&env, "Issue"),
+        &1u32,
+        &None,
+    );
+
+    // Owner votes directly first.
+    client.cast_vote(
+        &dispute_id,
+        &owner,
+        &VoteChoice::Client,
+        &String::from_str(&env, "Direct owner vote"),
+    );
+
+    // Owner tries to set up a delegation after already voting — must fail.
+    client.delegate_vote(&owner, &delegate, &1u64);
+}
+
+#[test]
+#[should_panic(expected = "Error(Contract, #17)")] // DelegateAlreadyVoted
+fn test_revoke_fails_after_delegate_voted() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let (client, _dispute_id, _escrow_id, _admin) = setup_initialized_dispute_contract(&env);
+
+    let job_client = Address::generate(&env);
+    let freelancer = Address::generate(&env);
+    let owner = Address::generate(&env);
+    let delegate = Address::generate(&env);
+
+    let dispute_id = client.raise_dispute(
+        &1u64,
+        &job_client,
+        &freelancer,
+        &job_client,
+        &String::from_str(&env, "Issue"),
+        &1u32,
+        &None,
+    );
+
+    client.delegate_vote(&owner, &delegate, &1u64);
+
+    client.cast_vote(
+        &dispute_id,
+        &delegate,
+        &VoteChoice::Freelancer,
+        &String::from_str(&env, "Delegate vote"),
+    );
+
+    // Attempting to revoke after vote is cast must fail.
+    client.revoke_delegation(&owner, &1u64);
+}
+
+#[test]
+#[should_panic(expected = "Error(Contract, #16)")] // AlreadyDelegated
+fn test_double_delegation_for_same_job_fails() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let (client, _dispute_id, _escrow_id, _admin) = setup_initialized_dispute_contract(&env);
+
+    let owner = Address::generate(&env);
+    let delegate_a = Address::generate(&env);
+    let delegate_b = Address::generate(&env);
+
+    client.delegate_vote(&owner, &delegate_a, &5u64);
+    // Second delegation for the same job must fail.
+    client.delegate_vote(&owner, &delegate_b, &5u64);
+}
+
+#[test]
+fn test_delegated_vote_counts_same_as_direct_vote_in_resolution() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let (client, _dispute_id, _escrow_id, _admin) = setup_initialized_dispute_contract(&env);
+
+    let job_client = Address::generate(&env);
+    let freelancer = Address::generate(&env);
+
+    let dispute_id = client.raise_dispute(
+        &1u64,
+        &job_client,
+        &freelancer,
+        &job_client,
+        &String::from_str(&env, "Issue"),
+        &3u32,
+        &None,
+    );
+
+    // Two direct voters for freelancer.
+    let voter1 = Address::generate(&env);
+    let voter2 = Address::generate(&env);
+    client.cast_vote(&dispute_id, &voter1, &VoteChoice::Freelancer, &String::from_str(&env, "v1"));
+    client.cast_vote(&dispute_id, &voter2, &VoteChoice::Freelancer, &String::from_str(&env, "v2"));
+
+    // One delegated vote for freelancer.
+    let owner = Address::generate(&env);
+    let delegate = Address::generate(&env);
+    client.delegate_vote(&owner, &delegate, &1u64);
+    client.cast_vote(&dispute_id, &delegate, &VoteChoice::Freelancer, &String::from_str(&env, "delegated"));
+
+    // 3 votes for freelancer — resolution should succeed.
+    let status = client.resolve_dispute(&dispute_id);
+    assert_eq!(status, DisputeStatus::ResolvedForFreelancer);
+}

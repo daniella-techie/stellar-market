@@ -226,8 +226,8 @@ function FreelancersContent() {
             </div>
           ) : freelancers.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-              {freelancers.map((freelancer) => (
-                <FreelancerCard key={freelancer.id} freelancer={freelancer} />
+              {freelancers.map((freelancer, i) => (
+                <FreelancerCard key={freelancer.id} freelancer={freelancer} index={i} />
               ))}
             </div>
           ) : (

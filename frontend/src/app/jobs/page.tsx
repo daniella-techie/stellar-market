@@ -232,12 +232,12 @@ function JobsContent() {
           ) : jobs.length > 0 ? (
             <>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {jobs.map((job) => (
+                {jobs.map((job, i) => (
                   <div
                     key={job.id}
                     className={newJobIds.has(job.id) ? "animate-fade-down ring-2 ring-stellar-blue/40 rounded-xl" : ""}
                   >
-                    <JobCard job={job} />
+                    <JobCard job={job} index={i} />
                   </div>
                 ))}
               </div>

@@ -1,8 +1,10 @@
 import type { PrismaClient } from "@prisma/client";
 import RedisClient from "./redis";
 import { logger } from "./logger";
+import { getHorizonListenerHealth } from "../services/horizon-listener.service";
 
 export type DependencyHealthStatus = "ok" | "error";
+export type HorizonListenerStatus = "connected" | "degraded" | "down";
 
 export type HealthResponse = {
   status: "ok" | "degraded";
@@ -10,6 +12,7 @@ export type HealthResponse = {
   checks: {
     database: DependencyHealthStatus;
     redis: DependencyHealthStatus;
+    horizonListener: HorizonListenerStatus;
   };
 };
 
@@ -19,6 +22,7 @@ export async function getHealthStatus(
   const checks: HealthResponse["checks"] = {
     database: "ok",
     redis: "ok",
+    horizonListener: getHorizonListenerHealth(),
   };
 
   try {
@@ -38,7 +42,10 @@ export async function getHealthStatus(
     logger.error({ err: error }, "Health check Redis probe failed");
   }
 
-  const healthy = Object.values(checks).every((value) => value === "ok");
+  const healthy =
+    checks.database === "ok" &&
+    checks.redis === "ok" &&
+    checks.horizonListener !== "down";
 
   return {
     status: healthy ? "ok" : "degraded",

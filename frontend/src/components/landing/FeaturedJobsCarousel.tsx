@@ -99,9 +99,9 @@ export default function FeaturedJobsCarousel() {
               </div>
             ))
           ) : jobs.length > 0 ? (
-            jobs.map((job) => (
+            jobs.map((job, i) => (
               <div key={job.id} className="min-w-[300px] md:min-w-[400px] flex-shrink-0 snap-start">
-                <JobCard job={job} />
+                <JobCard job={job} index={i} />
               </div>
             ))
           ) : (

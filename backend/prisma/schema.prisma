@@ -111,6 +111,7 @@ model User {
   isSuspended            Boolean   @default(false)
   suspendReason          String?
   suspendedAt            DateTime?
+  isSuspiciousReporter   Boolean   @default(false)
   createdAt              DateTime  @default(now())
   updatedAt              DateTime  @updatedAt
   availability           Boolean   @default(true)
@@ -414,13 +415,14 @@ model SystemState {
 }
 
 model Report {
-  id         String           @id @default(cuid())
-  reporterId String
-  targetType ReportTargetType
-  targetId   String
-  reason     String
-  status     ReportStatus     @default(PENDING)
-  createdAt  DateTime         @default(now())
+  id             String           @id @default(cuid())
+  reporterId     String
+  targetType     ReportTargetType
+  targetId       String
+  reason         String
+  status         ReportStatus     @default(PENDING)
+  requiresReview Boolean          @default(false)
+  createdAt      DateTime         @default(now())
 
   reporter User @relation("ReportsGiven", fields: [reporterId], references: [id], onDelete: Cascade)
 
