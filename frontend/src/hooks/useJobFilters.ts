@@ -27,7 +27,7 @@ const DEFAULTS: JobFilters = {
   page: 1,
 };
 
-function parseFiltersFromParams(searchParams: URLSearchParams): JobFilters {
+export function parseFiltersFromParams(searchParams: URLSearchParams): JobFilters {
   const skills = searchParams.get("skills");
   const status = searchParams.get("status");
   const page = parseInt(searchParams.get("page") || "1", 10);
@@ -45,7 +45,7 @@ function parseFiltersFromParams(searchParams: URLSearchParams): JobFilters {
   };
 }
 
-function filtersToParams(filters: JobFilters): URLSearchParams {
+export function filtersToParams(filters: JobFilters): URLSearchParams {
   const params = new URLSearchParams();
   if (filters.search) params.set("q", filters.search);
   if (filters.category !== "All") params.set("category", filters.category);

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Trash2, Tag, Loader2 } from "lucide-react";
+import { Plus, Trash2, Tag, Loader2, ArrowUp, ArrowDown } from "lucide-react";
 import axios from "axios";
 import { z } from "zod";
 import { useForm, useFieldArray } from "react-hook-form";
@@ -80,10 +80,15 @@ export default function PostJobPage() {
       milestones: [{ title: "", description: "", amount: "", deadline: "" }],
     },
   });
-  const { fields, append, remove } = useFieldArray({
+  const { fields, append, remove, move } = useFieldArray({
     control,
     name: "milestones",
   });
+
+  const moveMilestone = (from: number, to: number) => {
+    if (to < 0 || to >= fields.length) return;
+    move(from, to);
+  };
   const milestones = watch("milestones");
 
   useEffect(() => {
@@ -395,15 +400,40 @@ export default function PostJobPage() {
                   <span className="text-sm font-medium text-stellar-purple">
                     Milestone {index + 1}
                   </span>
-                  {milestones.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => removeMilestone(index)}
-                      className="text-red-400 hover:text-red-300 transition-colors"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {fields.length > 1 && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => moveMilestone(index, index - 1)}
+                          disabled={index === 0}
+                          aria-label={`Move milestone ${index + 1} up`}
+                          className="text-stellar-blue hover:text-stellar-purple transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                        >
+                          <ArrowUp size={16} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => moveMilestone(index, index + 1)}
+                          disabled={index === fields.length - 1}
+                          aria-label={`Move milestone ${index + 1} down`}
+                          className="text-stellar-blue hover:text-stellar-purple transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                        >
+                          <ArrowDown size={16} />
+                        </button>
+                      </>
+                    )}
+                    {milestones.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeMilestone(index)}
+                        aria-label={`Remove milestone ${index + 1}`}
+                        className="text-red-400 hover:text-red-300 transition-colors"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    )}
+                  </div>
                 </div>
                 <div className="space-y-3">
                   <input
