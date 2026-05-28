@@ -254,17 +254,19 @@ mod escrow {
         Funded,
         InProgress,
         Completed,
-        Cancelled,
         Disputed,
+        Cancelled,
+        Expired,
     }
 
     #[contracttype]
     #[derive(Clone, Debug, Eq, PartialEq)]
     pub enum MilestoneStatus {
         Pending,
+        InProgress,
         Submitted,
         Approved,
-        Rejected,
+        PartiallyPaid,
     }
 
     #[contracttype]
@@ -285,6 +287,7 @@ mod escrow {
         pub freelancer: Address,
         pub token: Address,
         pub total_amount: i128,
+        pub funded_amount: i128,
         pub status: JobStatus,
         pub milestones: Vec<Milestone>,
         pub job_deadline: u64,

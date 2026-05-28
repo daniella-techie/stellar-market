@@ -16,6 +16,7 @@ mod escrow {
         Completed,
         Disputed,
         Cancelled,
+        Expired,
     }
 
     #[contracttype]
@@ -25,6 +26,7 @@ mod escrow {
         InProgress,
         Submitted,
         Approved,
+        PartiallyPaid,
     }
 
     #[contracttype]
@@ -45,6 +47,7 @@ mod escrow {
         pub freelancer: Address,
         pub token: Address,
         pub total_amount: i128,
+        pub funded_amount: i128,
         pub status: JobStatus,
         pub milestones: Vec<Milestone>,
         pub job_deadline: u64,
@@ -446,18 +449,12 @@ impl ReputationContract {
 
         // Track stake balance for withdrawal
         let balance_key = DataKey::StakeBalance(reviewer.clone());
-        let mut balance: i128 = env
-            .storage()
-            .persistent()
-            .get(&balance_key)
-            .unwrap_or(0);
+        let mut balance: i128 = env.storage().persistent().get(&balance_key).unwrap_or(0);
         balance += stake_weight;
         env.storage().persistent().set(&balance_key, &balance);
-        env.storage().persistent().extend_ttl(
-            &balance_key,
-            MIN_TTL_THRESHOLD,
-            MIN_TTL_EXTEND_TO,
-        );
+        env.storage()
+            .persistent()
+            .extend_ttl(&balance_key, MIN_TTL_THRESHOLD, MIN_TTL_EXTEND_TO);
 
         let weight = if stake_weight > 0 {
             stake_weight as u64
@@ -789,9 +786,11 @@ impl ReputationContract {
             .persistent()
             .get(&DataKey::Referrer(user.clone()));
         if referrer.is_some() {
-            env.storage()
-                .persistent()
-                .extend_ttl(&DataKey::Referrer(user.clone()), MIN_TTL_THRESHOLD, MIN_TTL_EXTEND_TO);
+            env.storage().persistent().extend_ttl(
+                &DataKey::Referrer(user.clone()),
+                MIN_TTL_THRESHOLD,
+                MIN_TTL_EXTEND_TO,
+            );
         }
 
         Ok(UserReputationWithReferrer {
@@ -884,23 +883,26 @@ impl ReputationContract {
         dispute_contract.require_auth();
 
         let rep_key = DataKey::Reputation(user.clone());
-        let mut reputation: UserReputation = env
-            .storage()
-            .persistent()
-            .get(&rep_key)
-            .unwrap_or(UserReputation {
-                user: user.clone(),
-                total_score: 0,
-                total_weight: 0,
-                review_count: 0,
-            });
+        let mut reputation: UserReputation =
+            env.storage()
+                .persistent()
+                .get(&rep_key)
+                .unwrap_or(UserReputation {
+                    user: user.clone(),
+                    total_score: 0,
+                    total_weight: 0,
+                    review_count: 0,
+                });
 
         reputation.total_score = reputation.total_score.saturating_sub(amount);
         env.storage().persistent().set(&rep_key, &reputation);
         bump_reputation_ttl(&env, &user);
 
         env.events().publish(
-            (symbol_short!("reput"), Symbol::new(&env, "reputation_slashed")),
+            (
+                symbol_short!("reput"),
+                Symbol::new(&env, "reputation_slashed"),
+            ),
             (user, job_id, amount, reason),
         );
 
@@ -1326,11 +1328,7 @@ impl ReputationContract {
         require_not_paused(&env)?;
 
         let balance_key = DataKey::StakeBalance(reviewer.clone());
-        let balance: i128 = env
-            .storage()
-            .persistent()
-            .get(&balance_key)
-            .unwrap_or(0);
+        let balance: i128 = env.storage().persistent().get(&balance_key).unwrap_or(0);
 
         if balance < amount || amount <= 0 {
             return Err(ReputationError::BelowMinStake);
@@ -1415,7 +1413,8 @@ impl ReputationContract {
     /// tuples sorted by rating (highest first), up to top 50.
     pub fn get_leaderboard(env: Env) -> Vec<(Address, u64)> {
         let leaderboard_key = DataKey::Leaderboard;
-        let leaderboard: Option<Vec<(Address, u64)>> = env.storage().instance().get(&leaderboard_key);
+        let leaderboard: Option<Vec<(Address, u64)>> =
+            env.storage().instance().get(&leaderboard_key);
 
         match leaderboard {
             Some(list) => {
