@@ -773,6 +773,9 @@ impl DisputeContract {
                     DisputeResolution::Escalate => unreachable!(),
                 };
 
+                let _client = dispute.client.clone();
+                let _freelancer = dispute.freelancer.clone();
+
                 // Best-effort cross-contract call — ignore errors so resolution is never blocked
                 let _ = env.try_invoke_contract::<(), soroban_sdk::Error>(
                     &reputation_contract,
@@ -793,9 +796,10 @@ impl DisputeContract {
                 );
             }
 
-            env.storage()
-                .persistent()
-                .set(&DataKey::LastDisputeClosedAt(dispute.job_id), &env.ledger().timestamp());
+            env.storage().persistent().set(
+                &DataKey::LastDisputeClosedAt(dispute.job_id),
+                &env.ledger().timestamp(),
+            );
             bump_last_dispute_closed_ttl(&env, dispute.job_id);
         }
 

@@ -2,11 +2,9 @@
 
 use super::*;
 use soroban_sdk::{
-    contract,
-    contractimpl,
+    contract, contractimpl,
     testutils::{Address as _, Events, Ledger},
-    Env,
-    String,
+    Env, String,
 };
 
 #[contract]
@@ -928,7 +926,14 @@ fn setup_dispute_with_votes(
         );
     }
 
-    (client, dispute_contract_id, escrow_contract_id, user_client, freelancer, dispute_id)
+    (
+        client,
+        dispute_contract_id,
+        escrow_contract_id,
+        user_client,
+        freelancer,
+        dispute_id,
+    )
 }
 
 #[test]
@@ -958,7 +963,10 @@ fn test_client_wins_freelancer_stake_slashed() {
     });
     let _ = last_event;
     let _ = topic1;
-    assert!(slash_event.is_some(), "StakeSlashed event should be emitted when client wins");
+    assert!(
+        slash_event.is_some(),
+        "StakeSlashed event should be emitted when client wins"
+    );
 }
 
 #[test]
@@ -981,7 +989,10 @@ fn test_freelancer_wins_client_stake_slashed() {
         }
         false
     });
-    assert!(slash_event.is_some(), "StakeSlashed event should be emitted when freelancer wins");
+    assert!(
+        slash_event.is_some(),
+        "StakeSlashed event should be emitted when freelancer wins"
+    );
 }
 
 #[test]
@@ -1014,10 +1025,30 @@ fn test_no_slash_on_escalated_dispute() {
     let voter2 = Address::generate(&env);
     let voter3 = Address::generate(&env);
     let voter4 = Address::generate(&env);
-    client.cast_vote(&dispute_id, &voter1, &VoteChoice::Client, &String::from_str(&env, "C"));
-    client.cast_vote(&dispute_id, &voter2, &VoteChoice::Freelancer, &String::from_str(&env, "F"));
-    client.cast_vote(&dispute_id, &voter3, &VoteChoice::Client, &String::from_str(&env, "C"));
-    client.cast_vote(&dispute_id, &voter4, &VoteChoice::Freelancer, &String::from_str(&env, "F"));
+    client.cast_vote(
+        &dispute_id,
+        &voter1,
+        &VoteChoice::Client,
+        &String::from_str(&env, "C"),
+    );
+    client.cast_vote(
+        &dispute_id,
+        &voter2,
+        &VoteChoice::Freelancer,
+        &String::from_str(&env, "F"),
+    );
+    client.cast_vote(
+        &dispute_id,
+        &voter3,
+        &VoteChoice::Client,
+        &String::from_str(&env, "C"),
+    );
+    client.cast_vote(
+        &dispute_id,
+        &voter4,
+        &VoteChoice::Freelancer,
+        &String::from_str(&env, "F"),
+    );
 
     let status = client.resolve_dispute(&dispute_id, &escrow_contract_id);
     assert_eq!(status, DisputeStatus::Escalated);
@@ -1031,7 +1062,10 @@ fn test_no_slash_on_escalated_dispute() {
         }
         false
     });
-    assert!(!has_slash, "StakeSlashed event should NOT be emitted for escalated disputes");
+    assert!(
+        !has_slash,
+        "StakeSlashed event should NOT be emitted for escalated disputes"
+    );
 }
 
 #[test]

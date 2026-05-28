@@ -31,6 +31,7 @@ import ProposeRevisionModal, {
 import { Job, Application, PaginatedResponse, Review } from "@/types";
 import { parseJobIdFromResult } from "@/utils/stellar";
 import { ShareButton } from "@/components/ShareButton";
+import { useToast } from "@/components/Toast";
 
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
@@ -47,6 +48,7 @@ export default function JobDetailClient() {
   const { id } = useParams();
   const { address, signAndBroadcastTransaction } = useWallet();
   const { user } = useAuth();
+  const { toast } = useToast();
   const [job, setJob] = useState<Job | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState(false);
@@ -399,6 +401,21 @@ export default function JobDetailClient() {
   const handleApproveMilestone = async (milestoneId: string) => {
     setError(null);
     setActioningMilestoneId(milestoneId);
+    const previousJob = job;
+    if (job) {
+      setJob((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          milestones: prev.milestones.map((milestone) =>
+            milestone.id === milestoneId
+              ? { ...milestone, status: "APPROVED" }
+              : milestone,
+          ),
+        };
+      });
+      setRecentlyApprovedMilestoneId(milestoneId);
+    }
     try {
       const token =
         localStorage.getItem("stellarmarket_jwt") ??
@@ -433,7 +450,12 @@ export default function JobDetailClient() {
       await fetchJob();
       setRecentlyApprovedMilestoneId(milestoneId);
     } catch (err: unknown) {
+      if (previousJob) {
+        setJob(previousJob);
+      }
+      setRecentlyApprovedMilestoneId(null);
       setError(err instanceof Error ? err.message : "Action failed.");
+      toast.error("Failed to approve milestone. Please try again.");
     } finally {
       setActioningMilestoneId(null);
     }

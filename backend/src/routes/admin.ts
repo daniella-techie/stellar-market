@@ -7,6 +7,7 @@ import {
     getUsersAdminQuerySchema,
     overrideDisputeSchema
 } from "../schemas/admin";
+import { paginationSchema } from "../schemas/common";
 import { ZodError, z } from "zod";
 import { logAdminAction } from "../utils/auditLogger";
 import { NotificationService } from "../services/notification.service";
@@ -76,6 +77,55 @@ router.get("/users", async (req: AuthRequest, res: Response): Promise<void> => {
             return;
         }
         console.error("Error fetching users:", error);
+        res.status(500).json({ error: "Internal server error" });
+    }
+});
+
+/**
+ * GET /api/admin/jobs
+ * List all jobs with pagination
+ */
+router.get("/jobs", async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+        const jobsQuerySchema = paginationSchema.extend({
+            includeDeleted: z.coerce.boolean().optional(),
+        });
+        const { page = 1, limit = 10, includeDeleted } = jobsQuerySchema.parse(req.query);
+        const skip = (page - 1) * limit;
+        const where = includeDeleted ? {} : {};
+
+        const [jobs, total] = await Promise.all([
+            prisma.job.findMany({
+                where,
+                skip,
+                take: limit,
+                orderBy: { createdAt: "desc" },
+                include: {
+                    client: {
+                        select: { id: true, username: true, walletAddress: true },
+                    },
+                    freelancer: {
+                        select: { id: true, username: true, walletAddress: true },
+                    },
+                },
+            }),
+            prisma.job.count({ where }),
+        ]);
+
+        res.json({
+            jobs,
+            pagination: {
+                total,
+                page,
+                limit,
+                totalPages: Math.ceil(total / limit),
+            },
+        });
+    } catch (error) {
+        if (error instanceof ZodError) {
+            res.status(400).json({ error: "Validation error", details: error.issues });
+            return;
+        }
         res.status(500).json({ error: "Internal server error" });
     }
 });
@@ -189,6 +239,34 @@ router.get("/disputes", async (req: AuthRequest, res: Response): Promise<void> =
         res.json({ disputes });
     } catch (error) {
         console.error("Error fetching disputes:", error);
+        res.status(500).json({ error: "Internal server error" });
+    }
+});
+
+/**
+ * GET /api/admin/disputes/pending
+ * List pending disputes for review
+ */
+router.get("/disputes/pending", async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+        const disputes = await prisma.dispute.findMany({
+            where: { status: DisputeStatus.OPEN },
+            include: {
+                job: {
+                    select: {
+                        id: true,
+                        title: true,
+                        clientId: true,
+                        freelancerId: true,
+                    },
+                },
+            },
+            orderBy: { createdAt: "desc" },
+        });
+
+        res.json({ disputes });
+    } catch (error) {
+        console.error("Error fetching pending disputes:", error);
         res.status(500).json({ error: "Internal server error" });
     }
 });
@@ -311,6 +389,31 @@ router.get("/flagged", async (req: AuthRequest, res: Response): Promise<void> =>
         });
     } catch (error) {
         console.error("Error fetching flagged content:", error);
+        res.status(500).json({ error: "Internal server error" });
+    }
+});
+
+/**
+ * GET /api/admin/users/flagged
+ * List all flagged/suspended users
+ */
+router.get("/users/flagged", async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+        const users = await prisma.user.findMany({
+            where: { isSuspended: true },
+            select: {
+                id: true,
+                username: true,
+                walletAddress: true,
+                suspendReason: true,
+                suspendedAt: true,
+            },
+            orderBy: { suspendedAt: "desc" },
+        });
+
+        res.json({ users });
+    } catch (error) {
+        console.error("Error fetching flagged users:", error);
         res.status(500).json({ error: "Internal server error" });
     }
 });
