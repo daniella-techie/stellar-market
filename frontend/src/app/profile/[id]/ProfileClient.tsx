@@ -198,7 +198,7 @@ export default function ProfileClient() {
             )}
             <ShareMenu
               title={profile.username}
-              url={typeof window !== "undefined" ? window.location.href : ""}
+              url={`/profile/${profile.id}`}
               description={`Check out ${profile.username}'s profile on StellarMarket`}
             />
           </div>

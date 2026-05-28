@@ -626,7 +626,7 @@ export default function JobDetailClient() {
           <div className="flex flex-wrap items-center gap-4 mb-8">
             <ShareMenu
               title={job.title}
-              url={typeof window !== "undefined" ? window.location.href : ""}
+              url={`/jobs/${id}`}
               description={`Check out this job on StellarMarket: ${job.title}`}
             />
           </div>
