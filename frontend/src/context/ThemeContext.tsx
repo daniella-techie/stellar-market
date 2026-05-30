@@ -12,28 +12,20 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>(() => {
-    if (typeof document !== "undefined") {
-      const ssrTheme = document.documentElement.getAttribute("data-theme");
-      if (ssrTheme === "dark" || ssrTheme === "light") {
-        return ssrTheme;
-      }
-    }
-    return "light";
-  });
+  const [theme, setTheme] = useState<Theme>("light");
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    // Keep client state aligned with the pre-hydration theme from layout script
     const savedTheme = localStorage.getItem("stellar-market-theme") as Theme | null;
     const systemTheme = window.matchMedia("(prefers-color-scheme: dark)").matches
       ? "dark"
       : "light";
-
     const initialTheme = savedTheme || systemTheme;
     setTheme(initialTheme);
     document.documentElement.setAttribute("data-theme", initialTheme);
-    // Remove the default 'dark' class if present to favor data-theme
-    document.documentElement.classList.remove("dark");
+    if (initialTheme === "dark") document.documentElement.classList.add("dark");
+    else document.documentElement.classList.remove("dark");
+    setMounted(true);
   }, []);
 
   const toggleTheme = () => {
@@ -41,7 +33,13 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     setTheme(newTheme);
     localStorage.setItem("stellar-market-theme", newTheme);
     document.documentElement.setAttribute("data-theme", newTheme);
+    if (newTheme === "dark") document.documentElement.classList.add("dark");
+    else document.documentElement.classList.remove("dark");
   };
+
+  if (!mounted) {
+    return <ThemeContext.Provider value={{ theme, toggleTheme }}>{children}</ThemeContext.Provider>;
+  }
 
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme }}>

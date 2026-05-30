@@ -495,7 +495,7 @@ export default function Navbar() {
             {/* Close Button */}
             <div className="flex justify-between items-center mb-10">
               <span className="text-lg font-bold text-theme-heading">Menu</span>
-              <button onClick={() => setMobileOpen(false)} className="p-2 text-theme-text hover:text-theme-heading">
+              <button onClick={() => setMobileOpen(false)} className="p-2 text-theme-text hover:text-theme-heading" aria-label="Close navigation menu">
                 <X size={24} />
               </button>
             </div>

@@ -952,7 +952,7 @@ export default function SettingsPage() {
                       type="button"
                       onClick={handleUnlinkWallet}
                       disabled={walletLoading}
-                      className="w-fit rounded-lg border border-red-600/50 px-3 py-2 text-sm text-red-400 hover:bg-red-900/20 disabled:opacity-60"
+                      className="w-fit rounded-lg border border-theme-error/50 px-3 py-2 text-sm text-theme-error hover:bg-theme-error/10 disabled:opacity-60"
                     >
                       {walletLoading ? "Updating..." : "Unlink"}
                     </button>
@@ -972,8 +972,8 @@ export default function SettingsPage() {
             </div>
 
             {recoveryCodesPending && recoveryCodesPending.length > 0 ? (
-              <div className="space-y-4 rounded-lg border border-amber-600/40 bg-amber-950/30 p-4">
-                <p className="text-amber-200 text-sm font-medium">
+              <div className="space-y-4 rounded-lg border border-theme-warning/40 bg-theme-warning/10 p-4">
+                <p className="text-theme-warning text-sm font-medium">
                   Save these recovery codes now. Each code works once instead of your authenticator at login. They will not be shown again.
                 </p>
                 <div className="flex items-center justify-between gap-2">
@@ -1007,9 +1007,9 @@ export default function SettingsPage() {
               </div>
             ) : twoFAEnabled && !twoFASetupData ? (
               <div className="space-y-4">
-                <div className="flex items-center gap-3 p-4 bg-green-900/20 border border-green-700/30 rounded-lg">
-                  <ShieldCheck size={20} className="text-green-400" />
-                  <p className="text-green-300 text-sm">Two-factor authentication is enabled.</p>
+                <div className="flex items-center gap-3 p-4 bg-theme-success/10 border border-theme-success/30 rounded-lg">
+                  <ShieldCheck size={20} className="text-theme-success" />
+                  <p className="text-theme-success text-sm">Two-factor authentication is enabled.</p>
                 </div>
 
                 {showRegenerateModal ? (
@@ -1060,7 +1060,7 @@ export default function SettingsPage() {
                       <button
                         type="submit"
                         disabled={twoFALoading}
-                        className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+                        className="flex items-center gap-2 px-4 py-2 bg-theme-error hover:bg-theme-error/80 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
                       >
                         {twoFALoading ? <Loader2 size={14} className="animate-spin" /> : <ShieldOff size={14} />}
                         Confirm Disable
@@ -1087,7 +1087,7 @@ export default function SettingsPage() {
                     <button
                       type="button"
                       onClick={() => setShowDisableModal(true)}
-                      className="flex items-center gap-2 px-4 py-2 border border-red-600/50 text-red-400 rounded-lg text-sm hover:bg-red-900/20 transition-colors"
+                      className="flex items-center gap-2 px-4 py-2 border border-theme-error/50 text-theme-error rounded-lg text-sm hover:bg-theme-error/10 transition-colors"
                     >
                       <ShieldOff size={14} />
                       Disable 2FA
@@ -1298,7 +1298,7 @@ export default function SettingsPage() {
                           <button
                             type="button"
                             onClick={() => handlePortfolioDelete(item.id)}
-                            className="p-1.5 text-theme-text hover:text-red-400 transition-colors rounded"
+                            className="p-1.5 text-theme-text hover:text-theme-error transition-colors rounded"
                             title="Delete"
                           >
                             <Trash2 size={15} />

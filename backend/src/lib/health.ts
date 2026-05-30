@@ -4,7 +4,6 @@ import { logger } from "./logger";
 import { getHorizonListenerHealth } from "../services/horizon-listener.service";
 
 export type DependencyHealthStatus = "ok" | "error" | "degraded";
-export type DependencyHealthStatus = "ok" | "error";
 export type HorizonListenerStatus = "connected" | "degraded" | "down";
 
 export type HealthResponse = {

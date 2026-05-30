@@ -226,6 +226,8 @@ function JobsContent() {
             <button
               onClick={loadNewJobs}
               className="w-full flex items-center justify-center gap-2 bg-stellar-blue/90 hover:bg-stellar-blue text-white text-sm font-medium py-2.5 px-4 rounded-lg mb-4 transition-colors animate-slide-in-left"
+              aria-live="polite"
+              aria-atomic="true"
             >
               <ArrowUp size={14} />
               {pendingJobs.length} new job{pendingJobs.length !== 1 ? "s" : ""} — click to load

@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
-  Loader2,
   ShieldAlert,
   CheckCircle,
   Clock,
@@ -14,6 +13,7 @@ import axios from "axios";
 import { useAuth } from "@/context/AuthContext";
 import { Dispute } from "@/types";
 import EmptyState from "@/components/EmptyState";
+import DisputeHistoryCardSkeleton from "@/components/skeletons/DisputeHistoryCardSkeleton";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
@@ -85,8 +85,31 @@ export default function DisputeHistoryPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="animate-spin text-stellar-blue" size={48} />
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 animate-pulse">
+        <div className="mb-8">
+          <div className="flex items-center gap-2 text-stellar-blue mb-4">
+            <div className="h-5 w-5 rounded bg-theme-border" />
+            <div className="h-4 w-28 rounded bg-theme-border" />
+          </div>
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+            <div>
+              <div className="h-9 w-64 rounded bg-theme-border mb-2" />
+              <div className="h-4 w-96 rounded bg-theme-border" />
+            </div>
+          </div>
+        </div>
+        <div className="card p-4 mb-6">
+          <div className="flex gap-2">
+            <div className="h-9 w-28 rounded-lg bg-theme-border" />
+            <div className="h-9 w-28 rounded-lg bg-theme-border" />
+            <div className="h-9 w-28 rounded-lg bg-theme-border" />
+          </div>
+        </div>
+        <div className="grid gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <DisputeHistoryCardSkeleton key={i} />
+          ))}
+        </div>
       </div>
     );
   }

@@ -49,8 +49,8 @@ router.post("/init-create", authenticate, asyncHandler(async (req: AuthRequest, 
   }
 
   const xdr = await ContractService.buildCreateJobTx(
-    job.client.walletAddress,
-    job.freelancer.walletAddress,
+    job.client.walletAddress!,
+    job.freelancer.walletAddress!,
     config.stellar.nativeTokenId,
     job.milestones.map(m => ({
       description: m.title,
@@ -82,8 +82,8 @@ router.post("/init-submit", authenticate, asyncHandler(async (req: AuthRequest, 
   }
 
   const xdr = await ContractService.buildSubmitMilestoneTx(
-    milestone.job.freelancer.walletAddress,
-    milestone.job.contractJobId,
+    milestone.job.freelancer.walletAddress!,
+    milestone.job.contractJobId!,
     milestone.onChainIndex,
   );
 
@@ -104,7 +104,7 @@ router.post("/init-fund", authenticate, asyncHandler(async (req: AuthRequest, re
     return res.status(404).json({ error: "On-chain job not found. Create it first." });
   }
 
-  const xdr = await ContractService.buildFundJobTx(job.client.walletAddress, job.contractJobId);
+  const xdr = await ContractService.buildFundJobTx(job.client.walletAddress!, job.contractJobId!);
   res.json({ xdr });
 }));
 
@@ -123,8 +123,8 @@ router.post("/init-approve", authenticate, asyncHandler(async (req: AuthRequest,
   }
 
   const xdr = await ContractService.buildApproveMilestoneTx(
-    milestone.job.client.walletAddress,
-    milestone.job.contractJobId,
+    milestone.job.client.walletAddress!,
+    milestone.job.contractJobId!,
     milestone.onChainIndex
   );
 
@@ -149,7 +149,7 @@ router.post("/init-cancel", authenticate, asyncHandler(async (req: AuthRequest, 
     return res.status(403).json({ error: "Only the client can cancel this job." });
   }
 
-  const xdr = await ContractService.buildCancelJobTx(job.client.walletAddress, job.contractJobId);
+  const xdr = await ContractService.buildCancelJobTx(job.client.walletAddress!, job.contractJobId!);
   res.json({ xdr });
 }));
 
@@ -171,7 +171,7 @@ router.post("/init-refund", authenticate, asyncHandler(async (req: AuthRequest, 
     return res.status(403).json({ error: "Only the client can claim a refund." });
   }
 
-  const xdr = await ContractService.buildClaimRefundTx(job.client.walletAddress, job.contractJobId);
+  const xdr = await ContractService.buildClaimRefundTx(job.client.walletAddress!, job.contractJobId!);
   res.json({ xdr });
 }));
 
@@ -197,8 +197,8 @@ router.post("/init-extend-deadline", authenticate, asyncHandler(async (req: Auth
   const newDeadlineUnix = Math.floor(new Date(newDeadline).getTime() / 1000);
 
   const xdr = await ContractService.buildExtendDeadlineTx(
-    milestone.job.client.walletAddress,
-    milestone.job.contractJobId,
+    milestone.job.client.walletAddress!,
+    milestone.job.contractJobId!,
     milestone.onChainIndex,
     newDeadlineUnix,
   );
@@ -282,8 +282,8 @@ router.post(
     }
 
     const xdr = await ContractService.buildProposeRevisionTx(
-      callerWallet,
-      job.contractJobId,
+      callerWallet!,
+      job.contractJobId!,
       payload
     );
     res.json({ xdr });

@@ -23,7 +23,7 @@ const statusConfig: Record<string, { label: string; color: string }> = {
   },
   COMPLETED: {
     label: "Completed",
-    color: "bg-gray-500/20 text-gray-400 border-gray-500/30",
+    color: "bg-theme-success/20 text-theme-success border-theme-success/30",
   },
   CANCELLED: {
     label: "Cancelled",

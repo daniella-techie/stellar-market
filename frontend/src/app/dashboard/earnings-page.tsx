@@ -225,14 +225,14 @@ const EarningsPage = () => {
   };
 
   return (
-    <div className="space-y-6 p-6 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 min-h-screen">
+    <div className="space-y-6 p-6 bg-theme-bg min-h-screen">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-white">
+          <h1 className="text-3xl font-bold text-theme-heading">
             Earnings
           </h1>
-          <p className="text-slate-600 dark:text-slate-400 mt-2">
+          <p className="text-theme-text mt-2">
             Track your payment history and earnings overview
           </p>
         </div>
@@ -240,10 +240,10 @@ const EarningsPage = () => {
 
       {/* Error Message */}
       {error && (
-        <div className="flex items-start gap-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg p-4">
-          <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+        <div className="flex items-start gap-3 bg-theme-error/10 border border-theme-error/30 rounded-lg p-4">
+          <AlertTriangle className="w-5 h-5 text-theme-error flex-shrink-0 mt-0.5" />
           <div>
-            <p className="font-medium text-red-800 dark:text-red-200">{error}</p>
+            <p className="font-medium text-theme-error">{error}</p>
           </div>
         </div>
       )}
@@ -286,8 +286,8 @@ const EarningsPage = () => {
       {!loading && chartData.length > 0 && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Line Chart */}
-          <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-6 shadow-sm">
-            <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
+          <div className="bg-theme-card rounded-lg border border-theme-border p-6 shadow-sm">
+            <h2 className="text-theme-heading text-lg font-semibold mb-4">
               Earnings Trend
             </h2>
             <ResponsiveContainer width="100%" height={300}>
@@ -324,8 +324,8 @@ const EarningsPage = () => {
           </div>
 
           {/* Bar Chart */}
-          <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-6 shadow-sm">
-            <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
+          <div className="bg-theme-card rounded-lg border border-theme-border p-6 shadow-sm">
+            <h2 className="text-theme-heading text-lg font-semibold mb-4">
               Comparison
             </h2>
             <ResponsiveContainer width="100%" height={300}>
@@ -352,16 +352,16 @@ const EarningsPage = () => {
       )}
 
       {/* Filters */}
-      <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-6 shadow-sm">
+      <div className="bg-theme-card rounded-lg border border-theme-border p-6 shadow-sm">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+          <h2 className="text-theme-heading text-lg font-semibold flex items-center gap-2">
             <Filter className="w-5 h-5" />
             Filters
           </h2>
           {(typeFilter || dateFrom || dateTo) && (
             <button
               onClick={resetFilters}
-              className="px-3 py-1 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+              className="px-3 py-1 text-sm text-stellar-blue hover:text-stellar-blue/80"
             >
               Clear filters
             </button>
@@ -370,7 +370,7 @@ const EarningsPage = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+            <label className="block text-sm font-medium text-theme-text mb-2">
               Transaction Type
             </label>
             <select
@@ -379,7 +379,7 @@ const EarningsPage = () => {
                 setTypeFilter(e.target.value);
                 setCurrentPage(1);
               }}
-              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+              className="input-field"
             >
               <option value="">All Types</option>
               <option value="RELEASE">Release</option>
@@ -390,7 +390,7 @@ const EarningsPage = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+            <label className="block text-sm font-medium text-theme-text mb-2">
               Date From
             </label>
             <input
@@ -400,12 +400,12 @@ const EarningsPage = () => {
                 setDateFrom(e.target.value);
                 setCurrentPage(1);
               }}
-              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+              className="input-field"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+            <label className="block text-sm font-medium text-theme-text mb-2">
               Date To
             </label>
             <input
@@ -415,27 +415,27 @@ const EarningsPage = () => {
                 setDateTo(e.target.value);
                 setCurrentPage(1);
               }}
-              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+              className="input-field"
             />
           </div>
         </div>
       </div>
 
       {/* Transactions Table */}
-      <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm">
-        <div className="p-6 border-b border-slate-200 dark:border-slate-700">
-          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+      <div className="bg-theme-card rounded-lg border border-theme-border overflow-hidden shadow-sm">
+        <div className="p-6 border-b border-theme-border">
+          <h2 className="text-theme-heading text-lg font-semibold">
             Payment History
           </h2>
         </div>
 
         {loading ? (
           <div className="flex items-center justify-center py-12">
-            <Loader2 className="w-6 h-6 text-slate-400 animate-spin" />
+            <Loader2 className="w-6 h-6 text-theme-text animate-spin" />
           </div>
         ) : transactions.length === 0 ? (
           <div className="p-8 text-center">
-            <p className="text-slate-600 dark:text-slate-400">
+            <p className="text-theme-text">
               No transactions found.
             </p>
           </div>
@@ -443,30 +443,30 @@ const EarningsPage = () => {
           <>
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700">
+                <thead className="bg-theme-bg-secondary border-b border-theme-border">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-theme-text uppercase tracking-wider">
                       Type
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-theme-text uppercase tracking-wider">
                       Job
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-theme-text uppercase tracking-wider">
                       Amount
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-theme-text uppercase tracking-wider">
                       Date
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-theme-text uppercase tracking-wider">
                       Hash
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
+                <tbody className="divide-y divide-theme-border">
                   {transactions.map((tx) => (
                     <tr
                       key={tx.id}
-                      className="hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                      className="hover:bg-theme-bg-secondary transition-colors"
                     >
                       <td className="px-6 py-4">
                         <StatusBadge
@@ -478,27 +478,27 @@ const EarningsPage = () => {
                         <div className="flex flex-col">
                           {tx.job ? (
                             <>
-                              <span className="text-sm font-medium text-slate-900 dark:text-white">
+                              <span className="text-sm font-medium text-theme-heading">
                                 {tx.job.title}
                               </span>
-                              <span className="text-xs text-slate-600 dark:text-slate-400">
+                              <span className="text-xs text-theme-text">
                                 ID: {tx.jobId.slice(0, 8)}...
                               </span>
                             </>
                           ) : (
-                            <span className="text-sm text-slate-600 dark:text-slate-400">
+                            <span className="text-sm text-theme-text">
                               {tx.jobId.slice(0, 8)}...
                             </span>
                           )}
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <span className="text-sm font-semibold text-slate-900 dark:text-white">
+                        <span className="text-sm font-semibold text-theme-heading">
                           {formatCurrency(tx.amount)}
                         </span>
                       </td>
                       <td className="px-6 py-4">
-                        <span className="text-sm text-slate-600 dark:text-slate-400">
+                        <span className="text-sm text-theme-text">
                           {new Date(tx.createdAt).toLocaleDateString("en-US", {
                             year: "numeric",
                             month: "short",
@@ -511,7 +511,7 @@ const EarningsPage = () => {
                           href={`https://stellar.expert/explorer/public/tx/${tx.txHash}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                          className="text-sm text-stellar-blue hover:underline"
                           title={tx.txHash}
                         >
                           {tx.txHash.slice(0, 12)}...
@@ -524,8 +524,8 @@ const EarningsPage = () => {
             </div>
 
             {/* Pagination */}
-            <div className="flex items-center justify-between px-6 py-4 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900">
-              <div className="text-sm text-slate-600 dark:text-slate-400">
+            <div className="flex items-center justify-between px-6 py-4 border-t border-theme-border bg-theme-bg-secondary">
+              <div className="text-sm text-theme-text">
                 Page {currentPage} of {totalPages}
               </div>
 
@@ -533,7 +533,7 @@ const EarningsPage = () => {
                 <button
                   onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                   disabled={currentPage === 1}
-                  className="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-100 dark:hover:bg-slate-600"
+                  className="btn-secondary px-4 py-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Previous
                 </button>
@@ -542,7 +542,7 @@ const EarningsPage = () => {
                     setCurrentPage(Math.min(totalPages, currentPage + 1))
                   }
                   disabled={currentPage === totalPages}
-                  className="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-100 dark:hover:bg-slate-600"
+                  className="btn-secondary px-4 py-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Next
                 </button>
@@ -565,21 +565,20 @@ interface StatCardProps {
 
 const StatCard = ({ label, value, icon, color }: StatCardProps) => {
   const colorMap = {
-    success: "bg-green-50 dark:bg-green-950/20 text-green-600 dark:text-green-400",
-    warning:
-      "bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400",
-    primary: "bg-blue-50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400",
-    danger: "bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400",
+    success: "bg-theme-success/10 text-theme-success",
+    warning: "bg-theme-warning/10 text-theme-warning",
+    primary: "bg-stellar-blue/10 text-stellar-blue",
+    danger: "bg-theme-error/10 text-theme-error",
   };
 
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-6 shadow-sm">
+    <div className="bg-theme-card rounded-lg border border-theme-border p-6 shadow-sm">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm font-medium text-slate-600 dark:text-slate-400">
+          <p className="text-theme-text text-sm font-medium">
             {label}
           </p>
-          <p className="text-2xl font-bold text-slate-900 dark:text-white mt-2">
+          <p className="text-theme-heading text-2xl font-bold mt-2">
             {value}
           </p>
         </div>

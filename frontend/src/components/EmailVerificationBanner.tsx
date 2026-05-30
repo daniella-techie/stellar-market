@@ -42,17 +42,17 @@ export default function EmailVerificationBanner() {
   };
 
   return (
-    <div className="bg-amber-50 dark:bg-amber-900/20 border-b border-amber-200 dark:border-amber-800">
+    <div className="bg-theme-warning/10 border-b border-theme-warning/20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 flex-1">
-            <AlertCircle className="text-amber-600 dark:text-amber-400 flex-shrink-0" size={20} />
+            <AlertCircle className="text-theme-warning flex-shrink-0" size={20} />
             <div className="flex-1">
-              <p className="text-sm text-amber-900 dark:text-amber-100">
+              <p className="text-sm text-theme-heading">
                 Your email is not verified. Check your inbox or resend the verification email.
               </p>
               {message && (
-                <p className={`text-xs mt-1 ${message.includes("sent") ? "text-green-700 dark:text-green-400" : "text-red-700 dark:text-red-400"}`}>
+                <p className={`text-xs mt-1 ${message.includes("sent") ? "text-theme-success" : "text-theme-error"}`}>
                   {message}
                 </p>
               )}
@@ -62,14 +62,14 @@ export default function EmailVerificationBanner() {
             <button
               onClick={handleResend}
               disabled={sending}
-              className="flex items-center gap-2 px-4 py-1.5 bg-amber-600 hover:bg-amber-700 disabled:bg-amber-400 text-white text-sm font-medium rounded-lg transition-colors disabled:cursor-not-allowed"
+              className="flex items-center gap-2 px-4 py-1.5 bg-theme-warning hover:bg-theme-warning/80 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors disabled:cursor-not-allowed"
             >
               <Mail size={14} />
               {sending ? "Sending..." : "Resend"}
             </button>
             <button
               onClick={() => setDismissed(true)}
-              className="text-amber-600 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-200 transition-colors"
+              className="text-theme-warning hover:text-theme-warning/80 transition-colors"
               aria-label="Dismiss banner"
             >
               <X size={20} />

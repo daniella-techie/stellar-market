@@ -4,6 +4,7 @@ import { useState, useRef } from "react";
 import { X, AlertCircle, Loader2, Paperclip, Upload } from "lucide-react";
 import axios, { AxiosError } from "axios";
 import { useWallet } from "@/context/WalletContext";
+import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { Job } from "@/types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
@@ -26,6 +27,10 @@ export default function RaiseDisputeModal({
   onSuccess,
 }: RaiseDisputeModalProps) {
   const { signAndBroadcastTransaction } = useWallet();
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  useFocusTrap(modalRef, { open: isOpen, onClose });
+
   const [reason, setReason] = useState("");
   const [minVotes, setMinVotes] = useState<number>(3);
   const [processing, setProcessing] = useState(false);
@@ -199,7 +204,7 @@ export default function RaiseDisputeModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className="bg-theme-bg border border-theme-border rounded-xl w-full max-w-md shadow-xl overflow-hidden animate-in fade-in zoom-in-95">
+      <div ref={modalRef} className="bg-theme-bg border border-theme-border rounded-xl w-full max-w-md shadow-xl overflow-hidden animate-in fade-in zoom-in-95">
         <div className="flex justify-between items-center p-4 border-b border-theme-border">
           <h2 className="text-lg font-semibold text-theme-heading flex items-center gap-2">
             <AlertCircle className="text-theme-error" size={20} />
@@ -209,6 +214,7 @@ export default function RaiseDisputeModal({
             onClick={onClose}
             className="text-theme-text hover:text-theme-heading p-1 rounded-full hover:bg-theme-border/50"
             disabled={processing}
+            aria-label="Close raise dispute modal"
           >
             <X size={20} />
           </button>
@@ -229,10 +235,11 @@ export default function RaiseDisputeModal({
           )}
 
           <div>
-            <label className="block text-sm font-medium text-theme-heading mb-1">
+            <label htmlFor="dispute-reason" className="block text-sm font-medium text-theme-heading mb-1">
               Reason for Dispute
             </label>
             <textarea
+              id="dispute-reason"
               className="input-field min-h-[100px] resize-y"
               placeholder="Explain clearly why you are initiating a dispute. Provide specific details about unfulfilled requirements or issues."
               value={reason}
@@ -267,10 +274,11 @@ export default function RaiseDisputeModal({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-theme-heading mb-1">
+            <label htmlFor="dispute-min-votes" className="block text-sm font-medium text-theme-heading mb-1">
               Minimum Votes Required
             </label>
             <input
+              id="dispute-min-votes"
               type="number"
               min={3}
               max={21}
@@ -287,7 +295,7 @@ export default function RaiseDisputeModal({
 
           {/* Evidence upload section */}
           <div>
-            <label className="block text-sm font-medium text-theme-heading mb-1">
+            <label htmlFor="dispute-evidence" className="block text-sm font-medium text-theme-heading mb-1">
               Supporting Evidence{" "}
               <span className="font-normal text-theme-text">(optional)</span>
             </label>
@@ -296,6 +304,7 @@ export default function RaiseDisputeModal({
               onClick={() => fileInputRef.current?.click()}
               disabled={processing || selectedFiles.length >= MAX_FILES}
               className="flex items-center gap-2 text-sm px-3 py-2 border border-dashed border-theme-border rounded-lg text-theme-text hover:border-stellar-blue hover:text-stellar-blue transition-colors disabled:opacity-50 disabled:cursor-not-allowed w-full justify-center"
+              aria-controls="dispute-evidence"
             >
               <Paperclip size={14} />
               {selectedFiles.length >= MAX_FILES
@@ -304,6 +313,7 @@ export default function RaiseDisputeModal({
             </button>
             <input
               ref={fileInputRef}
+              id="dispute-evidence"
               type="file"
               multiple
               className="hidden"
@@ -328,6 +338,7 @@ export default function RaiseDisputeModal({
                       onClick={() => removeFile(idx)}
                       disabled={processing}
                       className="ml-2 text-theme-text-muted hover:text-theme-error transition-colors flex-shrink-0"
+                      aria-label={`Remove ${file.name}`}
                     >
                       <X size={12} />
                     </button>

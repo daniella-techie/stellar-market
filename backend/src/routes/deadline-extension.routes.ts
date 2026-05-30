@@ -62,7 +62,7 @@ router.post(
   validate({ params: z.object({ id: z.string() }) }),
   asyncHandler(async (req: AuthRequest, res: Response) => {
     const extensionRequest = await DeadlineExtensionService.approveExtension(
-      req.params.id,
+      String(req.params.id),
       req.userId!,
     );
 
@@ -85,7 +85,7 @@ router.post(
     const { rejectionReason } = req.body;
 
     const extensionRequest = await DeadlineExtensionService.rejectExtension(
-      req.params.id,
+      String(req.params.id),
       req.userId!,
       rejectionReason,
     );
@@ -110,7 +110,7 @@ router.post(
 
     const extensionRequest =
       await DeadlineExtensionService.confirmExtensionTransaction(
-        req.params.id,
+        String(req.params.id),
         txHash,
       );
 
@@ -127,7 +127,7 @@ router.get(
   authenticate,
   asyncHandler(async (req: AuthRequest, res: Response) => {
     const extensionRequests =
-      await DeadlineExtensionService.getJobExtensionRequests(req.params.jobId);
+      await DeadlineExtensionService.getJobExtensionRequests(String(req.params.jobId));
 
     res.json(extensionRequests);
   }),

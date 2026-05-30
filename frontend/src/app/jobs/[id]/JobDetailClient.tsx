@@ -681,7 +681,7 @@ export default function JobDetailClient() {
           </div>
 
           {pendingRevision && canRespondToRevision && (
-            <div className="card mb-8 border-amber-500/40 bg-amber-500/5">
+            <div className="card mb-8 border-theme-warning/40 bg-theme-warning/5">
               <h2 className="text-lg font-semibold text-theme-heading mb-2">
                 Pending revision proposal
               </h2>
@@ -861,7 +861,7 @@ export default function JobDetailClient() {
                             size={16}
                             className={
                               star <= review.rating
-                                ? "fill-yellow-400 text-yellow-400"
+                                ? "fill-theme-warning text-theme-warning"
                                 : "text-theme-border"
                             }
                           />
@@ -959,7 +959,7 @@ export default function JobDetailClient() {
                             size={16}
                             className={
                               star <= review.rating
-                                ? "fill-yellow-400 text-yellow-400"
+                                ? "fill-theme-warning text-theme-warning"
                                 : "text-theme-border"
                             }
                           />
@@ -1020,7 +1020,7 @@ export default function JobDetailClient() {
                               onClick={() =>
                                 void handleApplicationStatus(app.id, "ACCEPTED")
                               }
-                              className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg bg-green-500/10 text-green-400 hover:bg-green-500/20 transition-colors disabled:opacity-50"
+                              className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg bg-theme-success/10 text-theme-success hover:bg-theme-success/20 transition-colors disabled:opacity-50"
                             >
                               {actioningApp === app.id ? (
                                 <Loader2 size={12} className="animate-spin" />
@@ -1228,7 +1228,7 @@ export default function JobDetailClient() {
               job.status === "OPEN" &&
               (hasApplied ? (
                 <div className="space-y-2">
-                  <div className="flex items-center justify-center gap-2 w-full py-2 px-4 rounded-lg bg-green-500/10 text-green-400 text-sm font-medium border border-green-500/20">
+                  <div className="flex items-center justify-center gap-2 w-full py-2 px-4 rounded-lg bg-theme-success/10 text-theme-success text-sm font-medium border border-theme-success/20">
                     <CheckCircle size={16} /> Applied
                   </div>
                   <button

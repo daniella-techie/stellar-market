@@ -26,7 +26,7 @@ export default function MobileNavigation() {
       {/* Mobile menu button */}
       <button
         onClick={toggleMenu}
-        className="md:hidden fixed top-4 left-4 z-50 p-2 bg-white rounded-lg shadow-lg border"
+        className="md:hidden fixed top-4 left-4 z-50 p-2 bg-theme-card rounded-lg shadow-lg border border-theme-border"
         aria-label="Toggle navigation menu"
       >
         {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -42,16 +42,16 @@ export default function MobileNavigation() {
 
       {/* Mobile navigation drawer */}
       <div
-        className={`fixed top-0 left-0 h-full w-64 bg-white shadow-xl z-50 transform transition-transform duration-300 ease-in-out md:hidden ${
+        className={`fixed top-0 left-0 h-full w-64 bg-theme-bg shadow-xl z-50 transform transition-transform duration-300 ease-in-out md:hidden ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
         <div className="p-6">
           <div className="flex items-center justify-between mb-8">
-            <h2 className="text-xl font-bold text-gray-900">StellarMarket</h2>
+            <h2 className="text-xl font-bold text-theme-heading">StellarMarket</h2>
             <button
               onClick={closeMenu}
-              className="p-1 rounded-lg hover:bg-gray-100"
+              className="p-1 rounded-lg hover:bg-theme-bg-secondary"
               aria-label="Close menu"
             >
               <X className="w-5 h-5" />
@@ -70,8 +70,8 @@ export default function MobileNavigation() {
                   onClick={closeMenu}
                   className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
                     isActive
-                      ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-700'
-                      : 'text-gray-700 hover:bg-gray-50'
+                      ? 'bg-stellar-blue/10 text-stellar-blue border-r-2 border-stellar-blue'
+                      : 'text-theme-text hover:bg-theme-bg-secondary'
                   }`}
                 >
                   <Icon className="w-5 h-5" />

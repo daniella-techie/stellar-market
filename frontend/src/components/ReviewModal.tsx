@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, type ChangeEvent, type FormEvent } from "react";
+import { useState, useRef, type ChangeEvent, type FormEvent } from "react";
 import { X, Star, Loader2 } from "lucide-react";
 import axios, { AxiosError } from "axios";
 import { Job } from "@/types";
 import { useWallet } from "@/context/WalletContext";
+import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { ContractService } from "@/services/ContractService";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
@@ -29,6 +30,10 @@ export default function ReviewModal({
   onSuccess,
 }: ReviewModalProps) {
   const { address, signAndBroadcastTransaction } = useWallet();
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  useFocusTrap(modalRef, { open: isOpen, onClose });
+
   const [rating, setRating] = useState(0);
   const [hoveredRating, setHoveredRating] = useState(0);
   const [comment, setComment] = useState("");
@@ -141,7 +146,7 @@ export default function ReviewModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className="bg-theme-bg border border-theme-border rounded-xl w-full max-w-md shadow-xl overflow-hidden animate-in fade-in zoom-in-95">
+      <div ref={modalRef} className="bg-theme-bg border border-theme-border rounded-xl w-full max-w-md shadow-xl overflow-hidden animate-in fade-in zoom-in-95">
         <div className="flex justify-between items-center p-4 border-b border-theme-border">
           <h2 className="text-lg font-semibold text-theme-heading">
             Leave a Review
@@ -150,6 +155,7 @@ export default function ReviewModal({
             onClick={onClose}
             className="text-theme-text hover:text-theme-heading p-1 rounded-full hover:bg-theme-border/50"
             disabled={submitting}
+            aria-label="Close review modal"
           >
             <X size={20} />
           </button>
@@ -196,11 +202,14 @@ export default function ReviewModal({
                 ?
               </p>
 
-              <div className="flex items-center justify-center gap-2 py-4">
+              <div className="flex items-center justify-center gap-2 py-4" role="radiogroup" aria-label="Rating">
                 {[1, 2, 3, 4, 5].map((star) => (
                   <button
                     key={star}
                     type="button"
+                    role="radio"
+                    aria-checked={rating === star}
+                    aria-label={`${star} star${star > 1 ? "s" : ""}`}
                     onClick={() => setRating(star)}
                     onMouseEnter={() => setHoveredRating(star)}
                     onMouseLeave={() => setHoveredRating(0)}
@@ -231,10 +240,11 @@ export default function ReviewModal({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-theme-heading mb-1">
+              <label htmlFor="review-comment" className="block text-sm font-medium text-theme-heading mb-1">
                 Your Review
               </label>
               <textarea
+                id="review-comment"
                 className="input-field min-h-[100px] resize-y"
                 placeholder="Share your experience working on this job..."
                 value={comment}
@@ -248,10 +258,11 @@ export default function ReviewModal({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-theme-heading mb-1">
+              <label htmlFor="review-stake" className="block text-sm font-medium text-theme-heading mb-1">
                 Stake amount (optional)
               </label>
               <input
+                id="review-stake"
                 type="number"
                 inputMode="decimal"
                 min="0"

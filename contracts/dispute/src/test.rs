@@ -1151,8 +1151,8 @@ fn test_raise_dispute_allowed_after_cooldown() {
 
     let _ = client.resolve_dispute(&first_dispute_id);
 
-    // Cooldown is 86_400 seconds.
-    env.ledger().with_mut(|l| l.timestamp = 1000 + 86_401);
+    // Both the per-job cooldown (86_400 s) and per-party cooldown (1_209_600 s / 14 days) must expire.
+    env.ledger().with_mut(|l| l.timestamp = 1000 + 1_209_601);
 
     let second_dispute_id = client.raise_dispute(
         &9u64,
@@ -1275,6 +1275,159 @@ fn test_force_resolve_timeout_tie_break_success() {
 
     let status = client.force_resolve_timeout(&dispute_id);
     assert_eq!(status, DisputeStatus::ResolvedForClient);
+}
+
+// ── Party-pair cooldown tests (#530) ─────────────────────────────────────────
+
+#[test]
+#[should_panic(expected = "Error(Contract, #13)")] // DisputeCooldown
+fn test_party_cooldown_blocks_same_parties_on_different_job() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.ledger().with_mut(|l| l.timestamp = 1000);
+
+    let dispute_contract_id = env.register_contract(None, DisputeContract);
+    let client = DisputeContractClient::new(&env, &dispute_contract_id);
+    let escrow_contract_id = env.register_contract(None, DummyEscrow);
+    let reputation_contract_id = env.register_contract(None, MockReputationContract);
+    let admin = Address::generate(&env);
+    let user_client = Address::generate(&env);
+    let freelancer = Address::generate(&env);
+
+    client.initialize(&admin, &reputation_contract_id, &300, &escrow_contract_id);
+
+    // Raise and resolve a dispute on job 1.
+    let d1 = client.raise_dispute(
+        &1u64, &user_client, &freelancer, &user_client,
+        &String::from_str(&env, "First dispute"), &3u32, &None,
+    );
+    let v1 = Address::generate(&env);
+    let v2 = Address::generate(&env);
+    let v3 = Address::generate(&env);
+    client.cast_vote(&d1, &v1, &VoteChoice::Client, &String::from_str(&env, "v1"));
+    client.cast_vote(&d1, &v2, &VoteChoice::Client, &String::from_str(&env, "v2"));
+    client.cast_vote(&d1, &v3, &VoteChoice::Freelancer, &String::from_str(&env, "v3"));
+    let _ = client.resolve_dispute(&d1);
+
+    // Immediately try to raise a dispute on a different job between the same parties — must fail.
+    client.raise_dispute(
+        &2u64, &user_client, &freelancer, &freelancer,
+        &String::from_str(&env, "Too soon"), &3u32, &None,
+    );
+}
+
+#[test]
+fn test_party_cooldown_allows_after_expiry() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.ledger().with_mut(|l| l.timestamp = 1000);
+
+    let dispute_contract_id = env.register_contract(None, DisputeContract);
+    let client = DisputeContractClient::new(&env, &dispute_contract_id);
+    let escrow_contract_id = env.register_contract(None, DummyEscrow);
+    let reputation_contract_id = env.register_contract(None, MockReputationContract);
+    let admin = Address::generate(&env);
+    let user_client = Address::generate(&env);
+    let freelancer = Address::generate(&env);
+
+    client.initialize(&admin, &reputation_contract_id, &300, &escrow_contract_id);
+
+    let d1 = client.raise_dispute(
+        &1u64, &user_client, &freelancer, &user_client,
+        &String::from_str(&env, "First dispute"), &3u32, &None,
+    );
+    let v1 = Address::generate(&env);
+    let v2 = Address::generate(&env);
+    let v3 = Address::generate(&env);
+    client.cast_vote(&d1, &v1, &VoteChoice::Client, &String::from_str(&env, "v1"));
+    client.cast_vote(&d1, &v2, &VoteChoice::Client, &String::from_str(&env, "v2"));
+    client.cast_vote(&d1, &v3, &VoteChoice::Freelancer, &String::from_str(&env, "v3"));
+    let _ = client.resolve_dispute(&d1);
+
+    // Advance past the 14-day per-party cooldown (1_209_600 s) and per-job cooldown (86_400 s).
+    env.ledger().with_mut(|l| l.timestamp = 1000 + 1_209_601);
+
+    let d2 = client.raise_dispute(
+        &2u64, &user_client, &freelancer, &freelancer,
+        &String::from_str(&env, "After cooldown"), &3u32, &None,
+    );
+    assert_eq!(d2, 2);
+}
+
+#[test]
+fn test_party_cooldown_does_not_affect_different_party_pairs() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.ledger().with_mut(|l| {
+        l.timestamp = 1000;
+        l.sequence_number = 1000;
+    });
+
+    let dispute_contract_id = env.register_contract(None, DisputeContract);
+    let client = DisputeContractClient::new(&env, &dispute_contract_id);
+    let escrow_contract_id = env.register_contract(None, DummyEscrow);
+    let reputation_contract_id = env.register_contract(None, MockReputationContract);
+    let admin = Address::generate(&env);
+    let user_client_a = Address::generate(&env);
+    let freelancer_a = Address::generate(&env);
+    let user_client_b = Address::generate(&env);
+    let freelancer_b = Address::generate(&env);
+
+    client.initialize(&admin, &reputation_contract_id, &300, &escrow_contract_id);
+
+    // Resolve a dispute between pair A.
+    let d1 = client.raise_dispute(
+        &1u64, &user_client_a, &freelancer_a, &user_client_a,
+        &String::from_str(&env, "Pair A"), &3u32, &None,
+    );
+    let v1 = Address::generate(&env);
+    let v2 = Address::generate(&env);
+    let v3 = Address::generate(&env);
+    client.cast_vote(&d1, &v1, &VoteChoice::Client, &String::from_str(&env, "v1"));
+    client.cast_vote(&d1, &v2, &VoteChoice::Client, &String::from_str(&env, "v2"));
+    client.cast_vote(&d1, &v3, &VoteChoice::Freelancer, &String::from_str(&env, "v3"));
+    let _ = client.resolve_dispute(&d1);
+
+    // Different pair B should be unaffected.
+    let d2 = client.raise_dispute(
+        &2u64, &user_client_b, &freelancer_b, &user_client_b,
+        &String::from_str(&env, "Pair B"), &3u32, &None,
+    );
+    assert_eq!(d2, 2);
+}
+
+#[test]
+fn test_set_cooldown_duration() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let dispute_contract_id = env.register_contract(None, DisputeContract);
+    let client = DisputeContractClient::new(&env, &dispute_contract_id);
+    let escrow_contract_id = env.register_contract(None, DummyEscrow);
+    let reputation_contract_id = env.register_contract(None, MockReputationContract);
+    let admin = Address::generate(&env);
+
+    client.initialize(&admin, &reputation_contract_id, &300, &escrow_contract_id);
+
+    // Admin can update the cooldown duration.
+    client.set_cooldown_duration(&admin, &100_000u64);
+}
+
+#[test]
+#[should_panic(expected = "Error(Contract, #12)")] // NotAdmin
+fn test_set_cooldown_duration_non_admin_fails() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let dispute_contract_id = env.register_contract(None, DisputeContract);
+    let client = DisputeContractClient::new(&env, &dispute_contract_id);
+    let escrow_contract_id = env.register_contract(None, DummyEscrow);
+    let reputation_contract_id = env.register_contract(None, MockReputationContract);
+    let admin = Address::generate(&env);
+    let non_admin = Address::generate(&env);
+
+    client.initialize(&admin, &reputation_contract_id, &300, &escrow_contract_id);
+    client.set_cooldown_duration(&non_admin, &100_000u64);
 }
 
 // ── Vote delegation tests (#479) ──────────────────────────────────────────────
@@ -1526,4 +1679,41 @@ fn test_delegated_vote_counts_same_as_direct_vote_in_resolution() {
     // 3 votes for freelancer — resolution should succeed.
     let status = client.resolve_dispute(&dispute_id);
     assert_eq!(status, DisputeStatus::ResolvedForFreelancer);
+}
+
+#[test]
+#[should_panic(expected = "Error(Contract, #10)")] // DisputeError::ConflictOfInterest = 10
+fn test_conflict_of_interest_voter_is_party() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let dispute_contract_id = env.register_contract(None, DisputeContract);
+    let client = DisputeContractClient::new(&env, &dispute_contract_id);
+
+    let reputation_contract_id = env.register_contract(None, MockReputationContract);
+    let escrow_contract_id = env.register_contract(None, DummyEscrow);
+    let admin = Address::generate(&env);
+
+    client.initialize(&admin, &reputation_contract_id, &300, &escrow_contract_id);
+
+    let user_client = Address::generate(&env);
+    let freelancer = Address::generate(&env);
+
+    let dispute_id = client.raise_dispute(
+        &1u64,
+        &user_client,
+        &freelancer,
+        &user_client,
+        &String::from_str(&env, "Issue"),
+        &3u32,
+        &None,
+    );
+
+    // Client tries to vote on their own dispute
+    client.cast_vote(
+        &dispute_id,
+        &user_client,
+        &VoteChoice::Client,
+        &String::from_str(&env, "Vote"),
+    );
 }

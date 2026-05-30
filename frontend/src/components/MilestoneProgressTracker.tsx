@@ -45,7 +45,7 @@ const statusMeta: Record<
   },
   PARTIALLY_PAID: {
     label: "Partially paid",
-    tone: "border-amber-500/30 bg-amber-500/10 text-amber-500",
+    tone: "border-theme-warning/30 bg-theme-warning/10 text-theme-warning",
     icon: ArrowUpRight,
   },
 };
@@ -72,7 +72,7 @@ export default function MilestoneProgressTracker({
     <section className="card overflow-hidden">
       <div className="mb-5 flex items-start justify-between gap-4">
         <div>
-          <p className="text-xs uppercase tracking-[0.24em] text-theme-text-muted">
+          <p className="text-xs uppercase tracking-wider text-theme-text">
             Milestone flow
           </p>
           <h2 className="mt-1 text-lg font-semibold text-theme-heading">

@@ -33,6 +33,7 @@ import {
 import StatusBadge from "@/components/StatusBadge";
 import OnboardingWizard from "@/components/OnboardingWizard";
 import { DashboardStatsSkeleton, DashboardTabContentSkeleton } from "@/components/skeletons/DashboardSkeleton";
+import DisputeCardSkeleton from "@/components/skeletons/DisputeCardSkeleton";
 import { useAuth } from "@/context/AuthContext";
 import { useSocket } from "@/context/SocketContext";
 import { Job, Application, PaginatedResponse } from "@/types";
@@ -298,16 +299,16 @@ export default function DashboardPage() {
 
   const clientStatCards = [
     { label: "Posted Jobs", value: `${stats.postedJobs}`, detail: `${stats.openJobs} open · ${stats.inProgressJobs} funded · ${stats.completedJobs} completed`, icon: Briefcase, color: "text-stellar-blue" },
-    { label: "Pending Applications", value: `${stats.applicationsToReview}`, detail: "Awaiting your review", icon: FileText, color: "text-yellow-400" },
-    { label: "Active Disputes", value: `${stats.activeDisputes}`, detail: "Require attention", icon: AlertTriangle, color: "text-red-400" },
+    { label: "Pending Applications", value: `${stats.applicationsToReview}`, detail: "Awaiting your review", icon: FileText, color: "text-theme-warning" },
+    { label: "Active Disputes", value: `${stats.activeDisputes}`, detail: "Require attention", icon: AlertTriangle, color: "text-theme-error" },
     { label: "Total Spent", value: `${stats.totalSpent.toLocaleString()} XLM`, detail: `Rating: ${stats.rating > 0 ? `${stats.rating.toFixed(1)}/5` : "N/A"}`, icon: DollarSign, color: "text-stellar-purple" },
   ];
 
   const freelancerStatCards = [
     { label: "Active Work", value: `${stats.activeWork}`, detail: "Jobs in progress", icon: Briefcase, color: "text-stellar-blue" },
-    { label: "Applications", value: `${stats.totalApplications}`, detail: `${stats.pendingApplications} pending · ${stats.acceptedApplications} accepted`, icon: FileText, color: "text-yellow-400" },
+    { label: "Applications", value: `${stats.totalApplications}`, detail: `${stats.pendingApplications} pending · ${stats.acceptedApplications} accepted`, icon: FileText, color: "text-theme-warning" },
     { label: "Total Earned", value: `${stats.totalEarned.toLocaleString()} XLM`, detail: `Pending: ${stats.pendingPayout.toLocaleString()} XLM`, icon: DollarSign, color: "text-stellar-purple" },
-    { label: "Rating", value: stats.rating > 0 ? `${stats.rating.toFixed(1)}/5` : "N/A", detail: `${user?.reviewCount ?? 0} reviews`, icon: Star, color: "text-green-400" },
+    { label: "Rating", value: stats.rating > 0 ? `${stats.rating.toFixed(1)}/5` : "N/A", detail: `${user?.reviewCount ?? 0} reviews`, icon: Star, color: "text-theme-success" },
   ];
 
   const displayStats = isClient ? clientStatCards : freelancerStatCards;
@@ -376,7 +377,15 @@ export default function DashboardPage() {
       </div>
 
       {dataLoading ? (
-        <DashboardTabContentSkeleton />
+        activeTab === "Active Disputes" ? (
+          <div className="space-y-4">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <DisputeCardSkeleton key={i} />
+            ))}
+          </div>
+        ) : (
+          <DashboardTabContentSkeleton />
+        )
       ) : (
         <>
           {/* ── Freelancer tab content ── */}
@@ -521,7 +530,7 @@ export default function DashboardPage() {
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Clock size={14} className="text-yellow-400" />
+                      <Clock size={14} className="text-theme-warning" />
                       <StatusBadge status={milestone.status} />
                     </div>
                   </Link>
@@ -645,14 +654,14 @@ export default function DashboardPage() {
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
-                      <AlertTriangle size={14} className="text-red-400" />
+                      <AlertTriangle size={14} className="text-theme-error" />
                       <StatusBadge status={dispute.status} />
                     </div>
                   </Link>
                 ))
               ) : (
                 <div className="card text-center py-12">
-                  <CheckCircle2 className="mx-auto text-green-400 mb-4" size={40} />
+                  <CheckCircle2 className="mx-auto text-theme-success mb-4" size={40} />
                   <h3 className="text-lg font-semibold text-theme-heading mb-2">No active disputes</h3>
                   <p className="text-theme-text">All clear! No disputes require your attention.</p>
                 </div>

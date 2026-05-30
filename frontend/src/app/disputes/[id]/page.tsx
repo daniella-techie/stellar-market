@@ -239,7 +239,7 @@ export default function DisputeDetailPage() {
                         <div className="flex items-center justify-between mb-2">
                             <div className="font-medium text-theme-heading flex items-center gap-2">
                                 {vote.voter.username}
-                                <span className={`text-xs px-2 py-0.5 rounded ${vote.choice === 'CLIENT' ? 'bg-indigo-500/10 text-indigo-400' : 'bg-orange-500/10 text-orange-400'}`}>
+                                <span className={`text-xs px-2 py-0.5 rounded ${vote.choice === 'CLIENT' ? 'bg-stellar-blue/10 text-stellar-blue' : 'bg-theme-warning/10 text-theme-warning'}`}>
                                     Voted for {vote.choice.toLowerCase()}
                                 </span>
                             </div>
@@ -296,7 +296,7 @@ export default function DisputeDetailPage() {
                         onClick={() => setVoteChoice("CLIENT")}
                         className={`py-2 px-3 rounded-lg text-sm font-medium border transition-colors ${
                             voteChoice === "CLIENT" 
-                            ? "bg-indigo-500/20 border-indigo-500 text-indigo-400" 
+                            ? "bg-stellar-blue/20 border-stellar-blue text-stellar-blue" 
                             : "bg-theme-bg border-theme-border text-theme-text hover:border-indigo-500/50"
                         }`}
                     >
@@ -307,7 +307,7 @@ export default function DisputeDetailPage() {
                         onClick={() => setVoteChoice("FREELANCER")}
                         className={`py-2 px-3 rounded-lg text-sm font-medium border transition-colors ${
                             voteChoice === "FREELANCER" 
-                            ? "bg-orange-500/20 border-orange-500 text-orange-400" 
+                            ? "bg-theme-warning/20 border-theme-warning text-theme-warning" 
                             : "bg-theme-bg border-theme-border text-theme-text hover:border-orange-500/50"
                         }`}
                     >
