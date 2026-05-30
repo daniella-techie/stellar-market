@@ -1733,9 +1733,11 @@ impl EscrowContract {
     //   Either party → propose_revision()  → stores Pending proposal
     //   Other party  → accept_revision()   → updates job + adjusts escrow
     //   Other party  → reject_revision()   → cancels proposal, no changes
+    //   Proposer     → cancel_revision_proposal() → withdraws own Pending proposal
     //
     // Security invariants:
     //   - Proposer cannot accept or reject their own proposal
+    //   - Proposer can cancel (withdraw) their own Pending proposal
     //   - Only one Pending proposal per job at any time
     //   - All token movements use checked arithmetic
     //   - Escrow balance always reflects the current agreed total
@@ -2059,6 +2061,65 @@ impl EscrowContract {
         // 5. Emit event
         env.events()
             .publish((Symbol::new(&env, "revision_rejected"),), (job_id, caller, job.client, job.freelancer));
+
+        Ok(())
+    }
+
+    /// Cancels a pending revision proposal. Only the original proposer may cancel.
+    ///
+    /// # Authorization
+    /// Callable ONLY by the party who originally proposed the revision.
+    ///
+    /// # Arguments
+    /// * `caller` — The original proposer
+    /// * `job_id` — The job whose proposal is being cancelled
+    ///
+    /// # Behavior
+    /// - Removes the proposal from storage entirely
+    /// - Job milestones, total, and escrow balance remain completely unchanged
+    /// - After cancellation, a new proposal may be submitted by either party
+    ///
+    /// # Errors
+    /// * `RevisionProposalNotFound` — if no proposal exists
+    /// * `ProposalNotPending` — if the proposal is not Pending
+    /// * `NotAuthorizedForProposalAction` — if caller is not the original proposer
+    pub fn cancel_revision_proposal(env: Env, caller: Address, job_id: u64) -> Result<(), EscrowError> {
+        caller.require_auth();
+
+        // 1. Load job
+        let job: Job = env
+            .storage()
+            .persistent()
+            .get(&get_job_key(job_id))
+            .ok_or(EscrowError::JobNotFound)?;
+        bump_job_ttl(&env, job_id);
+
+        // 2. Load and validate proposal
+        let proposal = env
+            .storage()
+            .persistent()
+            .get::<DataKey, RevisionProposal>(&DataKey::RevisionProposal(job_id))
+            .ok_or(EscrowError::RevisionProposalNotFound)?;
+
+        if proposal.status != ProposalStatus::Pending {
+            return Err(EscrowError::ProposalNotPending);
+        }
+
+        // 3. Verify caller is the original proposer
+        if caller != proposal.proposer {
+            return Err(EscrowError::NotAuthorizedForProposalAction);
+        }
+
+        // 4. Remove the proposal from storage — slot is immediately available
+        env.storage()
+            .persistent()
+            .remove(&DataKey::RevisionProposal(job_id));
+
+        // 5. Emit event
+        env.events().publish(
+            (Symbol::new(&env, "revision_cancelled"),),
+            (job_id, caller, job.client, job.freelancer),
+        );
 
         Ok(())
     }
