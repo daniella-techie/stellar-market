@@ -39,7 +39,7 @@ function getIndicatorClasses(
       : "bg-theme-success border-theme-success";
   }
   if (status === "PARTIALLY_PAID") {
-    return "bg-amber-500 border-amber-500";
+    return "bg-theme-warning border-theme-warning";
   }
   if (status === "SUBMITTED") {
     return "bg-theme-warning border-theme-warning";
@@ -50,7 +50,7 @@ function getIndicatorClasses(
   if (status === "REJECTED") {
     return "bg-theme-error border-theme-error";
   }
-  return "bg-gray-500 border-gray-500";
+  return "bg-theme-text border-theme-text";
 }
 
 function isOverdue(deadline: string | Date | null | undefined): boolean {

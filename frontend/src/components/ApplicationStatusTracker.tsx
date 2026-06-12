@@ -13,30 +13,30 @@ interface ApplicationStatusTrackerProps {
 const statusConfig = {
   pending: {
     icon: Clock,
-    color: 'text-yellow-500',
-    bgColor: 'bg-yellow-50',
-    borderColor: 'border-yellow-200',
+    color: 'text-theme-warning',
+    bgColor: 'bg-theme-warning/10',
+    borderColor: 'border-theme-warning/20',
     label: 'Pending Review'
   },
   accepted: {
     icon: CheckCircle,
-    color: 'text-green-500',
-    bgColor: 'bg-green-50',
-    borderColor: 'border-green-200',
+    color: 'text-theme-success',
+    bgColor: 'bg-theme-success/10',
+    borderColor: 'border-theme-success/20',
     label: 'Accepted'
   },
   rejected: {
     icon: XCircle,
-    color: 'text-red-500',
-    bgColor: 'bg-red-50',
-    borderColor: 'border-red-200',
+    color: 'text-theme-error',
+    bgColor: 'bg-theme-error/10',
+    borderColor: 'border-theme-error/20',
     label: 'Rejected'
   },
   withdrawn: {
     icon: AlertCircle,
-    color: 'text-gray-500',
-    bgColor: 'bg-gray-50',
-    borderColor: 'border-gray-200',
+    color: 'text-theme-text',
+    bgColor: 'bg-theme-bg-secondary',
+    borderColor: 'border-theme-border',
     label: 'Withdrawn'
   }
 };
@@ -55,8 +55,8 @@ export default function ApplicationStatusTracker({
       <div className="flex items-center gap-3 mb-3">
         <Icon className={`w-5 h-5 ${config.color}`} />
         <div>
-          <h3 className="font-semibold text-gray-900">{config.label}</h3>
-          <p className="text-sm text-gray-600">
+          <h3 className="font-semibold text-theme-heading">{config.label}</h3>
+          <p className="text-sm text-theme-text">
             Submitted {new Date(submittedAt).toLocaleDateString()}
           </p>
         </div>
@@ -65,9 +65,9 @@ export default function ApplicationStatusTracker({
       {showTimeline && (
         <div className="space-y-2">
           <div className="flex items-center gap-2 text-sm">
-            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-            <span className="text-gray-600">Application submitted</span>
-            <span className="text-gray-400 ml-auto">
+            <div className="w-2 h-2 bg-stellar-blue rounded-full"></div>
+            <span className="text-theme-text">Application submitted</span>
+            <span className="text-theme-text ml-auto">
               {new Date(submittedAt).toLocaleString()}
             </span>
           </div>
@@ -75,11 +75,11 @@ export default function ApplicationStatusTracker({
           {status !== 'pending' && (
             <div className="flex items-center gap-2 text-sm">
               <div className={`w-2 h-2 rounded-full ${
-                status === 'accepted' ? 'bg-green-500' : 
-                status === 'rejected' ? 'bg-red-500' : 'bg-gray-500'
+                status === 'accepted' ? 'bg-theme-success' : 
+                status === 'rejected' ? 'bg-theme-error' : 'bg-theme-text'
               }`}></div>
-              <span className="text-gray-600">Status updated to {config.label.toLowerCase()}</span>
-              <span className="text-gray-400 ml-auto">
+              <span className="text-theme-text">Status updated to {config.label.toLowerCase()}</span>
+              <span className="text-theme-text ml-auto">
                 {lastUpdated ? new Date(lastUpdated).toLocaleString() : 'Recently'}
               </span>
             </div>
@@ -88,7 +88,7 @@ export default function ApplicationStatusTracker({
       )}
 
       {status === 'pending' && (
-        <div className="mt-3 p-2 bg-blue-50 rounded text-sm text-blue-700">
+        <div className="mt-3 p-2 bg-stellar-blue/10 rounded text-sm text-stellar-blue">
           💡 Your application is being reviewed. You'll be notified of any updates.
         </div>
       )}

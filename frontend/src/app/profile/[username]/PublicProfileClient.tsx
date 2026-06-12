@@ -24,6 +24,7 @@ type Review = {
   comment: string;
   createdAt: string;
   reviewer: { id: string; username: string; avatarUrl: string | null };
+  job?: { id: string; title: string } | null;
 };
 
 type PortfolioItem = {
@@ -64,7 +65,7 @@ function StarRow({ rating }: { rating: number }) {
         <Star
           key={s}
           size={14}
-          className={s <= rating ? "fill-yellow-400 text-yellow-400" : "text-theme-border"}
+          className={s <= rating ? "fill-theme-warning text-theme-warning" : "text-theme-border"}
         />
       ))}
     </div>
@@ -194,7 +195,7 @@ export default function PublicProfileClient({ profile }: { profile: PublicProfil
               id="reviews-heading"
               className="text-xl font-semibold text-theme-heading mb-4 flex items-center gap-2"
             >
-              <Star size={18} className="text-yellow-400 fill-yellow-400" />
+              <Star size={18} className="text-theme-warning fill-theme-warning" />
               Reviews ({profile.reviewsReceived.length})
             </h2>
             {profile.reviewsReceived.length > 0 ? (
@@ -204,16 +205,33 @@ export default function PublicProfileClient({ profile }: { profile: PublicProfil
                     <div className="flex justify-between items-start mb-2">
                       <div className="flex items-center gap-2">
                         <div className="w-7 h-7 rounded-full bg-gradient-to-br from-stellar-blue to-stellar-purple flex-shrink-0" />
-                        <span className="font-medium text-theme-heading text-sm">
-                          {r.reviewer.username}
-                        </span>
+                        <div>
+                          <span className="font-medium text-theme-heading text-sm">
+                            {r.reviewer.username}
+                          </span>
+                          {r.job && (
+                            <p className="text-xs text-theme-text/60 mt-0.5">
+                              on{" "}
+                              <Link
+                                href={`/jobs/${r.job.id}`}
+                                className="hover:text-stellar-blue hover:underline transition-colors"
+                              >
+                                {r.job.title}
+                              </Link>
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-end gap-1">
+                        <StarRow rating={r.rating} />
                         <span className="text-xs text-theme-text/60">
                           {new Date(r.createdAt).toLocaleDateString()}
                         </span>
                       </div>
-                      <StarRow rating={r.rating} />
                     </div>
-                    <p className="text-sm text-theme-text italic">&quot;{r.comment}&quot;</p>
+                    {r.comment ? (
+                      <p className="text-sm text-theme-text italic">&quot;{r.comment}&quot;</p>
+                    ) : null}
                   </div>
                 ))}
               </div>

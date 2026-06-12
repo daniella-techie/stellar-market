@@ -72,7 +72,7 @@ export default function ServiceDetailPage() {
               {service.title}
             </h1>
             <div className="flex items-center gap-6 text-sm text-theme-text">
-              <div className="flex items-center gap-1 text-yellow-500">
+              <div className="flex items-center gap-1 text-theme-warning">
                 <Star size={18} fill="currentColor" />
                 <span className="text-base font-semibold text-theme-heading">{averageRating}</span>
                 <span className="text-sm text-theme-text">({reviewCount} reviews)</span>
@@ -121,7 +121,7 @@ export default function ServiceDetailPage() {
 
             <div className="space-y-4 mb-8">
               <div className="flex items-center gap-3 text-sm text-theme-text">
-                <ShieldCheck size={18} className="text-green-400" />
+                <ShieldCheck size={18} className="text-theme-success" />
                 <span>Secure Stellar Payment</span>
               </div>
               <div className="flex items-center gap-3 text-sm text-theme-text">

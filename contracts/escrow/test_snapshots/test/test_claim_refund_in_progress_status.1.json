@@ -98,6 +98,9 @@
                 },
                 {
                   "u64": 604800
+                },
+                {
+                  "u32": 518400
                 }
               ]
             }
@@ -378,6 +381,14 @@
                     },
                     {
                       "key": {
+                        "symbol": "expiry_ledger"
+                      },
+                      "val": {
+                        "u32": 518400
+                      }
+                    },
+                    {
+                      "key": {
                         "symbol": "freelancer"
                       },
                       "val": {
@@ -610,7 +621,7 @@
             },
             "ext": "v0"
           },
-          4095
+          518400
         ]
       ],
       [
@@ -655,7 +666,7 @@
             },
             "ext": "v0"
           },
-          4095
+          518400
         ]
       ],
       [
@@ -1205,7 +1216,7 @@
             },
             "ext": "v0"
           },
-          4095
+          518400
         ]
       ]
     ]
@@ -1417,6 +1428,9 @@
                 },
                 {
                   "u64": 604800
+                },
+                {
+                  "u32": 518400
                 }
               ]
             }
@@ -2076,6 +2090,14 @@
                 },
                 {
                   "key": {
+                    "symbol": "expiry_ledger"
+                  },
+                  "val": {
+                    "u32": 518400
+                  }
+                },
+                {
+                  "key": {
                     "symbol": "freelancer"
                   },
                   "val": {
@@ -2551,6 +2573,14 @@
                   },
                   "val": {
                     "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "expiry_ledger"
+                  },
+                  "val": {
+                    "u32": 518400
                   }
                 },
                 {

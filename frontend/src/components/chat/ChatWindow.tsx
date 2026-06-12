@@ -164,7 +164,7 @@ export default function ChatWindow({
               >
                 {msg.content}
                 <div
-                  className={`text-xs mt-1 ${isOwn ? "text-blue-200" : "text-theme-text"
+                  className={`text-xs mt-1 ${isOwn ? "text-white/70" : "text-theme-text"
                     }`}
                 >
                   {new Date(msg.createdAt).toLocaleTimeString([], {

@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { AlertCircle, CheckCircle2, Loader2, X } from "lucide-react";
+import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { prepareSorobanTransaction, type TransactionPreview } from "@/utils/stellar";
 
 type TransactionConfirmationModalProps = {
@@ -30,6 +31,10 @@ export default function TransactionConfirmationModal({
   onClose,
   onConfirm,
 }: TransactionConfirmationModalProps) {
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  useFocusTrap(modalRef, { open: isOpen, onClose });
+
   const [preview, setPreview] = useState<TransactionPreview | null>(null);
   const [loadingPreview, setLoadingPreview] = useState(false);
   const [previewError, setPreviewError] = useState<string | null>(null);
@@ -89,7 +94,7 @@ export default function TransactionConfirmationModal({
 
   return (
     <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="w-full max-w-xl overflow-hidden rounded-2xl border border-theme-border bg-theme-bg shadow-2xl">
+      <div ref={modalRef} className="w-full max-w-xl overflow-hidden rounded-2xl border border-theme-border bg-theme-bg shadow-2xl">
         <div className="flex items-center justify-between border-b border-theme-border px-5 py-4">
           <div>
             <h2 className="text-lg font-semibold text-theme-heading">{title}</h2>
@@ -150,7 +155,7 @@ export default function TransactionConfirmationModal({
           )}
 
           {preview?.requiresRestoreFootprint && (
-            <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-4 text-sm text-amber-500">
+            <div className="rounded-xl border border-theme-warning/30 bg-theme-warning/10 px-4 py-4 text-sm text-theme-warning">
               This transaction needs a restore-footprint step before it can be
               submitted. The current flow only supports direct submission.
             </div>

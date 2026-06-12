@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { X, SlidersHorizontal, ChevronDown, ChevronUp } from "lucide-react";
 import { JobFilters } from "@/hooks/useJobFilters";
-import { JOB_CATEGORIES, JOB_SKILLS } from "@/constants/jobs";
+import { useFocusTrap } from "@/hooks/useFocusTrap";
+import { JOB_SKILLS } from "@/constants/jobs";
+import axios from "axios";
 
 const STATUSES = [
   { value: "OPEN", label: "Open" },
@@ -49,6 +51,7 @@ function FilterSection({
     <div className="border-b border-theme-border pb-4 mb-4 last:border-b-0 last:mb-0 last:pb-0">
       <button
         onClick={() => setOpen(!open)}
+        aria-expanded={open}
         className="flex items-center justify-between w-full text-sm font-medium text-theme-heading mb-2"
       >
         {title}
@@ -68,6 +71,31 @@ export default function FilterSidebar({
   isOpen,
   onClose,
 }: FilterSidebarProps) {
+  const drawerRef = useRef<HTMLDivElement>(null);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [loadingCategories, setLoadingCategories] = useState(true);
+
+  useFocusTrap(drawerRef, { open: isOpen, onClose });
+
+  // Fetch categories from API
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+        const response = await axios.get<string[]>(`${API_URL}/categories`);
+        setCategories(response.data);
+      } catch (error) {
+        console.error("Failed to fetch categories:", error);
+        // Fallback to hardcoded categories if API fails
+        setCategories(["Frontend", "Backend", "Smart Contract", "Design", "Mobile", "Documentation", "DevOps"]);
+      } finally {
+        setLoadingCategories(false);
+      }
+    };
+
+    fetchCategories();
+  }, []);
+
   const content = (
     <div>
       {/* Header */}
@@ -84,6 +112,7 @@ export default function FilterSidebar({
         <button
           onClick={onClose}
           className="lg:hidden p-1 text-theme-text hover:text-theme-heading transition-colors"
+          aria-label="Close filters"
         >
           <X size={20} />
         </button>
@@ -91,7 +120,9 @@ export default function FilterSidebar({
 
       {/* Sort */}
       <FilterSection title="Sort By">
+        <label htmlFor="filter-sort" className="sr-only">Sort By</label>
         <select
+          id="filter-sort"
           value={filters.sort}
           onChange={(e) => updateFilter("sort", e.target.value)}
           className="input-field text-sm"
@@ -106,18 +137,24 @@ export default function FilterSidebar({
 
       {/* Category */}
       <FilterSection title="Category">
+        <label htmlFor="filter-category" className="sr-only">Category</label>
         <select
+          id="filter-category"
           value={filters.category}
           onChange={(e) => updateFilter("category", e.target.value)}
           className="input-field text-sm"
+          disabled={loadingCategories}
         >
           <option value="All">All Categories</option>
-          {JOB_CATEGORIES.map((category) => (
+          {categories.map((category) => (
             <option key={category} value={category}>
               {category}
             </option>
           ))}
         </select>
+        {loadingCategories && (
+          <p className="text-xs text-theme-text mt-1">Loading categories...</p>
+        )}
       </FilterSection>
 
       {/* Skills */}
@@ -159,7 +196,9 @@ export default function FilterSidebar({
       {/* Budget Range */}
       <FilterSection title="Budget (XLM)">
         <div className="flex gap-2">
+          <label htmlFor="filter-budget-min" className="sr-only">Minimum budget</label>
           <input
+            id="filter-budget-min"
             type="number"
             placeholder="Min"
             value={filters.minBudget}
@@ -167,7 +206,9 @@ export default function FilterSidebar({
             className="input-field text-sm"
             min={0}
           />
+          <label htmlFor="filter-budget-max" className="sr-only">Maximum budget</label>
           <input
+            id="filter-budget-max"
             type="number"
             placeholder="Max"
             value={filters.maxBudget}
@@ -223,7 +264,7 @@ export default function FilterSidebar({
             className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
             onClick={onClose}
           />
-          <div className="absolute left-0 top-0 bottom-0 w-80 max-w-[85vw] bg-theme-card border-r border-theme-border p-6 overflow-y-auto shadow-2xl animate-slide-in-left">
+          <div ref={drawerRef} className="absolute left-0 top-0 bottom-0 w-80 max-w-[85vw] bg-theme-card border-r border-theme-border p-6 overflow-y-auto shadow-2xl animate-slide-in-left">
             {content}
           </div>
         </div>

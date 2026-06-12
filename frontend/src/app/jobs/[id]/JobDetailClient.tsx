@@ -34,6 +34,7 @@ import ProposeRevisionModal, {
 import { Job, Application, PaginatedResponse, Review } from "@/types";
 import { parseJobIdFromResult } from "@/utils/stellar";
 import ShareMenu from "@/components/ShareMenu";
+import { useToast } from "@/components/Toast";
 import WalletAddress from "@/components/WalletAddress";
 
 
@@ -72,6 +73,7 @@ export default function JobDetailClient() {
   const { id } = useParams();
   const { address, balances, signAndBroadcastTransaction } = useWallet();
   const { user } = useAuth();
+  const { toast } = useToast();
   const [job, setJob] = useState<Job | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState(false);
@@ -211,6 +213,26 @@ export default function JobDetailClient() {
     if (!user) return null;
     return reviews.find((r) => r.reviewerId === user.id) ?? null;
   }, [reviews, user]);
+
+  // Auto-show review modal when job is completed and current user hasn't reviewed yet.
+  // Runs once after job + reviews are loaded.
+  useEffect(() => {
+    if (!job || !user) return;
+    if (job.status !== "COMPLETED") return;
+    if (myReview) return; // already reviewed
+
+    const isParticipant =
+      user.id === job.client.id ||
+      (job.freelancer && user.id === job.freelancer.id);
+    if (!isParticipant) return;
+
+    // Only auto-open once per session per job
+    const sessionKey = `review_prompted_${job.id}`;
+    if (sessionStorage.getItem(sessionKey)) return;
+    sessionStorage.setItem(sessionKey, "1");
+
+    setReviewModalOpen(true);
+  }, [job, user, myReview]);
 
   useEffect(() => {
     if (!recentlyApprovedMilestoneId) return;
@@ -467,6 +489,79 @@ export default function JobDetailClient() {
   };
 
   const handleApproveMilestone = async (milestoneId: string) => {
+    setError(null);
+    setActioningMilestoneId(milestoneId);
+    const previousMilestones = job?.milestones ?? [];
+    setJob((prev) =>
+      prev
+        ? {
+            ...prev,
+            milestones: prev.milestones.map((m) =>
+              m.id === milestoneId ? { ...m, status: "APPROVED" } : m,
+            ),
+          }
+        : prev,
+    );
+    setConfirmingMilestoneId(milestoneId);
+    try {
+      const token =
+        localStorage.getItem("stellarmarket_jwt") ??
+        localStorage.getItem("token");
+
+      if (!token) {
+        throw new Error("Please log in again.");
+      }
+
+      const res = await axios.put(
+        `${API_URL}/milestones/${milestoneId}/approve`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+
+      const txResult = await signAndBroadcastTransaction(res.data.xdr);
+      if (!txResult.success) {
+        throw new Error(txResult.error || "Transaction failed");
+      }
+
+      await axios.post(
+        `${API_URL}/escrow/confirm-tx`,
+        {
+          hash: txResult.hash,
+          type: "APPROVE_MILESTONE",
+          jobId: id,
+          milestoneId,
+        },
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+
+      await fetchJob();
+      setRecentlyApprovedMilestoneId(milestoneId);
+    } catch (err: unknown) {
+      // Roll back optimistic milestone status if on-chain confirmation fails.
+      setJob((prev) =>
+        prev
+          ? {
+              ...prev,
+              milestones: prev.milestones.map((m) =>
+                m.id === milestoneId
+                  ? {
+                      ...m,
+                      status:
+                        previousMilestones.find((pm) => pm.id === milestoneId)
+                          ?.status ?? m.status,
+                    }
+                  : m,
+                ),
+            }
+          : prev,
+      );
+      setRecentlyApprovedMilestoneId(null);
+      setError(err instanceof Error ? err.message : "Action failed.");
+      toast.error("Failed to approve milestone. Please try again.");
+    } finally {
+      setConfirmingMilestoneId(null);
+      setActioningMilestoneId(null);
+    }
     await handleEscrowAction("approve", milestoneId);
   };
 
@@ -681,7 +776,7 @@ export default function JobDetailClient() {
           </div>
 
           {pendingRevision && canRespondToRevision && (
-            <div className="card mb-8 border-amber-500/40 bg-amber-500/5">
+            <div className="card mb-8 border-theme-warning/40 bg-theme-warning/5">
               <h2 className="text-lg font-semibold text-theme-heading mb-2">
                 Pending revision proposal
               </h2>
@@ -779,7 +874,10 @@ export default function JobDetailClient() {
             />
           </div>
 
-          {job.status === "COMPLETED" && !myReview && (
+          {job.status === "COMPLETED" && !myReview && user && (
+            user.id === job.client.id ||
+            (job.freelancer && user.id === job.freelancer.id)
+          ) && (
             <div className="card mt-8 border-stellar-blue/30 bg-stellar-blue/5">
               <h2 className="text-lg font-semibold text-theme-heading mb-2">
                 Leave a review
@@ -796,12 +894,6 @@ export default function JobDetailClient() {
                 >
                   Review now
                 </button>
-                <Link
-                  href={`/jobs/${job.id}/review`}
-                  className="btn-secondary"
-                >
-                  Open review page
-                </Link>
               </div>
             </div>
           )}
@@ -861,7 +953,7 @@ export default function JobDetailClient() {
                             size={16}
                             className={
                               star <= review.rating
-                                ? "fill-yellow-400 text-yellow-400"
+                                ? "fill-theme-warning text-theme-warning"
                                 : "text-theme-border"
                             }
                           />
@@ -877,103 +969,6 @@ export default function JobDetailClient() {
             )}
           </div>
 
-          {job.status === "COMPLETED" && !myReview && (
-            <div className="card mt-8 border-stellar-blue/30 bg-stellar-blue/5">
-              <h2 className="text-lg font-semibold text-theme-heading mb-2">
-                Leave a review
-              </h2>
-              <p className="text-sm text-theme-text mb-4">
-                This job is complete. Share your experience to help build trust
-                on StellarMarket.
-              </p>
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  className="btn-primary"
-                  onClick={() => setReviewModalOpen(true)}
-                >
-                  Review now
-                </button>
-                <Link
-                  href={`/jobs/${job.id}/review`}
-                  className="btn-secondary"
-                >
-                  Open review page
-                </Link>
-              </div>
-            </div>
-          )}
-
-          {/* Reviews */}
-          <div className="card mt-8">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-theme-heading">
-                Reviews
-              </h2>
-              {myReview ? (
-                <span className="text-xs text-theme-text">Already reviewed</span>
-              ) : null}
-            </div>
-
-            {reviewsLoading ? (
-              <div className="flex justify-center py-6">
-                <Loader2 className="animate-spin text-stellar-blue" size={28} />
-              </div>
-            ) : reviews.length === 0 ? (
-              <p className="text-sm text-theme-text">No reviews yet.</p>
-            ) : (
-              <div className="space-y-4">
-                {reviews.map((review) => (
-                  <div
-                    key={review.id}
-                    className="p-4 bg-theme-bg rounded-lg border border-theme-border"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-stellar-blue to-stellar-purple flex items-center justify-center text-white text-sm font-bold overflow-hidden">
-                          {review.reviewer.avatarUrl ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img
-                              src={review.reviewer.avatarUrl}
-                              alt={review.reviewer.username}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            review.reviewer.username.charAt(0).toUpperCase()
-                          )}
-                        </div>
-                        <div>
-                          <div className="text-sm font-medium text-theme-heading">
-                            {review.reviewer.username}
-                          </div>
-                          <div className="text-xs text-theme-text">
-                            {new Date(review.createdAt).toLocaleDateString()}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-1">
-                        {[1, 2, 3, 4, 5].map((star) => (
-                          <Star
-                            key={star}
-                            size={16}
-                            className={
-                              star <= review.rating
-                                ? "fill-yellow-400 text-yellow-400"
-                                : "text-theme-border"
-                            }
-                          />
-                        ))}
-                      </div>
-                    </div>
-                    <p className="text-sm text-theme-text mt-3 whitespace-pre-line">
-                      {review.comment}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
           {/* Applicants — visible to owning client only */}
           {isOwnJob && (
             <div className="card mt-8">
@@ -1020,7 +1015,7 @@ export default function JobDetailClient() {
                               onClick={() =>
                                 void handleApplicationStatus(app.id, "ACCEPTED")
                               }
-                              className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg bg-green-500/10 text-green-400 hover:bg-green-500/20 transition-colors disabled:opacity-50"
+                              className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg bg-theme-success/10 text-theme-success hover:bg-theme-success/20 transition-colors disabled:opacity-50"
                             >
                               {actioningApp === app.id ? (
                                 <Loader2 size={12} className="animate-spin" />
@@ -1228,7 +1223,7 @@ export default function JobDetailClient() {
               job.status === "OPEN" &&
               (hasApplied ? (
                 <div className="space-y-2">
-                  <div className="flex items-center justify-center gap-2 w-full py-2 px-4 rounded-lg bg-green-500/10 text-green-400 text-sm font-medium border border-green-500/20">
+                  <div className="flex items-center justify-center gap-2 w-full py-2 px-4 rounded-lg bg-theme-success/10 text-theme-success text-sm font-medium border border-theme-success/20">
                     <CheckCircle size={16} /> Applied
                   </div>
                   <button
@@ -1363,12 +1358,9 @@ export default function JobDetailClient() {
       {job.freelancer && (
         <ReviewModal
           job={job}
-          revieweeId={isClient ? job.freelancer.id : job.client.id}
+          revieweeId={user?.id === job.client.id ? job.freelancer.id : job.client.id}
           revieweeName={
-            isClient ? job.freelancer.username : job.client.username
-          }
-          revieweeWalletAddress={
-            isClient ? job.freelancer.walletAddress : job.client.walletAddress
+            user?.id === job.client.id ? job.freelancer.username : job.client.username
           }
           isOpen={reviewModalOpen}
           onClose={() => {

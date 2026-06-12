@@ -2,12 +2,13 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { ShieldCheck, Loader2, Gavel, Vote } from "lucide-react";
+import { ShieldCheck, Gavel, Vote } from "lucide-react";
 import Link from "next/link";
 import axios from "axios";
 import StatusBadge from "@/components/StatusBadge";
 import EmptyState from "@/components/EmptyState";
 import Pagination from "@/components/Pagination";
+import DisputeCardSkeleton from "@/components/skeletons/DisputeCardSkeleton";
 import { Dispute, PaginatedResponse } from "@/types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
@@ -108,8 +109,10 @@ export default function DisputesDashboardPage() {
 
       {/* Content */}
       {loading ? (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="animate-spin text-stellar-blue" size={48} />
+        <div className="space-y-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <DisputeCardSkeleton key={i} />
+          ))}
         </div>
       ) : disputes.length > 0 ? (
         <>

@@ -137,6 +137,7 @@ export interface Review {
   rating: number;
   comment: string;
   reviewer: User;
+  job?: { id: string; title: string };
   createdAt: string;
 }
 
