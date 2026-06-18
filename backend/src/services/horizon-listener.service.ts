@@ -1,10 +1,11 @@
 import { rpc, scValToNative } from "@stellar/stellar-sdk";
-import { PrismaClient, BadgeTier } from "@prisma/client";
+import { PrismaClient, BadgeTier, EscrowEventType } from "@prisma/client";
 import { config } from "../config";
 import { NotificationService } from "./notification.service";
 import { logger } from "../lib/logger";
 import { CircuitBreaker } from "../lib/circuit-breaker";
 import type { CircuitBreakerStatus } from "../lib/circuit-breaker";
+import { handleEscrowEvent } from "./escrow-projection.service";
 
 export type { CircuitBreakerStatus };
 export type { CircuitState } from "../lib/circuit-breaker";
@@ -94,12 +95,23 @@ async function handleJobCreated(event: SorobanEvent): Promise<void> {
 
   const onChainJobId = bigintToStr(data[0]);
 
-  await prisma.job.updateMany({
-    where: {
-      contractJobId: onChainJobId,
-      escrowStatus: { not: "FUNDED" },
-    },
-    data: { escrowStatus: "UNFUNDED" },
+  const job = await prisma.job.findFirst({
+    where: { contractJobId: onChainJobId },
+    select: { id: true },
+  });
+
+  if (!job) {
+    logger.warn({ contractJobId: onChainJobId }, "[HorizonListener] JobCreated — no DB job");
+    return;
+  }
+
+  await handleEscrowEvent({
+    jobId: job.id,
+    contractJobId: onChainJobId,
+    eventType: EscrowEventType.JOB_CREATED,
+    ledgerSeq: event.ledger,
+    txHash: event.txHash,
+    payload: {},
   });
 
   logger.info({ contractJobId: onChainJobId }, "[HorizonListener] JobCreated");
@@ -114,12 +126,23 @@ async function handleJobFunded(event: SorobanEvent): Promise<void> {
 
   const onChainJobId = bigintToStr(data[0]);
 
-  await prisma.job.updateMany({
-    where: {
-      contractJobId: onChainJobId,
-      escrowStatus: "UNFUNDED",
-    },
-    data: { escrowStatus: "FUNDED", status: "IN_PROGRESS" },
+  const job = await prisma.job.findFirst({
+    where: { contractJobId: onChainJobId },
+    select: { id: true },
+  });
+
+  if (!job) {
+    logger.warn({ contractJobId: onChainJobId }, "[HorizonListener] JobFunded — no DB job");
+    return;
+  }
+
+  await handleEscrowEvent({
+    jobId: job.id,
+    contractJobId: onChainJobId,
+    eventType: EscrowEventType.JOB_FUNDED,
+    ledgerSeq: event.ledger,
+    txHash: event.txHash,
+    payload: {},
   });
 
   logger.info({ contractJobId: onChainJobId }, "[HorizonListener] JobFunded");
@@ -133,36 +156,26 @@ async function handlePaymentReleased(event: SorobanEvent): Promise<void> {
   if (!Array.isArray(data) || data.length < 1) return;
 
   const onChainJobId = bigintToStr(data[0]);
+  const amount = data.length >= 3 ? bigintToStr(data[2]) : "0";
 
-  const updated = await prisma.job.updateMany({
-    where: {
-      contractJobId: onChainJobId,
-      status: { not: "COMPLETED" },
-    },
-    data: { escrowStatus: "COMPLETED", status: "COMPLETED" },
+  const job = await prisma.job.findFirst({
+    where: { contractJobId: onChainJobId },
+    select: { id: true },
   });
 
-  if (updated.count > 0) {
-    const job = await prisma.job.findFirst({
-      where: { contractJobId: onChainJobId },
-      select: { clientId: true, freelancerId: true, title: true },
-    });
-    if (job) {
-      const notifyIds = [job.clientId, job.freelancerId].filter(Boolean) as string[];
-      await Promise.all(
-        notifyIds.map((userId) =>
-          NotificationService.sendNotification({
-            userId,
-            type: "PAYMENT_RELEASED",
-            title: "Payment Released",
-            message: `All payments for "${job.title}" have been released on-chain.`,
-            metadata: { contractJobId: onChainJobId },
-            skipBatching: true,
-          })
-        )
-      );
-    }
+  if (!job) {
+    logger.warn({ contractJobId: onChainJobId }, "[HorizonListener] PaymentReleased — no DB job");
+    return;
   }
+
+  await handleEscrowEvent({
+    jobId: job.id,
+    contractJobId: onChainJobId,
+    eventType: EscrowEventType.PAYMENT_RELEASED,
+    ledgerSeq: event.ledger,
+    txHash: event.txHash,
+    payload: { amount },
+  });
 
   logger.info({ contractJobId: onChainJobId }, "[HorizonListener] PaymentReleased");
 }
@@ -179,7 +192,7 @@ async function handleDisputeOpened(event: SorobanEvent): Promise<void> {
 
   const job = await prisma.job.findFirst({
     where: { contractJobId: onChainJobId },
-    select: { id: true, clientId: true, freelancerId: true, dispute: true },
+    select: { id: true },
   });
 
   if (!job) {
@@ -187,37 +200,14 @@ async function handleDisputeOpened(event: SorobanEvent): Promise<void> {
     return;
   }
 
-  await prisma.job.update({
-    where: { id: job.id },
-    data: { status: "DISPUTED", escrowStatus: "DISPUTED" },
+  await handleEscrowEvent({
+    jobId: job.id,
+    contractJobId: onChainJobId,
+    eventType: EscrowEventType.DISPUTE_OPENED,
+    ledgerSeq: event.ledger,
+    txHash: event.txHash,
+    payload: { onChainDisputeId },
   });
-
-  await prisma.dispute.upsert({
-    where: { onChainDisputeId },
-    update: { status: "OPEN" },
-    create: {
-      jobId: job.id,
-      onChainDisputeId,
-      clientId: job.clientId,
-      freelancerId: job.freelancerId ?? job.clientId,
-      initiatorId: job.clientId,
-      reason: "Raised on-chain",
-      status: "OPEN",
-    },
-  });
-
-  const notifyIds = [job.clientId, job.freelancerId].filter(Boolean) as string[];
-  await Promise.all(
-    notifyIds.map((userId) =>
-      NotificationService.sendNotification({
-        userId,
-        type: "DISPUTE_RAISED",
-        title: "Dispute Opened",
-        message: "A dispute has been opened on-chain for your job.",
-        metadata: { onChainDisputeId, contractJobId: onChainJobId },
-      })
-    )
-  );
 
   logger.info({ onChainDisputeId }, "[HorizonListener] DisputeOpened");
 }
@@ -232,27 +222,9 @@ async function handleDisputeResolved(event: SorobanEvent): Promise<void> {
   const onChainDisputeId = bigintToStr(data[0]);
   const rawStatus = enumVariant(data[1]);
 
-  let dbDisputeStatus: "OPEN" | "IN_PROGRESS" | "RESOLVED" = "RESOLVED";
-  let jobStatus: "COMPLETED" | "CANCELLED" | null = null;
-  let outcome: string = rawStatus;
-
-  if (rawStatus === "ResolvedForClient") {
-    jobStatus = "CANCELLED";
-    outcome = "CLIENT_WINS";
-  } else if (rawStatus === "ResolvedForFreelancer") {
-    jobStatus = "COMPLETED";
-    outcome = "FREELANCER_WINS";
-  } else if (rawStatus === "RefundedBoth") {
-    jobStatus = "CANCELLED";
-    outcome = "REFUND_BOTH";
-  } else if (rawStatus === "Escalated") {
-    dbDisputeStatus = "IN_PROGRESS";
-    outcome = "ESCALATED";
-  }
-
   const dispute = await prisma.dispute.findUnique({
     where: { onChainDisputeId },
-    select: { id: true, jobId: true, clientId: true, freelancerId: true },
+    select: { jobId: true, job: { select: { contractJobId: true } } },
   });
 
   if (!dispute) {
@@ -260,41 +232,16 @@ async function handleDisputeResolved(event: SorobanEvent): Promise<void> {
     return;
   }
 
-  await prisma.$transaction(async (tx) => {
-    await tx.dispute.update({
-      where: { id: dispute.id },
-      data: {
-        status: dbDisputeStatus,
-        outcome,
-        resolvedAt: dbDisputeStatus === "RESOLVED" ? new Date() : null,
-      },
-    });
-
-    if (jobStatus) {
-      await tx.job.update({
-        where: { id: dispute.jobId },
-        data: {
-          status: jobStatus,
-          escrowStatus: jobStatus === "COMPLETED" ? "COMPLETED" : "CANCELLED",
-        },
-      });
-    }
+  await handleEscrowEvent({
+    jobId: dispute.jobId,
+    contractJobId: dispute.job.contractJobId ?? "",
+    eventType: EscrowEventType.DISPUTE_RESOLVED,
+    ledgerSeq: event.ledger,
+    txHash: event.txHash,
+    payload: { onChainDisputeId, rawStatus },
   });
 
-  const notifyIds = [dispute.clientId, dispute.freelancerId].filter(Boolean) as string[];
-  await Promise.all(
-    notifyIds.map((userId) =>
-      NotificationService.sendNotification({
-        userId,
-        type: "DISPUTE_RESOLVED",
-        title: "Dispute Resolved",
-        message: `The dispute has been resolved on-chain: ${outcome}.`,
-        metadata: { onChainDisputeId, outcome },
-      })
-    )
-  );
-
-  logger.info({ onChainDisputeId, outcome }, "[HorizonListener] DisputeResolved");
+  logger.info({ onChainDisputeId, rawStatus }, "[HorizonListener] DisputeResolved");
 }
 
 /**

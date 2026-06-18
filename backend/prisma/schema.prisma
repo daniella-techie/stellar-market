@@ -206,6 +206,7 @@ model Job {
   dispute      Dispute?
   savedBy      SavedJob[]    @relation("SavedByFreelancers")
   deadlineExtensionRequests DeadlineExtensionRequest[] @relation("DeadlineExtensions")
+  escrowEvents EscrowEvent[]
 
   @@index([deletedAt])
 }
@@ -563,4 +564,30 @@ model WebhookDelivery {
   @@index([webhookId])
   @@index([status])
   @@index([nextRetry])
+}
+
+enum EscrowEventType {
+  JOB_CREATED
+  JOB_FUNDED
+  PAYMENT_RELEASED
+  DISPUTE_OPENED
+  DISPUTE_RESOLVED
+  REFUNDED
+  EXPIRED
+}
+
+model EscrowEvent {
+  id            String          @id @default(cuid())
+  jobId         String
+  contractJobId String
+  eventType     EscrowEventType
+  ledgerSeq     Int
+  txHash        String
+  payload       Json
+  processedAt   DateTime        @default(now())
+
+  job           Job             @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@unique([contractJobId, eventType, ledgerSeq])
+  @@index([jobId, ledgerSeq])
 }
