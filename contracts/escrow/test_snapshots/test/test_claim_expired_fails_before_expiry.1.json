@@ -593,7 +593,7 @@
             },
             "ext": "v0"
           },
-          518400
+          6311999
         ]
       ],
       [
@@ -971,7 +971,7 @@
             },
             "ext": "v0"
           },
-          518400
+          6311999
         ]
       ]
     ]
@@ -1551,7 +1551,7 @@
                 "bytes": "0000000000000000000000000000000000000000000000000000000000000001"
               },
               {
-                "symbol": "claim_expired"
+                "symbol": "expire_job"
               }
             ],
             "data": {
@@ -1574,12 +1574,12 @@
                 "symbol": "fn_return"
               },
               {
-                "symbol": "claim_expired"
+                "symbol": "expire_job"
               }
             ],
             "data": {
               "error": {
-                "contract": 40
+                "contract": 26
               }
             }
           }
@@ -1600,7 +1600,7 @@
               },
               {
                 "error": {
-                  "contract": 40
+                  "contract": 26
                 }
               }
             ],
@@ -1625,7 +1625,7 @@
               },
               {
                 "error": {
-                  "contract": 40
+                  "contract": 26
                 }
               }
             ],
@@ -1635,7 +1635,7 @@
                   "string": "contract call failed"
                 },
                 {
-                  "symbol": "claim_expired"
+                  "symbol": "expire_job"
                 },
                 {
                   "vec": [
@@ -1664,7 +1664,7 @@
               },
               {
                 "error": {
-                  "contract": 40
+                  "contract": 26
                 }
               }
             ],

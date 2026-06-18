@@ -1,8 +1,9 @@
+extern crate std;
+
 use soroban_sdk::{
-    contract, contractimpl,
     testutils::{Address as _, Ledger},
     token::StellarAssetClient,
-    vec, Address, Env, IntoVal, String, Vec,
+    vec, Address, Env, String, Vec,
 };
 
 use crate::*;
@@ -45,7 +46,7 @@ fn setup_fuzz_test(env: &Env, num_tokens: usize) -> (EscrowContractClient, Vec<A
             token_admin.mint(&user, &1_000_000_000_000_i128);
         }
 
-        client.add_allowed_token(&admin, &token_address).unwrap();
+        client.add_allowed_token(&admin, &token_address);
         tokens.push_back(token_address);
     }
 
@@ -65,6 +66,7 @@ fn fuzz_deposit_and_release_basic() {
     let num_runs = 100;
 
     for run in 0..num_runs {
+        env.budget().reset_unlimited();
         let client = Address::generate(&env);
         let freelancer = Address::generate(&env);
 
@@ -79,7 +81,7 @@ fn fuzz_deposit_and_release_basic() {
             let amount = random_i128(&mut seed, 1_000_000);
             let deadline = 1000 + (m as u64 + 1) * 100;
             milestones.push_back((
-                String::from_str(&env, &format!("Milestone {}", m)),
+                String::from_str(&env, &std::format!("Milestone {}", m)),
                 amount,
                 deadline,
             ));
@@ -92,10 +94,9 @@ fn fuzz_deposit_and_release_basic() {
 
         let job_deadline = 1000 + ((num_milestones as u64 + 1) * 100);
         let job_id = contract
-            .create_job(&client, &freelancer, &token, &milestones, &job_deadline, &604800)
-            .unwrap();
+            .create_job(&client, &freelancer, &token, &milestones, &job_deadline, &604800, &518_400u32);
 
-        contract.fund_job(&job_id, &client).unwrap();
+        contract.fund_job(&job_id, &client);
 
         let job = contract.get_job(&job_id);
         assert_eq!(job.funded_amount, total_amount);
@@ -103,11 +104,9 @@ fn fuzz_deposit_and_release_basic() {
 
         for (m_idx, _) in milestones.iter().enumerate() {
             contract
-                .submit_milestone(&job_id, &(m_idx as u32), &freelancer)
-                .unwrap();
+                .submit_milestone(&job_id, &(m_idx as u32), &freelancer);
             contract
-                .approve_milestone(&job_id, &(m_idx as u32), &client)
-                .unwrap();
+                .approve_milestone(&job_id, &(m_idx as u32), &client);
         }
 
         let final_job = contract.get_job(&job_id);
@@ -128,6 +127,7 @@ fn fuzz_partial_payments() {
     let num_runs = 100;
 
     for run in 0..num_runs {
+        env.budget().reset_unlimited();
         let client = Address::generate(&env);
         let freelancer = Address::generate(&env);
 
@@ -145,14 +145,12 @@ fn fuzz_partial_payments() {
         ];
 
         let job_id = contract
-            .create_job(&client, &freelancer, &token, &milestones, &1500, &604800)
-            .unwrap();
+            .create_job(&client, &freelancer, &token, &milestones, &1500, &604800, &518_400u32);
 
-        contract.fund_job(&job_id, &client).unwrap();
+        contract.fund_job(&job_id, &client);
 
         contract
-            .submit_milestone(&job_id, &0, &freelancer)
-            .unwrap();
+            .submit_milestone(&job_id, &0, &freelancer);
 
         let mut remaining = milestone_amount;
         while remaining > 0 {
@@ -162,8 +160,7 @@ fn fuzz_partial_payments() {
             }
 
             contract
-                .release_partial_payment(&job_id, &0, &payment, &client)
-                .unwrap();
+                .release_partial_payment(&job_id, &0, &payment, &client);
 
             remaining -= payment;
 
@@ -199,6 +196,7 @@ fn fuzz_boundary_values() {
     ];
 
     for boundary in boundary_values.iter() {
+        env.budget().reset_unlimited();
         let client = Address::generate(&env);
         let freelancer = Address::generate(&env);
 
@@ -211,21 +209,18 @@ fn fuzz_boundary_values() {
         ];
 
         let job_id = contract
-            .create_job(&client, &freelancer, &token, &milestones, &1500, &604800)
-            .unwrap();
+            .create_job(&client, &freelancer, &token, &milestones, &1500, &604800, &518_400u32);
 
-        contract.fund_job(&job_id, &client).unwrap();
+        contract.fund_job(&job_id, &client);
 
         let job = contract.get_job(&job_id);
         assert_eq!(job.total_amount, boundary);
 
         contract
-            .submit_milestone(&job_id, &0, &freelancer)
-            .unwrap();
+            .submit_milestone(&job_id, &0, &freelancer);
 
         contract
-            .approve_milestone(&job_id, &0, &client)
-            .unwrap();
+            .approve_milestone(&job_id, &0, &client);
 
         let final_job = contract.get_job(&job_id);
         assert_eq!(final_job.status, JobStatus::Completed);
@@ -245,6 +240,7 @@ fn fuzz_refund_flows() {
     let num_runs = 50;
 
     for run in 0..num_runs {
+        env.budget().reset_unlimited();
         let client = Address::generate(&env);
         let freelancer = Address::generate(&env);
 
@@ -259,7 +255,7 @@ fn fuzz_refund_flows() {
             let amount = random_i128(&mut seed, 100_000);
             let deadline = 1000 + (m as u64 + 1) * 100;
             milestones.push_back((
-                String::from_str(&env, &format!("Milestone {}", m)),
+                String::from_str(&env, &std::format!("Milestone {}", m)),
                 amount,
                 deadline,
             ));
@@ -272,13 +268,12 @@ fn fuzz_refund_flows() {
 
         let job_deadline = 1000 + ((num_milestones as u64 + 1) * 100);
         let job_id = contract
-            .create_job(&client, &freelancer, &token, &milestones, &job_deadline, &604800)
-            .unwrap();
+            .create_job(&client, &freelancer, &token, &milestones, &job_deadline, &604800, &518_400u32);
 
-        contract.fund_job(&job_id, &client).unwrap();
+        contract.fund_job(&job_id, &client);
 
         if random_bool(&mut seed) {
-            contract.cancel_job(&job_id, &client).unwrap();
+            contract.cancel_job(&job_id, &client);
 
             let job = contract.get_job(&job_id);
             assert_eq!(job.status, JobStatus::Cancelled);
@@ -302,6 +297,7 @@ fn fuzz_claim_refund_after_expiry() {
     let num_runs = 50;
 
     for run in 0..num_runs {
+        env.budget().reset_unlimited();
         let client = Address::generate(&env);
         let freelancer = Address::generate(&env);
 
@@ -309,7 +305,9 @@ fn fuzz_claim_refund_after_expiry() {
         token_admin.mint(&client, &100_000_000_i128);
 
         let milestone_amount = random_i128(&mut seed, 100_000).max(100);
-        let job_deadline = 2000 + random_u32(&mut seed) as u64;
+        // Deadline must be in the future relative to current timestamp.
+        let current_ts = env.ledger().timestamp();
+        let job_deadline = current_ts + 1000 + random_u32(&mut seed) as u64;
         let grace_period = 604800;
 
         let milestones = vec![
@@ -322,14 +320,13 @@ fn fuzz_claim_refund_after_expiry() {
         ];
 
         let job_id = contract
-            .create_job(&client, &freelancer, &token, &milestones, &job_deadline, &grace_period)
-            .unwrap();
+            .create_job(&client, &freelancer, &token, &milestones, &job_deadline, &grace_period, &518_400u32);
 
-        contract.fund_job(&job_id, &client).unwrap();
+        contract.fund_job(&job_id, &client);
 
         env.ledger().with_mut(|l| l.timestamp = job_deadline + grace_period + 1);
 
-        contract.claim_refund(&job_id, &client).unwrap();
+        contract.claim_refund(&job_id, &client);
 
         let job = contract.get_job(&job_id);
         assert_eq!(job.status, JobStatus::Cancelled);
@@ -348,7 +345,8 @@ fn fuzz_multi_token_scenarios() {
     let num_runs = 50;
 
     for run in 0..num_runs {
-        let token_idx = (random_u32(&mut seed) % 2) as usize;
+        env.budget().reset_unlimited();
+        let token_idx = (random_u32(&mut seed) % 2) as u32;
         let token = tokens.get(token_idx).unwrap();
 
         let client = Address::generate(&env);
@@ -365,7 +363,7 @@ fn fuzz_multi_token_scenarios() {
             let amount = random_i128(&mut seed, 100_000);
             let deadline = 1000 + (m as u64 + 1) * 100;
             milestones.push_back((
-                String::from_str(&env, &format!("Milestone {}", m)),
+                String::from_str(&env, &std::format!("Milestone {}", m)),
                 amount,
                 deadline,
             ));
@@ -378,21 +376,18 @@ fn fuzz_multi_token_scenarios() {
 
         let job_deadline = 1000 + ((num_milestones as u64 + 1) * 100);
         let job_id = contract
-            .create_job(&client, &freelancer, &token, &milestones, &job_deadline, &604800)
-            .unwrap();
+            .create_job(&client, &freelancer, &token, &milestones, &job_deadline, &604800, &518_400u32);
 
         let job = contract.get_job(&job_id);
         assert_eq!(job.token, token);
 
-        contract.fund_job(&job_id, &client).unwrap();
+        contract.fund_job(&job_id, &client);
 
         for (m_idx, _) in milestones.iter().enumerate() {
             contract
-                .submit_milestone(&job_id, &(m_idx as u32), &freelancer)
-                .unwrap();
+                .submit_milestone(&job_id, &(m_idx as u32), &freelancer);
             contract
-                .approve_milestone(&job_id, &(m_idx as u32), &client)
-                .unwrap();
+                .approve_milestone(&job_id, &(m_idx as u32), &client);
         }
     }
 }
@@ -410,6 +405,7 @@ fn fuzz_balance_invariants() {
     let num_runs = 50;
 
     for run in 0..num_runs {
+        env.budget().reset_unlimited();
         let client = Address::generate(&env);
         let freelancer = Address::generate(&env);
 
@@ -428,18 +424,15 @@ fn fuzz_balance_invariants() {
         ];
 
         let job_id = contract
-            .create_job(&client, &freelancer, &token, &milestones, &1500, &604800)
-            .unwrap();
+            .create_job(&client, &freelancer, &token, &milestones, &1500, &604800, &518_400u32);
 
-        contract.fund_job(&job_id, &client).unwrap();
-
-        contract
-            .submit_milestone(&job_id, &0, &freelancer)
-            .unwrap();
+        contract.fund_job(&job_id, &client);
 
         contract
-            .approve_milestone(&job_id, &0, &client)
-            .unwrap();
+            .submit_milestone(&job_id, &0, &freelancer);
+
+        contract
+            .approve_milestone(&job_id, &0, &client);
 
         let job = contract.get_job(&job_id);
         assert_eq!(job.funded_amount, milestone_amount);
@@ -460,6 +453,7 @@ fn fuzz_approve_milestones_batch() {
     let num_runs = 30;
 
     for run in 0..num_runs {
+        env.budget().reset_unlimited();
         let client = Address::generate(&env);
         let freelancer = Address::generate(&env);
 
@@ -474,7 +468,7 @@ fn fuzz_approve_milestones_batch() {
             let amount = random_i128(&mut seed, 100_000);
             let deadline = 1000 + (m as u64 + 1) * 100;
             milestones.push_back((
-                String::from_str(&env, &format!("Milestone {}", m)),
+                String::from_str(&env, &std::format!("Milestone {}", m)),
                 amount,
                 deadline,
             ));
@@ -487,22 +481,19 @@ fn fuzz_approve_milestones_batch() {
 
         let job_deadline = 1000 + ((num_milestones as u64 + 1) * 100);
         let job_id = contract
-            .create_job(&client, &freelancer, &token, &milestones, &job_deadline, &604800)
-            .unwrap();
+            .create_job(&client, &freelancer, &token, &milestones, &job_deadline, &604800, &518_400u32);
 
-        contract.fund_job(&job_id, &client).unwrap();
+        contract.fund_job(&job_id, &client);
 
         let mut indices = Vec::new(&env);
         for m in 0..milestones.len() {
             contract
-                .submit_milestone(&job_id, &(m as u32), &freelancer)
-                .unwrap();
+                .submit_milestone(&job_id, &(m as u32), &freelancer);
             indices.push_back(m as u32);
         }
 
         contract
-            .approve_milestones_batch(&job_id, &indices, &client)
-            .unwrap();
+            .approve_milestones_batch(&job_id, &indices, &client);
 
         let final_job = contract.get_job(&job_id);
         assert_eq!(final_job.status, JobStatus::Completed);
@@ -522,6 +513,7 @@ fn fuzz_top_up_escrow() {
     let num_runs = 30;
 
     for run in 0..num_runs {
+        env.budget().reset_unlimited();
         let client = Address::generate(&env);
         let freelancer = Address::generate(&env);
 
@@ -535,18 +527,16 @@ fn fuzz_top_up_escrow() {
         ];
 
         let job_id = contract
-            .create_job(&client, &freelancer, &token, &milestones, &1500, &604800)
-            .unwrap();
+            .create_job(&client, &freelancer, &token, &milestones, &1500, &604800, &518_400u32);
 
-        contract.fund_job(&job_id, &client).unwrap();
+        contract.fund_job(&job_id, &client);
 
-        let topup_amount = random_i128(&mut seed, 50_000_000).max(1);
-        contract
-            .top_up_escrow(&client, &job_id, &topup_amount)
-            .unwrap_or_else(|_| {});
-
+        // After fund_job, funded_amount == total_amount. top_up_escrow is only
+        // meaningful after a revision proposal raises total_amount; calling it
+        // here would return AlreadyFunded. Just verify the funded invariant.
         let job = contract.get_job(&job_id);
-        assert!(job.funded_amount >= initial_amount);
+        assert_eq!(job.funded_amount, initial_amount);
+        assert_eq!(job.total_amount, initial_amount);
     }
 }
 
@@ -565,7 +555,7 @@ fn fuzz_no_panic_on_edge_cases() {
     let freelancer = Address::generate(&env);
 
     let token_admin = StellarAssetClient::new(&env, &token);
-    token_admin.mint(&client, &i128::MAX / 2);
+    token_admin.mint(&client, &(i128::MAX / 2));
 
     let milestones = vec![
         &env,
@@ -573,21 +563,18 @@ fn fuzz_no_panic_on_edge_cases() {
     ];
 
     let job_id = contract
-        .create_job(&client, &freelancer, &token, &milestones, &1500, &604800)
-        .unwrap();
+        .create_job(&client, &freelancer, &token, &milestones, &1500, &604800, &518_400u32);
 
-    contract.fund_job(&job_id, &client).unwrap();
+    contract.fund_job(&job_id, &client);
 
     let job = contract.get_job(&job_id);
     assert_eq!(job.funded_amount, 1);
 
     contract
-        .submit_milestone(&job_id, &0, &freelancer)
-        .unwrap();
+        .submit_milestone(&job_id, &0, &freelancer);
 
     contract
-        .approve_milestone(&job_id, &0, &client)
-        .unwrap();
+        .approve_milestone(&job_id, &0, &client);
 
     let final_job = contract.get_job(&job_id);
     assert_eq!(final_job.status, JobStatus::Completed);

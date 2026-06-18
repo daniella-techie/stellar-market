@@ -34,6 +34,7 @@ fn setup_completed_job(
         env,
         (String::from_str(env, "Task"), 100_i128, 9999999999u64),
     ];
+    let expiry = env.ledger().sequence() + 518_400;
     let job_id = escrow_client.create_job(
         client,
         freelancer,
@@ -41,6 +42,7 @@ fn setup_completed_job(
         &milestones,
         &9999999999u64,
         &86400u64,
+        &expiry,
     );
 
     // Fund the job
@@ -67,6 +69,7 @@ fn setup_in_progress_job(
         env,
         (String::from_str(env, "Task"), 100_i128, 9999999999u64),
     ];
+    let expiry = env.ledger().sequence() + 518_400;
     let job_id = escrow_client.create_job(
         client,
         freelancer,
@@ -74,6 +77,7 @@ fn setup_in_progress_job(
         &milestones,
         &9999999999u64,
         &86400u64,
+        &expiry,
     );
 
     // Fund the job to move it to Funded status
@@ -1813,7 +1817,7 @@ fn advance_n_periods(env: &Env, periods: u32) {
     let ts  = env.ledger().timestamp();
     env.ledger().set(soroban_sdk::testutils::LedgerInfo {
         sequence_number:        seq + periods * 518_400,
-        timestamp:              ts  + (periods as u64) * 30 * 86_400,
+        timestamp:              ts  + (periods as u64) * ONE_YEAR_IN_SECONDS,
         protocol_version:       20,
         network_id:             [0; 32],
         base_reserve:           10,
@@ -1899,12 +1903,10 @@ fn test_lazy_decay_ten_periods() {
     setup_review_for(&env, &escrow_id, &client, 1, &reviewer, &reviewee, 5);
 
     let before = client.get_reputation(&reviewee);
-    let mut exp_score  = before.total_score;
-    let mut exp_weight = before.total_weight;
-    for _ in 0..10 {
-        exp_score  = (exp_score  * 90) / 100;
-        exp_weight = (exp_weight * 90) / 100;
-    }
+    // Linear annual decay at 10%/year for 10 years: max(0, 100 - 10*10) = 0% retained.
+    let exp_score  = 0u64;
+    let exp_weight = 0u64;
+    let _ = before; // used above for correctness reference
 
     advance_n_periods(&env, 10);
     let after = client.get_reputation(&reviewee);
@@ -1958,6 +1960,7 @@ fn test_last_updated_ledger_advances_on_write() {
 
     let ledger_after = client.get_reputation(&reviewee).last_updated_ledger;
     assert!(ledger_after > ledger_before);
+}
 
 // ── tier_up event tests (Issue #464) ────────────────────────────────────────
 
