@@ -42,16 +42,17 @@ mod escrow {
     #[contracttype]
     #[derive(Clone, Debug, Eq, PartialEq)]
     pub struct Job {
-        pub id: u64,
+        pub auto_refund_after: u64,
         pub client: Address,
+        pub expiry_ledger: u32,
         pub freelancer: Address,
+        pub funded_amount: i128,
+        pub id: u64,
+        pub job_deadline: u64,
+        pub milestones: Vec<Milestone>,
+        pub status: JobStatus,
         pub token: Address,
         pub total_amount: i128,
-        pub funded_amount: i128,
-        pub status: JobStatus,
-        pub milestones: Vec<Milestone>,
-        pub job_deadline: u64,
-        pub auto_refund_after: u64,
     }
 
     #[soroban_sdk::contractclient(name = "EscrowContractClient")]
@@ -298,8 +299,8 @@ const DEFAULT_REFERRAL_BONUS: u64 = 5; // Equivalates to a 5-star review bonus
 const REFERRAL_BONUS_REPUTATION_WEIGHT: u64 = 1;
 const ONE_YEAR_IN_SECONDS: u64 = 31_536_000;
 
-const MIN_TTL_THRESHOLD: u32 = 1_000;
-const MIN_TTL_EXTEND_TO: u32 = 10_000;
+const MIN_TTL_THRESHOLD: u32 = 50_000_000;
+const MIN_TTL_EXTEND_TO: u32 = 50_000_000;
 const APPEAL_GRACE_WINDOW_SECONDS: u64 = 72 * 60 * 60;
 
 fn bump_reputation_ttl(env: &Env, user: &Address) {
@@ -349,41 +350,37 @@ fn bump_instance_ttl(env: &Env) {
 }
 
 pub fn apply_lazy_decay(env: &Env, rep: &mut UserReputation) {
+    env.storage()
+        .instance()
+        .extend_ttl(MIN_TTL_THRESHOLD, MIN_TTL_EXTEND_TO);
     let decay_rate: u32 = env
         .storage()
         .instance()
         .get(&DataKey::DecayRate)
         .unwrap_or(0);
+
+    let current_ts = env.ledger().timestamp() as u32;
     if decay_rate == 0 || decay_rate >= 100 {
-        rep.last_updated_ledger = env.ledger().sequence();
+        rep.last_updated_ledger = current_ts;
         return;
     }
 
-    let current_ledger = env.ledger().sequence();
-    if current_ledger <= rep.last_updated_ledger {
+    let last_ts = rep.last_updated_ledger as u64;
+    let now_ts = current_ts as u64;
+    if now_ts <= last_ts {
         return;
     }
 
-    let elapsed = current_ledger - rep.last_updated_ledger;
-    let periods = elapsed / 518400; // e.g. 30 days
+    let elapsed_seconds = now_ts - last_ts;
+    // Linear annual decay: decay_rate% per year applied proportionally to elapsed time.
+    // retained_pct = max(0, 100 - decay_rate * elapsed_years)
+    // Use integer arithmetic: elapsed_years * 100 = elapsed_seconds * 100 / ONE_YEAR_IN_SECONDS
+    let decay_amount = (decay_rate as u64) * elapsed_seconds / ONE_YEAR_IN_SECONDS;
+    let retained_pct = 100_u64.saturating_sub(decay_amount);
 
-    if periods > 0 {
-        let retained = 100_u64.saturating_sub(decay_rate as u64);
-        let mut score = rep.total_score;
-        let mut weight = rep.total_weight;
-
-        for _ in 0..periods {
-            score = (score * retained) / 100;
-            weight = (weight * retained) / 100;
-            if score == 0 && weight == 0 {
-                break;
-            }
-        }
-
-        rep.total_score = score;
-        rep.total_weight = weight;
-        rep.last_updated_ledger += periods * 518400;
-    }
+    rep.total_score  = (rep.total_score  * retained_pct) / 100;
+    rep.total_weight = (rep.total_weight * retained_pct) / 100;
+    rep.last_updated_ledger = current_ts;
 }
 
 fn get_decay_factor(decay_rate: u32, current_time: u64, recorded_at: u64) -> u64 {
@@ -549,7 +546,7 @@ impl ReputationContract {
                     total_score: 0,
                     total_weight: 0,
                     review_count: 0,
-                    last_updated_ledger: env.ledger().sequence(),
+                    last_updated_ledger: env.ledger().timestamp() as u32,
                 });
 
         apply_lazy_decay(&env, &mut reputation);
@@ -557,7 +554,7 @@ impl ReputationContract {
         reputation.total_score += (rating as u64) * weight;
         reputation.total_weight += weight;
         reputation.review_count += 1;
-        reputation.last_updated_ledger = env.ledger().sequence();
+        reputation.last_updated_ledger = env.ledger().timestamp() as u32;
 
         env.storage().persistent().set(&rep_key, &reputation);
         bump_reputation_ttl(&env, &reviewee);
@@ -794,14 +791,14 @@ impl ReputationContract {
                     total_score: 0,
                     total_weight: 0,
                     review_count: 0,
-                    last_updated_ledger: env.ledger().sequence(),
+                    last_updated_ledger: env.ledger().timestamp() as u32,
                 });
 
             apply_lazy_decay(env, &mut reputation);
 
             reputation.total_score += earned_score;
             reputation.total_weight += weight;
-            reputation.last_updated_ledger = env.ledger().sequence();
+            reputation.last_updated_ledger = env.ledger().timestamp() as u32;
 
             env.storage().persistent().set(&rep_key, &reputation);
             bump_reputation_ttl(env, &referrer);
@@ -849,6 +846,7 @@ impl ReputationContract {
 
     /// Get the reputation data for a user, applying time decay to totals.
     pub fn get_reputation(env: Env, user: Address) -> Result<UserReputation, ReputationError> {
+        bump_instance_ttl(&env);
         let rep_key = DataKey::Reputation(user.clone());
         if !env.storage().persistent().has(&rep_key) {
             return Err(ReputationError::UserNotFound);
@@ -863,7 +861,7 @@ impl ReputationContract {
             total_score,
             total_weight,
             review_count,
-            last_updated_ledger: env.ledger().sequence(),
+            last_updated_ledger: env.ledger().timestamp() as u32,
         })
     }
 
@@ -984,13 +982,13 @@ impl ReputationContract {
                     total_score: 0,
                     total_weight: 0,
                     review_count: 0,
-                    last_updated_ledger: env.ledger().sequence(),
+                    last_updated_ledger: env.ledger().timestamp() as u32,
                 });
 
         apply_lazy_decay(&env, &mut reputation);
 
         reputation.total_score = reputation.total_score.saturating_sub(amount);
-        reputation.last_updated_ledger = env.ledger().sequence();
+        reputation.last_updated_ledger = env.ledger().timestamp() as u32;
         env.storage().persistent().set(&rep_key, &reputation);
         bump_reputation_ttl(&env, &user);
 
@@ -1298,13 +1296,13 @@ impl ReputationContract {
                         total_score: 0,
                         total_weight: 0,
                         review_count: 0,
-                        last_updated_ledger: env.ledger().sequence(),
+                        last_updated_ledger: env.ledger().timestamp() as u32,
                     });
 
                 apply_lazy_decay(&env, &mut reputation);
 
                 reputation.total_score = reputation.total_score.saturating_sub(amount);
-                reputation.last_updated_ledger = env.ledger().sequence();
+                reputation.last_updated_ledger = env.ledger().timestamp() as u32;
                 env.storage().persistent().set(&rep_key, &reputation);
                 bump_reputation_ttl(env, &loser);
 
@@ -1360,21 +1358,51 @@ impl ReputationContract {
     }
 
     fn get_decayed_totals(env: &Env, user: Address) -> (u64, u64, u32) {
-        let rep_key = DataKey::Reputation(user.clone());
-        let mut rep: UserReputation =
-            env.storage()
-                .persistent()
-                .get(&rep_key)
-                .unwrap_or(UserReputation {
-                    user: user.clone(),
-                    total_score: 0,
-                    total_weight: 0,
-                    review_count: 0,
-                    last_updated_ledger: env.ledger().sequence(),
-                });
+        env.storage()
+            .instance()
+            .extend_ttl(MIN_TTL_THRESHOLD, MIN_TTL_EXTEND_TO);
 
-        apply_lazy_decay(env, &mut rep);
-        (rep.total_score, rep.total_weight, rep.review_count)
+        let decay_rate: u32 = env
+            .storage()
+            .instance()
+            .get(&DataKey::DecayRate)
+            .unwrap_or(0);
+        let current_ts = env.ledger().timestamp();
+
+        let reviews_key = DataKey::Reviews(user.clone());
+        let reviews: Vec<Review> = env
+            .storage()
+            .persistent()
+            .get(&reviews_key)
+            .unwrap_or(Vec::new(env));
+
+        let review_count = reviews.len() as u32;
+        let mut total_score = 0u64;
+        let mut total_weight = 0u64;
+
+        for review in reviews.iter() {
+            let factor = get_decay_factor(decay_rate, current_ts, review.timestamp);
+            let decayed_weight = (review.stake_weight as u64 * factor) / 100;
+            total_score += (review.rating as u64) * decayed_weight;
+            total_weight += decayed_weight;
+        }
+
+        // Include referral bonuses (stored as ReferralBonusRecord with individual timestamps).
+        let bonuses_key = DataKey::ReferralBonusList(user.clone());
+        if let Some(bonuses) = env
+            .storage()
+            .persistent()
+            .get::<DataKey, Vec<ReferralBonusRecord>>(&bonuses_key)
+        {
+            for bonus in bonuses.iter() {
+                let factor = get_decay_factor(decay_rate, current_ts, bonus.timestamp);
+                // bonus.amount = bonus_rating * bonus.weight; apply same decay factor.
+                total_score += bonus.amount * factor / 100;
+                total_weight += bonus.weight * factor / 100;
+            }
+        }
+
+        (total_score, total_weight, review_count)
     }
 
     pub fn endorse(
@@ -1781,7 +1809,7 @@ impl ReputationContract {
                     total_score: 0,
                     total_weight: 0,
                     review_count: 0,
-                    last_updated_ledger: env.ledger().sequence(),
+                    last_updated_ledger: env.ledger().timestamp() as u32,
                 });
 
             apply_lazy_decay(&env, &mut reputation);
@@ -1789,7 +1817,7 @@ impl ReputationContract {
             reputation.total_score = reputation.total_score.saturating_sub(removed_score);
             reputation.total_weight = reputation.total_weight.saturating_sub(removed_weight);
             reputation.review_count = reputation.review_count.saturating_sub(1);
-            reputation.last_updated_ledger = env.ledger().sequence();
+            reputation.last_updated_ledger = env.ledger().timestamp() as u32;
             env.storage().persistent().set(&rep_key, &reputation);
             bump_reputation_ttl(&env, &reviewee);
 
@@ -1868,7 +1896,7 @@ mod tests {
                     total_score: (rating as u64) * (MIN_REVIEW_STAKE_DEFAULT as u64),
                     total_weight: MIN_REVIEW_STAKE_DEFAULT as u64,
                     review_count: 1,
-                    last_updated_ledger: env.ledger().sequence(),
+                    last_updated_ledger: env.ledger().timestamp() as u32,
                 },
             );
         });
@@ -1953,6 +1981,7 @@ mod tests {
                     total_score: 100,
                     total_weight: 10,
                     review_count: 1,
+                    last_updated_ledger: 0,
                 },
             );
         });
@@ -1967,6 +1996,7 @@ mod tests {
                     total_score: 500,
                     total_weight: 50,
                     review_count: 5,
+                    last_updated_ledger: 0,
                 },
             );
         });
@@ -1981,6 +2011,7 @@ mod tests {
                     total_score: 2000,
                     total_weight: 200,
                     review_count: 20,
+                    last_updated_ledger: 0,
                 },
             );
         });
@@ -1995,6 +2026,7 @@ mod tests {
                     total_score: 99,
                     total_weight: 10,
                     review_count: 1,
+                    last_updated_ledger: 0,
                 },
             );
         });
@@ -2026,6 +2058,7 @@ mod tests {
                     total_score: 500,
                     total_weight: 50,
                     review_count: 5,
+                    last_updated_ledger: 0,
                 },
             );
         });
@@ -2069,6 +2102,7 @@ mod tests {
                     total_score: 100,
                     total_weight: 10,
                     review_count: 1,
+                    last_updated_ledger: 0,
                 },
             );
         });

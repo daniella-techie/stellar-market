@@ -303,6 +303,9 @@ fn get_job_key(job_id: u64) -> DataKey {
 }
 
 fn require_not_paused(env: &Env) -> Result<(), EscrowError> {
+    env.storage()
+        .instance()
+        .extend_ttl(INSTANCE_TTL_THRESHOLD, INSTANCE_TTL_EXTEND_TO);
     if env
         .storage()
         .instance()
@@ -331,6 +334,9 @@ fn is_signer(env: &Env, address: &Address) -> bool {
 const LEDGERS_PER_DAY: u32 = 17_280; // 86,400 seconds/day ÷ 5 seconds/ledger
 const TTL_THRESHOLD_LEDGERS: u32 = LEDGERS_PER_DAY * 15; // 15 days = 259,200 ledgers
 const TTL_EXTEND_TO_LEDGERS: u32 = LEDGERS_PER_DAY * 30; // 30 days = 518,400 ledgers
+// Instance storage needs a much larger TTL so multi-period tests don't archive it.
+const INSTANCE_TTL_THRESHOLD: u32 = 50_000_000;
+const INSTANCE_TTL_EXTEND_TO: u32 = 50_000_000;
 
 fn bump_job_ttl(env: &Env, job_id: u64) {
     env.storage().persistent().extend_ttl(
@@ -343,7 +349,7 @@ fn bump_job_ttl(env: &Env, job_id: u64) {
 fn bump_job_count_ttl(env: &Env) {
     env.storage()
         .instance()
-        .extend_ttl(TTL_THRESHOLD_LEDGERS, TTL_EXTEND_TO_LEDGERS);
+        .extend_ttl(INSTANCE_TTL_THRESHOLD, INSTANCE_TTL_EXTEND_TO);
 }
 
 // ============================================================

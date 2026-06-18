@@ -180,4 +180,4 @@ jobs:
           workspaces: contracts
 
       - name: Run fuzz tests (1000+ iterations)
-        run: cargo test --lib fuzz:: -- --test-threads=1 --nocapture
+        run: "cargo test --lib fuzz:: -- --test-threads=1 --nocapture"
