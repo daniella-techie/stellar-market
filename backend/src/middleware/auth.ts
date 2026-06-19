@@ -9,6 +9,9 @@ const prisma = new PrismaClient();
 export interface AuthRequest extends Request {
   userId?: string;
   userRole?: UserRole;
+  /** walletAddress claim from the JWT, present only when the token was issued
+   *  after a successful POST /auth/wallet/verify challenge-response round-trip. */
+  userWalletAddress?: string;
 }
 
 export const authenticate = async (
@@ -28,6 +31,7 @@ export const authenticate = async (
   try {
     const decoded = jwt.verify(token, config.jwtSecret) as {
       userId: string;
+      walletAddress?: string;
       purpose?: string;
     };
 
@@ -37,6 +41,9 @@ export const authenticate = async (
     }
 
     req.userId = decoded.userId;
+    if (decoded.walletAddress) {
+      req.userWalletAddress = decoded.walletAddress;
+    }
 
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },

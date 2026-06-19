@@ -30,6 +30,11 @@ export const updateStellarAddressSchema = z.object({
   stellarAddress: stellarAddressSchema,
 });
 
+export const walletVerifySchema = z.object({
+  address: stellarAddressSchema,
+  signature: z.string().min(1, "Signature is required"),
+});
+
 export const forgotPasswordSchema = z.object({
   email: emailSchema,
 });

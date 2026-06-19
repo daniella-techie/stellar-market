@@ -865,29 +865,32 @@ impl DisputeContract {
             return Err(DisputeError::VotingClosed);
         }
 
-        // Check if voter is an assigned arbitrator
-        if !dispute.assigned_arbitrators.contains(&voter) {
-            return Err(DisputeError::Unauthorized);
-        }
-
-        // Parties involved cannot vote (redundant check since they shouldn't be in assigned_arbitrators)
-        if voter == dispute.client || voter == dispute.freelancer {
-            return Err(DisputeError::ConflictOfInterest);
-        }
-
-        // Check if voter is excluded due to conflict of interest
-        if dispute.excluded_voters.contains(&voter) {
-            return Err(DisputeError::ConflictOfInterest);
-        }
-
-        // Resolve delegation: if the voter is acting as a delegate for this job's dispute,
-        // look up the stake owner so eligibility and double-vote checks use the owner.
+        // Resolve delegation first: if the voter is acting as a delegate, look up the
+        // stake owner so the arbitrator-membership and double-vote checks use the owner.
         let delegation_owner: Option<Address> = env
             .storage()
             .persistent()
             .get(&DataKey::DelegationOwner(voter.clone(), dispute.job_id));
 
         let stake_owner = delegation_owner.as_ref().unwrap_or(&voter);
+
+        // Check if the effective arbitrator (the owner when delegated, otherwise the voter)
+        // is an assigned arbitrator for this dispute.
+        if !dispute.assigned_arbitrators.contains(stake_owner) {
+            return Err(DisputeError::Unauthorized);
+        }
+
+        // Parties involved cannot vote
+        if stake_owner == &dispute.client || stake_owner == &dispute.freelancer {
+            return Err(DisputeError::ConflictOfInterest);
+        }
+
+        // Check if voter or their principal is excluded due to conflict of interest
+        if dispute.excluded_voters.contains(&voter)
+            || (delegation_owner.is_some() && dispute.excluded_voters.contains(stake_owner))
+        {
+            return Err(DisputeError::ConflictOfInterest);
+        }
 
         // Check voter reputation eligibility against the stake owner (owner if delegated).
         if env.storage().instance().has(&DataKey::ReputationContract) {

@@ -48,8 +48,8 @@ interface FormErrors {
 }
 
 export default function SettingsPage() {
-  const { user, token, isLoading: authLoading, updateUser } = useAuth();
-  const { address, connect, signMessage, isConnecting } = useWallet();
+  const { user, token, isLoading: authLoading, updateUser, refreshUser } = useAuth();
+  const { address, connect, bindWallet, isConnecting } = useWallet();
   const { toast } = useToast();
   const router = useRouter();
 
@@ -515,25 +515,32 @@ export default function SettingsPage() {
     if (!token || !user) return;
     setWalletLoading(true);
     try {
-      let publicKey = address;
-      if (!publicKey) {
-        publicKey = await connect();
+      // Ensure a wallet is connected before starting the challenge flow
+      if (!address) {
+        const connected = await connect();
+        if (!connected) {
+          toast.error("Select a wallet to link.");
+          return;
+        }
       }
-      if (!publicKey) {
-        toast.error("Select a wallet to link.");
+
+      // Challenge-response: fetch nonce → sign with wallet → verify on server
+      const result = await bindWallet(token);
+      if (!result.success) {
+        toast.error(result.error ?? "Failed to link wallet.");
         return;
       }
-      const message = `Link Stellar wallet ${publicKey} to StellarMarket account ${user.id} at ${Date.now()}`;
-      const signature = await signMessage(message);
-      const res = await axios.post(
-        `${API_URL}/auth/wallet/link`,
-        { publicKey, message, signature },
-        { headers: { Authorization: `Bearer ${token}` } },
-      );
-      updateUser(res.data.user);
+
+      // Store the refreshed JWT (now carries a verified walletAddress claim)
+      if (result.token) {
+        localStorage.setItem("stellarmarket_jwt", result.token);
+      }
+
+      // Sync user state so the UI reflects the newly bound address
+      await refreshUser();
       toast.success("Wallet linked.");
     } catch (error: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
-      toast.error(error.response?.data?.error || error.message || "Failed to link wallet.");
+      toast.error(error?.message ?? "Failed to link wallet.");
     } finally {
       setWalletLoading(false);
     }

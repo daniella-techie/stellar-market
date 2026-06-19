@@ -11,6 +11,7 @@ import { NotificationService } from "./notification.service";
 import { logger } from "../lib/logger";
 import { CircuitBreaker } from "../lib/circuit-breaker";
 import type { CircuitBreakerStatus } from "../lib/circuit-breaker";
+import { handleEscrowEvent } from "./escrow-projection.service";
 
 export type { CircuitBreakerStatus };
 export type { CircuitState } from "../lib/circuit-breaker";
@@ -166,6 +167,7 @@ async function handlePaymentReleased(
   if (!Array.isArray(data) || data.length < 1) return [];
 
   const onChainJobId = bigintToStr(data[0]);
+  const amount = data.length >= 3 ? bigintToStr(data[2]) : "0";
 
   const updated = await tx.job.updateMany({
     where: {
@@ -196,6 +198,15 @@ async function handlePaymentReleased(
     }
   }
 
+  await handleEscrowEvent({
+    jobId: job.id,
+    contractJobId: onChainJobId,
+    eventType: EscrowEventType.PAYMENT_RELEASED,
+    ledgerSeq: event.ledger,
+    txHash: event.txHash,
+    payload: { amount },
+  });
+
   logger.info({ contractJobId: onChainJobId }, "[HorizonListener] PaymentReleased");
   return [];
 }
@@ -215,7 +226,7 @@ async function handleDisputeOpened(
 
   const job = await tx.job.findFirst({
     where: { contractJobId: onChainJobId },
-    select: { id: true, clientId: true, freelancerId: true, dispute: true },
+    select: { id: true },
   });
 
   if (!job) {
@@ -287,7 +298,7 @@ async function handleDisputeResolved(
 
   const dispute = await tx.dispute.findUnique({
     where: { onChainDisputeId },
-    select: { id: true, jobId: true, clientId: true, freelancerId: true },
+    select: { jobId: true, job: { select: { contractJobId: true } } },
   });
 
   if (!dispute) {

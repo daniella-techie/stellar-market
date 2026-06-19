@@ -48,6 +48,14 @@ interface WalletState {
   signAndBroadcastTransaction: (
     xdr: string
   ) => Promise<{ hash: string; success: boolean; error?: string; resultXdr?: string }>;
+  /**
+   * Bind the currently-connected wallet address to the authenticated account
+   * by completing a server-issued challenge / ed25519 signature round-trip.
+   * Calls POST /auth/wallet/challenge, signs with Freighter/LOBSTR signMessage,
+   * then calls POST /auth/wallet/verify. On success, updates the stored JWT
+   * and returns { success: true, token }.
+   */
+  bindWallet: (authToken: string) => Promise<{ success: boolean; token?: string; error?: string }>;
   isSessionActive: boolean;
   sessionExpiresIn: number | null;
   extendSession: () => void;
@@ -622,6 +630,52 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     return result.signedMessage ?? result.signature;
   }, [getWalletKit, walletType, address]);
 
+  const bindWallet = useCallback(async (authToken: string) => {
+    if (!address) {
+      return { success: false, error: "No wallet connected. Connect a wallet first." };
+    }
+    const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000/api";
+    try {
+      // Step 1 — fetch a one-time challenge from the server
+      const challengeRes = await fetch(`${API}/auth/wallet/challenge`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${authToken}` },
+      });
+      if (!challengeRes.ok) {
+        const body = await challengeRes.json().catch(() => ({}));
+        return { success: false, error: body.error ?? "Failed to fetch challenge" };
+      }
+      const { challenge } = await challengeRes.json() as { challenge: string };
+
+      // Step 2 — sign the challenge with the wallet's private key
+      // Freighter's signMessage signs raw UTF-8 bytes (ed25519).
+      // LOBSTR via StellarWalletsKit also exposes signMessage with the same
+      // semantics.  Both return a base64-encoded ed25519 signature.
+      const signature = await signMessage(challenge);
+
+      // Step 3 — submit address + signature for server-side verification
+      const verifyRes = await fetch(`${API}/auth/wallet/verify`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${authToken}`,
+        },
+        body: JSON.stringify({ address, signature }),
+      });
+      if (!verifyRes.ok) {
+        const body = await verifyRes.json().catch(() => ({}));
+        return { success: false, error: body.error ?? "Wallet verification failed" };
+      }
+      const { token } = await verifyRes.json() as { token: string };
+      return { success: true, token };
+    } catch (err: unknown) {
+      return {
+        success: false,
+        error: err instanceof Error ? err.message : "Wallet binding failed",
+      };
+    }
+  }, [address, signMessage]);
+
   const signAndBroadcastTransaction = useCallback(async (xdr: string) => {
     try {
       let signedResult: any;
@@ -698,13 +752,15 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       disconnect,
       refreshBalance,
       signMessage,
+      bindWallet,
       signAndBroadcastTransaction,
       extendSession: updateSessionActivity,
     }),
     [
       address, isConnecting, isFreighterInstalled, isLobstrInstalled, error,
       balance, balances, isLoadingBalance, walletType, isSessionActive, sessionExpiresIn,
-      connect, disconnect, refreshBalance, signMessage, signAndBroadcastTransaction, updateSessionActivity,
+      connect, disconnect, refreshBalance, signMessage, bindWallet, signAndBroadcastTransaction,
+      updateSessionActivity,
     ],
   );
 

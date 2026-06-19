@@ -12,6 +12,7 @@ import { errorHandler } from "./middleware/error";
 import { requestIdMiddleware } from "./middleware/request-id";
 import { initSocket } from "./socket";
 import { startExpiryJob } from "./jobs/expiry.job";
+import { startPendingTxJob } from "./jobs/pending-tx.job";
 import {
   startHorizonListener,
   stopHorizonListener,
@@ -105,6 +106,7 @@ function startServer(): void {
   httpServer.listen(config.port, async () => {
     logger.info({ port: config.port }, "StellarMarket API running");
     startExpiryJob();
+    startPendingTxJob();
     startHorizonListener();
     RecommendationQueueService.startWorker();
 

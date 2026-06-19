@@ -1,6 +1,7 @@
 import { Router, Response } from "express";
 import { PrismaClient, EscrowStatus, NotificationType } from "@prisma/client";
 import { authenticate, AuthRequest } from "../middleware/auth";
+import { walletSourceGuard } from "../middleware/wallet-guard";
 import { asyncHandler } from "../middleware/error";
 import { ContractService } from "../services/contract.service";
 import { NotificationService } from "../services/notification.service";
@@ -25,7 +26,7 @@ const indexerCursorState: {
 /**
  * Request XDR to create a job on-chain.
  */
-router.post("/init-create", authenticate, asyncHandler(async (req: AuthRequest, res: Response) => {
+router.post("/init-create", authenticate, walletSourceGuard, asyncHandler(async (req: AuthRequest, res: Response) => {
   const { jobId } = req.body;
   const job = await prisma.job.findUnique({
     where: { id: jobId },
@@ -66,7 +67,7 @@ router.post("/init-create", authenticate, asyncHandler(async (req: AuthRequest, 
 /**
  * Request XDR to submit a milestone on-chain.
  */
-router.post("/init-submit", authenticate, asyncHandler(async (req: AuthRequest, res: Response) => {
+router.post("/init-submit", authenticate, walletSourceGuard, asyncHandler(async (req: AuthRequest, res: Response) => {
   const { milestoneId } = req.body;
   const milestone = await prisma.milestone.findUnique({
     where: { id: milestoneId },
@@ -93,7 +94,7 @@ router.post("/init-submit", authenticate, asyncHandler(async (req: AuthRequest, 
 /**
  * Request XDR to fund a job on-chain.
  */
-router.post("/init-fund", authenticate, asyncHandler(async (req: AuthRequest, res: Response) => {
+router.post("/init-fund", authenticate, walletSourceGuard, asyncHandler(async (req: AuthRequest, res: Response) => {
   const { jobId } = req.body;
   const job = await prisma.job.findUnique({
     where: { id: jobId },
@@ -111,7 +112,7 @@ router.post("/init-fund", authenticate, asyncHandler(async (req: AuthRequest, re
 /**
  * Request XDR to approve a milestone on-chain.
  */
-router.post("/init-approve", authenticate, asyncHandler(async (req: AuthRequest, res: Response) => {
+router.post("/init-approve", authenticate, walletSourceGuard, asyncHandler(async (req: AuthRequest, res: Response) => {
   const { milestoneId } = req.body;
   const milestone = await prisma.milestone.findUnique({
     where: { id: milestoneId },
@@ -134,7 +135,7 @@ router.post("/init-approve", authenticate, asyncHandler(async (req: AuthRequest,
 /**
  * Request XDR to cancel a funded job and refund the remaining escrow balance.
  */
-router.post("/init-cancel", authenticate, asyncHandler(async (req: AuthRequest, res: Response) => {
+router.post("/init-cancel", authenticate, walletSourceGuard, asyncHandler(async (req: AuthRequest, res: Response) => {
   const { jobId } = req.body;
   const job = await prisma.job.findUnique({
     where: { id: jobId },
@@ -156,7 +157,7 @@ router.post("/init-cancel", authenticate, asyncHandler(async (req: AuthRequest, 
 /**
  * Request XDR to claim a refund after the auto-refund deadline has passed.
  */
-router.post("/init-refund", authenticate, asyncHandler(async (req: AuthRequest, res: Response) => {
+router.post("/init-refund", authenticate, walletSourceGuard, asyncHandler(async (req: AuthRequest, res: Response) => {
   const { jobId } = req.body;
   const job = await prisma.job.findUnique({
     where: { id: jobId },
@@ -178,7 +179,7 @@ router.post("/init-refund", authenticate, asyncHandler(async (req: AuthRequest, 
 /**
  * Request XDR to extend a milestone deadline on-chain.
  */
-router.post("/init-extend-deadline", authenticate, asyncHandler(async (req: AuthRequest, res: Response) => {
+router.post("/init-extend-deadline", authenticate, walletSourceGuard, asyncHandler(async (req: AuthRequest, res: Response) => {
   const { milestoneId, newDeadline } = req.body;
 
   const milestone = await prisma.milestone.findUnique({
@@ -209,6 +210,7 @@ router.post("/init-extend-deadline", authenticate, asyncHandler(async (req: Auth
 router.post(
   "/init-propose-revision",
   authenticate,
+  walletSourceGuard,
   asyncHandler(async (req: AuthRequest, res: Response) => {
     const { jobId, milestones } = req.body as {
       jobId?: string;
@@ -293,6 +295,7 @@ router.post(
 router.post(
   "/init-accept-revision",
   authenticate,
+  walletSourceGuard,
   asyncHandler(async (req: AuthRequest, res: Response) => {
     const { jobId } = req.body as { jobId?: string };
     if (!jobId) {
@@ -332,6 +335,7 @@ router.post(
 router.post(
   "/init-reject-revision",
   authenticate,
+  walletSourceGuard,
   asyncHandler(async (req: AuthRequest, res: Response) => {
     const { jobId } = req.body as { jobId?: string };
     if (!jobId) {

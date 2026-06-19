@@ -552,7 +552,8 @@ router.put(
     if (body.skills !== undefined) data.skills = body.skills;
     if (body.availability !== undefined) data.availability = body.availability;
     if (body.name !== undefined) data.username = body.name;
-    if (body.stellarAddress !== undefined) data.walletAddress = body.stellarAddress;
+    // walletAddress is never written here — use POST /auth/wallet/challenge
+    // then POST /auth/wallet/verify to prove key ownership before binding.
 
     const user = await prisma.user.update({
       where: { id },

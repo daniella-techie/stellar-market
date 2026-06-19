@@ -4363,9 +4363,12 @@ fn test_claim_expired_success() {
     mint_tokens(&env, &token, &client, total);
     escrow.fund_job(&job_id, &client);
     
-    // Advance ledger past expiry_ledger
-    env.ledger().with_mut(|l| l.sequence_number = expiry_ledger + 1);
-    
+    // Advance past expiry_ledger (sequence) and past job_deadline (timestamp)
+    env.ledger().with_mut(|l| {
+        l.sequence_number = expiry_ledger + 1;
+        l.timestamp = JOB_DEADLINE + 1;
+    });
+
     // Claim expired - should succeed
     escrow.expire_job(&job_id);
     
@@ -4379,7 +4382,7 @@ fn test_claim_expired_success() {
 }
 
 #[test]
-#[should_panic(expected = "Error(Contract, #40)")] // ExpiryNotPassed
+#[should_panic(expected = "Error(Contract, #26)")] // DeadlineNotPassed
 fn test_claim_expired_fails_before_expiry() {
     let env = Env::default();
     env.mock_all_auths();
@@ -4447,10 +4450,14 @@ fn test_claim_expired_fails_on_completed_job() {
     escrow.approve_milestone(&job_id, &1, &client);
     escrow.submit_milestone(&job_id, &2, &freelancer);
     escrow.approve_milestone(&job_id, &2, &client);
-    
-    // Advance ledger past expiry
-    env.ledger().with_mut(|l| l.sequence_number = expiry_ledger + 1);
-    
+
+    // Advance past both deadline (timestamp) and expiry_ledger (sequence) so the
+    // state check is reached rather than DeadlineNotPassed firing first.
+    env.ledger().with_mut(|l| {
+        l.sequence_number = expiry_ledger + 1;
+        l.timestamp = JOB_DEADLINE + 1;
+    });
+
     // Claim expired - should fail (job is Completed)
     escrow.expire_job(&job_id);
 }
@@ -4484,10 +4491,13 @@ fn test_claim_expired_fails_on_cancelled_job() {
     
     // Cancel the job
     escrow.cancel_job(&job_id, &client);
-    
-    // Advance ledger past expiry
-    env.ledger().with_mut(|l| l.sequence_number = expiry_ledger + 1);
-    
+
+    // Advance past both deadline (timestamp) and expiry_ledger (sequence).
+    env.ledger().with_mut(|l| {
+        l.sequence_number = expiry_ledger + 1;
+        l.timestamp = JOB_DEADLINE + 1;
+    });
+
     // Claim expired - should fail (job is Cancelled)
     escrow.expire_job(&job_id);
 }
@@ -4521,10 +4531,13 @@ fn test_claim_expired_with_approved_milestones() {
     // Approve first milestone (500)
     escrow.submit_milestone(&job_id, &0, &freelancer);
     escrow.approve_milestone(&job_id, &0, &client);
-    
-    // Advance ledger past expiry
-    env.ledger().with_mut(|l| l.sequence_number = expiry_ledger + 1);
-    
+
+    // Advance past expiry_ledger (sequence) and job_deadline (timestamp).
+    env.ledger().with_mut(|l| {
+        l.sequence_number = expiry_ledger + 1;
+        l.timestamp = JOB_DEADLINE + 1;
+    });
+
     // Claim expired - should refund remaining amount (total - approved)
     escrow.expire_job(&job_id);
     
@@ -4566,26 +4579,28 @@ fn test_claim_expired_emits_event() {
     mint_tokens(&env, &token, &client, total);
     escrow.fund_job(&job_id, &client);
     
-    // Advance ledger past expiry
-    env.ledger().with_mut(|l| l.sequence_number = expiry_ledger + 1);
-    
+    // Advance past expiry_ledger (sequence) and job_deadline (timestamp).
+    env.ledger().with_mut(|l| {
+        l.sequence_number = expiry_ledger + 1;
+        l.timestamp = JOB_DEADLINE + 1;
+    });
+
     // Claim expired
     escrow.expire_job(&job_id);
     
-    // Verify EscrowExpired event was emitted
+    // Verify job_expired event was emitted
     let events = env.events().all();
-    let expired_event = events.last().expect("EscrowExpired event should be emitted");
-    
-    // Verify the event topic is "expired"
+    let expired_event = events.last().expect("job_expired event should be emitted");
+
+    // Verify the event topic is "job_expired"
     let topic: Symbol = expired_event.1.get(1).unwrap().into_val(&env);
-    assert_eq!(topic, Symbol::new(&env, "expired"));
-    
-    // Verify event data contains job_id, client, refund_amount, and ledger_sequence
-    let event_data: (u64, Address, i128, u32) = expired_event.2.clone().into_val(&env);
+    assert_eq!(topic, Symbol::new(&env, "job_expired"));
+
+    // Verify event data: (job_id, client, freelancer, token, refund_amount)
+    let event_data: (u64, Address, Address, Address, i128) = expired_event.2.clone().into_val(&env);
     assert_eq!(event_data.0, job_id);
     assert_eq!(event_data.1, client);
-    assert_eq!(event_data.2, total);
-    assert_eq!(event_data.3, expiry_ledger + 1);
+    assert_eq!(event_data.4, total);
 }
 
 #[test]
@@ -4614,9 +4629,12 @@ fn test_claim_expired_permissionless() {
     mint_tokens(&env, &token, &client, total);
     escrow.fund_job(&job_id, &client);
     
-    // Advance ledger past expiry
-    env.ledger().with_mut(|l| l.sequence_number = expiry_ledger + 1);
-    
+    // Advance past expiry_ledger (sequence) and job_deadline (timestamp).
+    env.ledger().with_mut(|l| {
+        l.sequence_number = expiry_ledger + 1;
+        l.timestamp = JOB_DEADLINE + 1;
+    });
+
     // Claim expired as third party - should succeed (permissionless)
     escrow.expire_job(&job_id);
     

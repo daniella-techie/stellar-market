@@ -1,12 +1,15 @@
 import { Router, Response } from "express";
 import { PrismaClient } from "@prisma/client";
+import { rpc } from "@stellar/stellar-sdk";
 import { z } from "zod";
 import { authenticate, AuthRequest } from "../middleware/auth";
 import { validate } from "../middleware/validation";
 import { logger } from "../lib/logger";
+import { config } from "../config";
 
 const router = Router();
 const prisma = new PrismaClient();
+const rpcServer = new rpc.Server(config.stellar.rpcUrl);
 
 // Validation schemas
 const createTransactionSchema = {
@@ -49,6 +52,140 @@ const txHashSchema = {
     txHash: z.string(),
   }),
 };
+
+const preRegisterSchema = {
+  body: z.object({
+    txHash: z.string().min(1),
+    type: z.enum(["DEPOSIT", "RELEASE", "REFUND", "DISPUTE_PAYOUT"]),
+    jobId: z.string().optional(),
+    maxLedger: z.number().int().positive().optional(),
+    fromAddress: z.string().optional(),
+    toAddress: z.string().optional(),
+    amount: z.number().positive().optional(),
+    tokenAddress: z.string().optional(),
+  }),
+};
+
+/**
+ * POST /api/transactions/pre-register
+ * Idempotently register a transaction hash before broadcasting to Horizon.
+ * If the txHash already exists the existing record is returned unchanged.
+ * This gives the backend a record to resolve against even if the HTTP
+ * response from Horizon is never received.
+ */
+router.post(
+  "/pre-register",
+  authenticate,
+  validate(preRegisterSchema),
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const { txHash, type, jobId, maxLedger, fromAddress, toAddress, amount, tokenAddress } =
+        req.body;
+
+      const record = await prisma.transaction.upsert({
+        where: { txHash },
+        update: {},
+        create: {
+          txHash,
+          type,
+          status: "PENDING",
+          jobId: jobId ?? null,
+          maxLedger: maxLedger ?? null,
+          fromAddress: fromAddress ?? null,
+          toAddress: toAddress ?? null,
+          amount: amount ?? null,
+          tokenAddress: tokenAddress ?? null,
+        },
+        select: { id: true, txHash: true, status: true, createdAt: true },
+      });
+
+      logger.info({ txHash, type }, "[Transaction] Pre-registered");
+      return res.status(200).json(record);
+    } catch (error) {
+      logger.error({ err: error }, "Error pre-registering transaction");
+      return res.status(500).json({ error: "Failed to pre-register transaction" });
+    }
+  },
+);
+
+/**
+ * GET /api/transactions/:txHash/status
+ * Returns the resolved status of a transaction.
+ * For PENDING records this queries the Soroban RPC live and syncs the result.
+ * Callers that receive { status: "EXPIRED", canRetry: true } should build a
+ * new transaction with a fresh sequence number and ask the user to re-sign.
+ */
+router.get(
+  "/:txHash/status",
+  validate({ params: z.object({ txHash: z.string() }) }),
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const txHash = req.params.txHash as string;
+
+      const record = await prisma.transaction.findUnique({
+        where: { txHash },
+        select: { id: true, status: true, maxLedger: true, confirmedLedger: true },
+      });
+
+      if (!record) {
+        return res.status(404).json({ error: "Transaction not found" });
+      }
+
+      if (record.status === "SUCCESS") {
+        return res.json({ status: "SUCCESS", ledger: record.confirmedLedger });
+      }
+
+      if (record.status === "FAILED") {
+        return res.json({ status: "FAILED", canRetry: false });
+      }
+
+      if (record.status === "EXPIRED") {
+        return res.json({ status: "EXPIRED", canRetry: true });
+      }
+
+      // PENDING — query Soroban RPC for live status
+      try {
+        const rpcResult = await rpcServer.getTransaction(txHash);
+
+        if (rpcResult.status === "SUCCESS") {
+          const confirmedLedger = (rpcResult as any).ledger ?? null;
+          await prisma.transaction.update({
+            where: { id: record.id },
+            data: { status: "SUCCESS", confirmedLedger },
+          });
+          return res.json({ status: "SUCCESS", ledger: confirmedLedger });
+        }
+
+        if (rpcResult.status === "FAILED") {
+          await prisma.transaction.update({
+            where: { id: record.id },
+            data: { status: "FAILED" },
+          });
+          return res.json({ status: "FAILED", canRetry: false });
+        }
+
+        // NOT_FOUND — check against maxLedger to detect expiry
+        if (record.maxLedger != null) {
+          const latest = await rpcServer.getLatestLedger();
+          if (latest.sequence > record.maxLedger) {
+            await prisma.transaction.update({
+              where: { id: record.id },
+              data: { status: "EXPIRED" },
+            });
+            return res.json({ status: "EXPIRED", canRetry: true });
+          }
+        }
+      } catch (rpcErr) {
+        logger.warn({ err: rpcErr, txHash }, "[Transaction] RPC status check failed — returning PENDING");
+      }
+
+      return res.json({ status: "PENDING" });
+    } catch (error) {
+      logger.error({ err: error }, "Error fetching transaction status");
+      return res.status(500).json({ error: "Failed to fetch transaction status" });
+    }
+  },
+);
 
 /**
  * POST /api/transactions
@@ -93,26 +230,30 @@ router.post(
         }
       }
 
-      // Check if transaction already exists
-      const existingTx = await prisma.transaction.findUnique({
+      // Upsert: if a PENDING pre-registration exists for this txHash, promote it to
+      // SUCCESS with full details. Otherwise create a new SUCCESS record.
+      const transaction = await prisma.transaction.upsert({
         where: { txHash },
-      });
-
-      if (existingTx) {
-        return res.status(409).json({ error: "Transaction already recorded" });
-      }
-
-      // Create transaction
-      const transaction = await prisma.transaction.create({
-        data: {
+        update: {
           jobId,
-          milestoneId,
+          milestoneId: milestoneId ?? null,
+          fromAddress,
+          toAddress,
+          amount,
+          tokenAddress,
+          type,
+          status: "SUCCESS",
+        },
+        create: {
+          jobId,
+          milestoneId: milestoneId ?? null,
           fromAddress,
           toAddress,
           amount,
           tokenAddress,
           txHash,
           type,
+          status: "SUCCESS",
         },
         include: {
           job: {
@@ -405,9 +546,9 @@ router.get(
         const isOutgoing = tx.fromAddress === user.walletAddress;
 
         let userRole = "unknown";
-        if (tx.job.clientId === req.userId) {
+        if (tx.job?.clientId === req.userId) {
           userRole = "client";
-        } else if (tx.job.freelancerId === req.userId) {
+        } else if (tx.job?.freelancerId === req.userId) {
           userRole = "freelancer";
         }
 
@@ -1109,8 +1250,8 @@ router.get(
       if (
         transaction.fromAddress !== user.walletAddress &&
         transaction.toAddress !== user.walletAddress &&
-        transaction.job.clientId !== req.userId &&
-        transaction.job.freelancerId !== req.userId
+        transaction.job?.clientId !== req.userId &&
+        transaction.job?.freelancerId !== req.userId
       ) {
         return res.status(403).json({ error: "Access denied" });
       }
