@@ -12,6 +12,7 @@ import { logger } from "../lib/logger";
 import { CircuitBreaker } from "../lib/circuit-breaker";
 import type { CircuitBreakerStatus } from "../lib/circuit-breaker";
 import { handleEscrowEvent } from "./escrow-projection.service";
+import { ReputationCacheService } from "./reputation-cache.service";
 
 export type { CircuitBreakerStatus };
 export type { CircuitState } from "../lib/circuit-breaker";
@@ -298,7 +299,16 @@ async function handleDisputeResolved(
 
   const dispute = await tx.dispute.findUnique({
     where: { onChainDisputeId },
-    select: { jobId: true, job: { select: { contractJobId: true } } },
+    select: { 
+      jobId: true, 
+      job: { 
+        select: { 
+          contractJobId: true,
+          client: { select: { walletAddress: true } },
+          freelancer: { select: { walletAddress: true } },
+        } 
+      } 
+    },
   });
 
   if (!dispute) {
