@@ -37,7 +37,10 @@ jest.mock("../../services/contract.service", () => ({
     buildFundJobTx: jest.fn(),
     buildApproveMilestoneTx: jest.fn(),
     verifyTransaction: jest.fn(),
+    simulateFundJob: jest.fn().mockResolvedValue({ ok: true }),
+    getRateSnapshot: jest.fn(),
   },
+  ContractSimulationError: class ContractSimulationError extends Error {},
 }));
 
 jest.mock("../../services/notification.service", () => ({
