@@ -630,7 +630,7 @@ router.get(
   "/:jobId/ttl",
   authenticate,
   asyncHandler(async (req: AuthRequest, res: Response) => {
-    const { jobId } = req.params;
+    const jobId = req.params.jobId as string;
     const job = await prisma.job.findUnique({
       where: { id: jobId },
       select: { contractJobId: true },
