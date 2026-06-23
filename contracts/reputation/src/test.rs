@@ -1823,7 +1823,7 @@ fn advance_n_periods(env: &Env, periods: u32) {
         base_reserve:           10,
         min_temp_entry_ttl:     10,
         min_persistent_entry_ttl: 10,
-        max_entry_ttl:          100_000_000,
+        max_entry_ttl:          500_000_000,
     });
 }
 
@@ -1998,6 +1998,209 @@ fn badge_event_count(env: &Env) -> usize {
             topics_match(env, topics, symbol_short!("reput"), symbol_short!("badge"))
         })
         .count()
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// #648 — Unbounded decay loop DoS fix: tests for large periods, leaderboard, fuzz
+// ─────────────────────────────────────────────────────────────────────────────
+
+fn setup_high_ttl_env() -> Env {
+    let env = Env::default();
+    env.ledger().set(soroban_sdk::testutils::LedgerInfo {
+        timestamp: 0,
+        protocol_version: 20,
+        sequence_number: 0,
+        network_id: [0; 32],
+        base_reserve: 10,
+        min_temp_entry_ttl: 10,
+        min_persistent_entry_ttl: 10,
+        max_entry_ttl: 500_000_000,
+    });
+    env
+}
+
+#[test]
+fn test_lazy_decay_sixty_periods_no_revert() {
+    let env = setup_high_ttl_env();
+    env.mock_all_auths();
+    let escrow_id = env.register_contract(None, EscrowContract);
+    let reputation_id = env.register_contract(None, ReputationContract);
+    let client = ReputationContractClient::new(&env, &reputation_id);
+    let admin = Address::generate(&env);
+    client.initialize(&vec![&env, admin.clone()], &1u32, &1u32); // 1% per year
+
+    let reviewer = Address::generate(&env);
+    let reviewee = Address::generate(&env);
+    setup_review_for(&env, &escrow_id, &client, 1, &reviewer, &reviewee, 5);
+
+    let before = client.get_reputation(&reviewee);
+    advance_n_periods(&env, 60);
+
+    // 60 years * 1% = 60% decay, retained 40%
+    let after = client.get_reputation(&reviewee);
+    assert_eq!(after.total_score, (before.total_score * 40) / 100);
+    assert_eq!(after.total_weight, (before.total_weight * 40) / 100);
+    assert_eq!(after.review_count, before.review_count);
+}
+
+#[test]
+fn test_lazy_decay_sixty_periods_full_decay_saturates() {
+    let env = setup_high_ttl_env();
+    env.mock_all_auths();
+    let escrow_id = env.register_contract(None, EscrowContract);
+    let reputation_id = env.register_contract(None, ReputationContract);
+    let client = ReputationContractClient::new(&env, &reputation_id);
+    let admin = Address::generate(&env);
+    client.initialize(&vec![&env, admin.clone()], &1u32, &2u32); // 2% per year
+
+    let reviewer = Address::generate(&env);
+    let reviewee = Address::generate(&env);
+    setup_review_for(&env, &escrow_id, &client, 1, &reviewer, &reviewee, 5);
+
+    advance_n_periods(&env, 60);
+
+    // 60 years * 2% = 120% -> saturating_sub clamps to 0% retained
+    let after = client.get_reputation(&reviewee);
+    assert_eq!(after.total_score, 0);
+    assert_eq!(after.total_weight, 0);
+    assert_eq!(after.review_count, 1);
+}
+
+#[test]
+fn test_lazy_decay_high_rate_full_decay_saturates() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let escrow_id = env.register_contract(None, EscrowContract);
+    let reputation_id = env.register_contract(None, ReputationContract);
+    let client = ReputationContractClient::new(&env, &reputation_id);
+    let admin = Address::generate(&env);
+    client.initialize(&vec![&env, admin.clone()], &1u32, &50u32); // 50% per year
+
+    let reviewer = Address::generate(&env);
+    let reviewee = Address::generate(&env);
+    setup_review_for(&env, &escrow_id, &client, 1, &reviewer, &reviewee, 5);
+
+    advance_n_periods(&env, 5);
+
+    // 5 years * 50% = 250% -> saturates to 0%
+    let after = client.get_reputation(&reviewee);
+    assert_eq!(after.total_score, 0);
+    assert_eq!(after.total_weight, 0);
+}
+
+#[test]
+fn test_leaderboard_many_entries_all_dormant_fifty_periods() {
+    let env = setup_high_ttl_env();
+    env.mock_all_auths();
+    let escrow_id = env.register_contract(None, EscrowContract);
+    let reputation_id = env.register_contract(None, ReputationContract);
+    let client = ReputationContractClient::new(&env, &reputation_id);
+    let admin = Address::generate(&env);
+    client.initialize(&vec![&env, admin.clone()], &1u32, &10u32);
+
+    // Create 10 users with reviews to populate the leaderboard
+    for i in 0..10u64 {
+        let reviewer = Address::generate(&env);
+        let reviewee = Address::generate(&env);
+        setup_review_for(&env, &escrow_id, &client, i + 1, &reviewer, &reviewee, 5);
+    }
+
+    // All users dormant for 50 periods
+    advance_n_periods(&env, 50);
+
+    // Leaderboard should still return without reverting
+    let leaderboard = client.get_leaderboard();
+    assert!(leaderboard.len() <= 10);
+    // All entries should have decayed scores (fully decayed at 10%/yr * 50yr)
+    for (_addr, score) in leaderboard.iter() {
+        assert!(score <= 500);
+    }
+}
+
+#[test]
+fn test_decay_formula_consistent_across_period_ranges() {
+    let env = setup_high_ttl_env();
+    env.mock_all_auths();
+    let escrow_id = env.register_contract(None, EscrowContract);
+    let reputation_id = env.register_contract(None, ReputationContract);
+    let client = ReputationContractClient::new(&env, &reputation_id);
+    let admin = Address::generate(&env);
+    client.initialize(&vec![&env, admin.clone()], &1u32, &5u32); // 5% per year
+
+    let reviewer = Address::generate(&env);
+    let reviewee = Address::generate(&env);
+    setup_review_for(&env, &escrow_id, &client, 1, &reviewer, &reviewee, 5);
+
+    // retained_pct = max(0, 100 - 5 * periods)
+    let check_points: [(u32, u64); 5] = [
+        (0, 100),
+        (1, 95),
+        (2, 90),
+        (5, 75),
+        (10, 50),
+    ];
+
+    let mut cumulative = 0u32;
+    for (periods, expected_retained_pct) in &check_points {
+        let advance = *periods - cumulative;
+        advance_n_periods(&env, advance);
+        cumulative = *periods;
+
+        let rep = client.get_reputation(&reviewee);
+        let expected_score = (5u64 * (MIN_STAKE as u64) * expected_retained_pct) / 100;
+        let expected_weight = ((MIN_STAKE as u64) * expected_retained_pct) / 100;
+        assert_eq!(
+            rep.total_score, expected_score,
+            "score mismatch at {} periods", periods
+        );
+        assert_eq!(
+            rep.total_weight, expected_weight,
+            "weight mismatch at {} periods", periods
+        );
+    }
+}
+
+/// Verify O(1) decay for high rates and long periods — never panics, never exceeds original.
+#[test]
+fn test_decay_fuzz_never_exceeds_original() {
+    let env = setup_high_ttl_env();
+    env.mock_all_auths();
+    let reputation_id = env.register_contract(None, ReputationContract);
+    let client = ReputationContractClient::new(&env, &reputation_id);
+    let admin = Address::generate(&env);
+    client.initialize(&vec![&env, admin.clone()], &1u32, &10u32); // 10% per year
+
+    // Single user, test at key period milestones
+    let user = Address::generate(&env);
+    env.as_contract(&reputation_id, || {
+        env.storage().persistent().set(
+            &DataKey::Reputation(user.clone()),
+            &UserReputation {
+                user: user.clone(),
+                total_score: 1_000_000,
+                total_weight: 100_000,
+                review_count: 10,
+                last_updated_ledger: 0,
+            },
+        );
+    });
+
+    let mut cumulative = 0u32;
+    for periods in [0u32, 1, 5, 10, 15, 30, 60] {
+        let advance = periods - cumulative;
+        advance_n_periods(&env, advance);
+        cumulative = periods;
+
+        let rep = client.get_reputation(&user);
+        assert!(
+            rep.total_score <= 1_000_000,
+            "score exceeded original at {} periods", periods
+        );
+        assert!(
+            rep.total_weight <= 100_000,
+            "weight exceeded original at {} periods", periods
+        );
+    }
 }
 
 /// A tier upgrade (None -> Bronze) must emit exactly one tier_up event carrying
