@@ -42,13 +42,13 @@ export default function Providers({ children }: { children: React.ReactNode }) {
       disableTransitionOnChange
     >
       <ThemeProvider>
-        <WalletProvider>
-          <AuthProvider>
-            <SocketProvider>
-              <ToastProvider>{children}</ToastProvider>
-            </SocketProvider>
-          </AuthProvider>
-        </WalletProvider>
+        <ToastProvider>
+          <WalletProvider>
+            <AuthProvider>
+              <SocketProvider>{children}</SocketProvider>
+            </AuthProvider>
+          </WalletProvider>
+        </ToastProvider>
       </ThemeProvider>
     </NextThemeProvider>
   );

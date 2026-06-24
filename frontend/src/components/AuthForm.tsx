@@ -335,7 +335,12 @@ export default function AuthForm({ type }: AuthFormProps) {
                   Please unlock your Freighter wallet and try again.
                 </p>
               )}
-              {walletError && walletError !== "NOT_INSTALLED" && walletError !== "LOCKED" && (
+              {walletError === "TIMEOUT" && (
+                <p className="text-xs text-theme-error mt-1">
+                  Wallet connection timed out. Make sure Freighter is unlocked and try again.
+                </p>
+              )}
+              {walletError && walletError !== "NOT_INSTALLED" && walletError !== "LOCKED" && walletError !== "TIMEOUT" && (
                 <p className="text-xs text-theme-error mt-1">{walletError}</p>
               )}
               {!address && !walletError && type === "register" && (
