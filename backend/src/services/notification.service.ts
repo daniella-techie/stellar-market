@@ -4,6 +4,10 @@ import { EmailService } from "./email.service";
 import { config } from "../config";
 import { logger } from "../lib/logger";
 import webpush from "web-push";
+import {
+  notificationQueue,
+  getNotificationPriority,
+} from "../lib/notification-queue";
 
 const prisma = new PrismaClient();
 
@@ -83,7 +87,8 @@ export class NotificationService {
   }
 
   /**
-   * Sends a notification immediately without batching
+   * Persists the notification to the DB and enqueues it for priority-ordered socket delivery.
+   * Callers get back the saved record immediately; socket emit happens asynchronously via the worker.
    */
   private static async sendImmediateNotification(params: {
     userId: string;
@@ -94,7 +99,6 @@ export class NotificationService {
   }) {
     const { userId, type, title, message, metadata } = params;
 
-    // 1. Create DB record (ensure commit before emitting)
     const notification = await prisma.$transaction(async (tx) => {
       return await tx.notification.create({
         data: {
@@ -115,11 +119,22 @@ export class NotificationService {
       metadata: metadata || {},
     });
 
-    // 2. Emit real-time event via Socket.IO
-    const io = getIo();
-    io.to(`user:${userId}`).emit("notification:new", notification);
+    const priority = getNotificationPriority(type);
+    await notificationQueue.add(
+      "send",
+      {
+        userId,
+        type,
+        title,
+        message,
+        metadata: metadata || {},
+        notificationId: notification.id,
+        priority,
+      },
+      { priority },
+    );
 
-    logger.info({ userId, type, title }, "Notification sent");
+    logger.info({ userId, type, title, notificationId: notification.id }, "Notification enqueued");
     return notification;
   }
 

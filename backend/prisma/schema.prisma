@@ -148,7 +148,8 @@ model User {
   transactionsFrom   Transaction[]  @relation("TransactionsFrom")
   transactionsTo     Transaction[]  @relation("TransactionsTo")
   attachments        Attachment[]
-  notifications      Notification[]
+  notifications        Notification[]
+  pendingNotifications PendingNotification[]
   auditLogs          AuditLog[]
   initiatedDisputes  Dispute[]      @relation("DisputeInitiated")
   clientDisputes     Dispute[]      @relation("DisputeClient")
@@ -379,9 +380,24 @@ model Notification {
   metadata  Json?
   createdAt DateTime         @default(now())
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user                User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pendingNotification PendingNotification?
 
   @@index([userId, createdAt(sort: Desc)])
+}
+
+model PendingNotification {
+  id             String       @id @default(cuid())
+  userId         String
+  notificationId String       @unique
+  priority       Int          @default(3)
+  deliveredAt    DateTime?
+  createdAt      DateTime     @default(now())
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  notification Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+
+  @@index([userId, deliveredAt, priority])
 }
 
 model AuditLog {

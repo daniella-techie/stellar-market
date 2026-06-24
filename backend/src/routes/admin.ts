@@ -1,6 +1,7 @@
 import { Router, Response } from "express";
 import { PrismaClient, UserRole, DisputeStatus } from "@prisma/client";
 import { AuthRequest, requireAdmin } from "../middleware/auth";
+import { getDlqJobs } from "../lib/notification-queue";
 import {
     flagJobSchema,
     suspendUserSchema,
@@ -1250,6 +1251,33 @@ router.get(
       res.status(500).json({ error: "Internal server error" });
     }
   }
+);
+
+/**
+ * GET /api/admin/notifications/dlq
+ * Returns failed notification jobs (dead-letter queue) for manual inspection.
+ */
+router.get(
+  "/notifications/dlq",
+  async (_req: AuthRequest, res: Response): Promise<void> => {
+    try {
+      const jobs = await getDlqJobs();
+      res.json({
+        total: jobs.length,
+        jobs: jobs.map((j) => ({
+          id: j.id,
+          data: j.data,
+          failedReason: j.failedReason,
+          attemptsMade: j.attemptsMade,
+          timestamp: j.timestamp,
+          finishedOn: j.finishedOn,
+        })),
+      });
+    } catch (error) {
+      console.error("Error fetching DLQ jobs:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  },
 );
 
 export default router;
