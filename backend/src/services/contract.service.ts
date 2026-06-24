@@ -13,18 +13,69 @@ import { MilestoneStatus } from "@prisma/client";
 import { config } from "../config";
 import { getRequestId } from "../lib/request-context";
 import { logger } from "../lib/logger";
+import { CircuitBreaker } from "../lib/circuit-breaker";
 
 const networkPassphrase = config.stellar.networkPassphrase;
 const contractId = config.stellar.escrowContractId;
 const READONLY_SOURCE = "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF";
 const STROOPS_PER_XLM = 10_000_000n;
 
+const contractCB = new CircuitBreaker({
+  failureThreshold: 5,
+  openDurationMs: 60_000,
+  name: "ContractRpc",
+});
+
 function getRpcServer(): rpc.Server {
   const requestId = getRequestId();
+  const headers = requestId ? { "X-Request-ID": requestId } : undefined;
 
-  return new rpc.Server(config.stellar.rpcUrl, {
-    headers: requestId ? { "X-Request-ID": requestId } : undefined,
-  });
+  const primary = new rpc.Server(config.stellar.rpcUrl, { headers });
+  const secondary = new rpc.Server(config.stellar.secondaryRpcUrl, { headers });
+
+  return new Proxy(primary, {
+    get(target, prop, receiver) {
+      const origValue = Reflect.get(target, prop, receiver);
+      if (typeof origValue === "function") {
+        return async (...args: any[]) => {
+          const isPrimaryAllowed = contractCB.allowRequest();
+          if (isPrimaryAllowed) {
+            try {
+              const res = await origValue.apply(target, args);
+              contractCB.onSuccess();
+              return res;
+            } catch (err) {
+              contractCB.onFailure();
+              if (contractCB.getStatus().state === "OPEN") {
+                logger.warn({ err }, "Primary RPC failed, circuit opened. Falling back to secondary RPC.");
+                try {
+                  const secondaryMethod = Reflect.get(secondary, prop);
+                  return await secondaryMethod.apply(secondary, args);
+                } catch (secErr) {
+                  logger.error({ err: secErr }, "Secondary RPC fallback failed.");
+                  const apiErr = new Error("Stellar RPC services unavailable") as any;
+                  apiErr.statusCode = 503;
+                  throw apiErr;
+                }
+              }
+              throw err;
+            }
+          } else {
+            try {
+              const secondaryMethod = Reflect.get(secondary, prop);
+              return await secondaryMethod.apply(secondary, args);
+            } catch (secErr) {
+              logger.error({ err: secErr }, "Secondary RPC failed while circuit is open.");
+              const apiErr = new Error("Stellar RPC services unavailable") as any;
+              apiErr.statusCode = 503;
+              throw apiErr;
+            }
+          }
+        };
+      }
+      return origValue;
+    },
+  }) as rpc.Server;
 }
 
 export type RevisionProposalView = {
@@ -65,6 +116,14 @@ export class ContractSimulationError extends Error {
 }
 
 export class ContractService {
+  static getCircuitBreakerStatus() {
+    return contractCB.getStatus();
+  }
+
+  static getCircuitBreaker() {
+    return contractCB;
+  }
+
   /**
    * Builds an un-signed transaction XDR for creating a job on-chain.
    */

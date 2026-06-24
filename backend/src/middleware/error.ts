@@ -81,6 +81,10 @@ export const errorHandler = (
   );
 
   // Send consistent error response
+  if (statusCode === 503) {
+    res.setHeader("Retry-After", "30");
+  }
+
   res.status(statusCode).json({
     error: message,
     requestId: req.requestId,

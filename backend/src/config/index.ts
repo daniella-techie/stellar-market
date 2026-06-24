@@ -11,6 +11,7 @@ export const config = {
   stellar: {
     networkPassphrase: process.env.STELLAR_NETWORK_PASSPHRASE || "Test SDF Network ; September 2015",
     rpcUrl: process.env.STELLAR_RPC_URL || "https://soroban-testnet.stellar.org",
+    secondaryRpcUrl: process.env.STELLAR_SECONDARY_RPC_URL || "https://soroban-testnet.stellar.org/secondary",
     horizonUrl: process.env.STELLAR_HORIZON_URL || "https://horizon-testnet.stellar.org",
     escrowContractId: process.env.ESCROW_CONTRACT_ID || "",
     disputeContractId: process.env.DISPUTE_CONTRACT_ID || "",
