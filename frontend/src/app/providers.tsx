@@ -1,13 +1,15 @@
 "use client";
 
+import { Suspense, useEffect } from "react";
 import { WalletProvider } from "@/context/WalletContext";
 import { SocketProvider } from "@/context/SocketContext";
 import { AuthProvider } from "@/context/AuthContext";
 import { ToastProvider } from "@/components/Toast";
 import { ThemeProvider as NextThemeProvider } from "next-themes";
 import { ThemeProvider } from "@/context/ThemeContext";
-import { useEffect } from "react";
 import { registerServiceWorker } from "@/utils/registerServiceWorker";
+import NavigationProgress from "@/components/NavigationProgress";
+import PushNotificationPrompt from "@/components/PushNotificationPrompt";
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   useEffect(() => {
@@ -16,21 +18,20 @@ export default function Providers({ children }: { children: React.ReactNode }) {
 
     // Track user interaction for push notification prompt
     const trackInteraction = () => {
-      localStorage.setItem('stellarmarket-has-interacted', 'true');
-      // Remove listeners after first interaction
-      window.removeEventListener('click', trackInteraction);
-      window.removeEventListener('keydown', trackInteraction);
-      window.removeEventListener('touchstart', trackInteraction);
+      localStorage.setItem("stellarmarket-has-interacted", "true");
+      window.removeEventListener("click", trackInteraction);
+      window.removeEventListener("keydown", trackInteraction);
+      window.removeEventListener("touchstart", trackInteraction);
     };
 
-    window.addEventListener('click', trackInteraction);
-    window.addEventListener('keydown', trackInteraction);
-    window.addEventListener('touchstart', trackInteraction);
+    window.addEventListener("click", trackInteraction);
+    window.addEventListener("keydown", trackInteraction);
+    window.addEventListener("touchstart", trackInteraction);
 
     return () => {
-      window.removeEventListener('click', trackInteraction);
-      window.removeEventListener('keydown', trackInteraction);
-      window.removeEventListener('touchstart', trackInteraction);
+      window.removeEventListener("click", trackInteraction);
+      window.removeEventListener("keydown", trackInteraction);
+      window.removeEventListener("touchstart", trackInteraction);
     };
   }, []);
 
@@ -45,7 +46,13 @@ export default function Providers({ children }: { children: React.ReactNode }) {
         <ToastProvider>
           <WalletProvider>
             <AuthProvider>
-              <SocketProvider>{children}</SocketProvider>
+              <SocketProvider>
+                <Suspense fallback={null}>
+                  <NavigationProgress />
+                </Suspense>
+                {children}
+                <PushNotificationPrompt />
+              </SocketProvider>
             </AuthProvider>
           </WalletProvider>
         </ToastProvider>

@@ -25,7 +25,9 @@ import StatusBadge from "@/components/StatusBadge";
 import ApplyModal from "@/components/ApplyModal";
 import RaiseDisputeModal from "@/components/RaiseDisputeModal";
 import ReviewModal from "@/components/ReviewModal";
-import MilestoneTimeline from "@/components/MilestoneTimeline";
+import MilestoneTimeline, {
+  getMilestoneDraftKey,
+} from "@/components/MilestoneTimeline";
 import MilestoneProgressTracker from "@/components/MilestoneProgressTracker";
 import TransactionConfirmationModal from "@/components/TransactionConfirmationModal";
 import DepositRateInfo from "@/components/DepositRateInfo";
@@ -330,6 +332,21 @@ export default function JobDetailClient() {
         action.milestoneId
       ) {
         setRecentlyApprovedMilestoneId(action.milestoneId);
+      }
+
+      if (
+        action.confirmType === "SUBMIT_MILESTONE" &&
+        action.milestoneId &&
+        job
+      ) {
+        const milestoneIndex = job.milestones.findIndex(
+          (milestone) => milestone.id === action.milestoneId,
+        );
+        if (milestoneIndex !== -1) {
+          window.localStorage.removeItem(
+            getMilestoneDraftKey(job.id, milestoneIndex),
+          );
+        }
       }
 
       if (action.confirmType === "PROPOSE_REVISION") {

@@ -13,6 +13,7 @@ export interface User {
   reviewCount?: number;
   availability?: boolean;
   completedOnboarding?: boolean;
+  availabilityStatus?: "available" | "busy" | "unavailable";
   authMethods?: {
     email: boolean;
     wallet: boolean;
@@ -157,6 +158,7 @@ export interface UserProfile extends User {
   services: ServiceListing[];
   portfolioItems?: PortfolioItem[];
   createdAt: string;
+  availability?: boolean;
 }
 
 export interface Conversation {
