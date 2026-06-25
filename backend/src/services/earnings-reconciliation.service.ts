@@ -1,6 +1,7 @@
 import { Horizon } from "@stellar/stellar-sdk";
 import { config } from "../config";
 import { logger } from "../lib/logger";
+import { withUpstreamTimeout } from "../lib/upstream-timeout";
 
 /**
  * A payment that settled on-chain to the freelancer's wallet, as reported by Horizon.
@@ -67,12 +68,16 @@ export async function fetchOnChainPayments(
   const server = getServer();
   const results: OnChainPayment[] = [];
 
-  let page = await server
-    .payments()
-    .forAccount(walletAddress)
-    .order("asc")
-    .limit(HORIZON_PAGE_LIMIT)
-    .call();
+  let page = await withUpstreamTimeout(
+    () =>
+      server
+        .payments()
+        .forAccount(walletAddress)
+        .order("asc")
+        .limit(HORIZON_PAGE_LIMIT)
+        .call(),
+    { route: "earnings.reconcile", target: "horizon.payments" },
+  );
 
   while (page.records.length > 0) {
     for (const raw of page.records as unknown as HorizonPaymentRecord[]) {
@@ -107,7 +112,10 @@ export async function fetchOnChainPayments(
       });
     }
 
-    page = await page.next();
+    page = await withUpstreamTimeout(() => page.next(), {
+      route: "earnings.reconcile",
+      target: "horizon.payments",
+    });
   }
 
   return results;

@@ -10,6 +10,7 @@ import { globalRateLimiter, writeRateLimiter } from "./middleware/rate-limit";
 import { sanitizeInput } from "./middleware/sanitize";
 import { errorHandler } from "./middleware/error";
 import { requestIdMiddleware } from "./middleware/request-id";
+import { requestTimeoutMiddleware } from "./middleware/timeout";
 import { initSocket } from "./socket";
 import { startExpiryJob } from "./jobs/expiry.job";
 import { startPendingTxJob } from "./jobs/pending-tx.job";
@@ -64,6 +65,7 @@ if (process.env.NODE_ENV !== "production") {
 app.use(cors(corsOptions));
 app.use(cookieParser());
 app.use(requestIdMiddleware);
+app.use(requestTimeoutMiddleware);
 app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: true, limit: "1mb" }));
 app.use(sanitizeInput);
