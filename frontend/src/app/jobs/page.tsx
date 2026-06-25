@@ -16,7 +16,7 @@ import {
   type ListImperativeAPI,
   type RowComponentProps,
 } from "react-window";
-import { Search, SlidersHorizontal, Briefcase, Loader2, Wifi, ArrowUp } from "lucide-react";
+import { Search, SlidersHorizontal, Briefcase, Loader2, Wifi, ArrowUp, X } from "lucide-react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import axios from "axios";
 import JobCard from "@/components/JobCard";
@@ -120,6 +120,7 @@ function JobsContent() {
     updateSearch,
     toggleArrayFilter,
     clearAll,
+    clearFilters,
     activeCount,
     postedAfterDate,
   } = useJobFilters();
@@ -350,6 +351,31 @@ function JobsContent() {
     [feedState, newJobIds, savedJobIds, debouncedSearch, toggleSavedJob, handleTagClick, dynamicRowHeight.observeRowElements],
   );
 
+  const activeFilters = useMemo(() => {
+    const items: Array<{ label: string; clear: () => void }> = [];
+    if (filters.category !== "All") {
+      items.push({ label: `Category: ${filters.category}`, clear: () => updateFilter("category", "All") });
+    }
+    filters.skills.forEach((skill) => items.push({
+      label: `Skill: ${skill}`,
+      clear: () => toggleArrayFilter("skills", skill),
+    }));
+    filters.status.forEach((status) => items.push({
+      label: `Status: ${status.replace("_", " ")}`,
+      clear: () => toggleArrayFilter("status", status),
+    }));
+    if (filters.minBudget) {
+      items.push({ label: `Min budget: ${filters.minBudget} XLM`, clear: () => updateFilter("minBudget", "") });
+    }
+    if (filters.maxBudget) {
+      items.push({ label: `Max budget: ${filters.maxBudget} XLM`, clear: () => updateFilter("maxBudget", "") });
+    }
+    if (filters.postedDate !== "all") {
+      items.push({ label: `Posted: ${filters.postedDate}`, clear: () => updateFilter("postedDate", "all") });
+    }
+    return items;
+  }, [filters, toggleArrayFilter, updateFilter]);
+
   return (
     <>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -493,22 +519,35 @@ function JobsContent() {
             ) : (
               <div role="status" aria-live="polite">
                 <EmptyState
-                  icon={Briefcase}
-                  title="No jobs found matching your filters."
-                  description="Try adjusting or clearing your filters to broaden the search."
-                  action={
-                    user?.role === "CLIENT"
-                      ? { label: "Post a Job", href: "/post-job" }
-                      : activeCount > 0
-                        ? { label: "Clear Filters", onClick: clearAll }
-                        : undefined
-                  }
-                  secondaryAction={
-                    user?.role === "CLIENT" && activeCount > 0
-                      ? { label: "Clear Filters", onClick: clearAll }
-                      : undefined
-                  }
-                />
+                  icon={Search}
+                  iconOverlay="?"
+                  title={debouncedSearch ? `No jobs found for ${debouncedSearch}` : "No jobs found"}
+                  description="Try clearing filters or browse all available jobs."
+                  action={{ label: "Browse all jobs", onClick: clearAll }}
+                  secondaryAction={{
+                    label: "Clear filters",
+                    onClick: activeCount > 0 ? clearFilters : clearAll,
+                  }}
+                >
+                  {activeFilters.length > 0 && (
+                    <div className="mb-6 max-w-lg" aria-label="Active filters">
+                      <p className="mb-2 text-sm font-medium text-theme-heading">Active filters</p>
+                      <div className="flex flex-wrap justify-center gap-2">
+                        {activeFilters.map((filter) => (
+                          <button
+                            key={filter.label}
+                            type="button"
+                            onClick={filter.clear}
+                            className="inline-flex items-center gap-1 rounded-full border border-theme-border bg-theme-card px-2.5 py-1 text-xs text-theme-text hover:border-stellar-blue hover:text-stellar-blue"
+                            aria-label={`Clear ${filter.label} filter`}
+                          >
+                            {filter.label} <X size={12} aria-hidden="true" />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </EmptyState>
               </div>
             )}
           </div>

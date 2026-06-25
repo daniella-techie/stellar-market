@@ -5,6 +5,7 @@ import Navbar from "@/components/Navbar";
 import EmailVerificationBanner from "@/components/EmailVerificationBanner";
 import OfflineBanner from "@/components/OfflineBanner";
 import PushNotificationPrompt from "@/components/PushNotificationPrompt";
+import MobileNavigation from "@/components/MobileNavigation";
 import Footer from "@/components/Footer";
 import Providers from "./providers";
 
@@ -94,8 +95,9 @@ export default function RootLayout({
           <Navbar />
           <EmailVerificationBanner />
           <OfflineBanner />
-          <main id="main-content" className="min-h-screen">{children}</main>
+          <main id="main-content" className="min-h-screen pb-16 md:pb-0">{children}</main>
           <Footer />
+          <MobileNavigation />
           <PushNotificationPrompt />
         </Providers>
       </body>

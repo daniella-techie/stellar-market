@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import {
   FileText,
   ExternalLink,
+  Download,
   Shield,
   ShieldAlert,
   ShieldCheck,
@@ -38,6 +39,7 @@ export default function EvidenceViewer({
     Record<string, VerificationState>
   >({});
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const listRef = useRef<HTMLUListElement>(null);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLUListElement>) => {
@@ -110,6 +112,28 @@ export default function EvidenceViewer({
     [disputeId],
   );
 
+  const downloadItem = useCallback(async (item: DisputeEvidence) => {
+    setDownloadingId(item.id);
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.get(
+        `${API_URL}/disputes/${disputeId}/evidence/${item.id}/download`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+          responseType: "blob",
+        },
+      );
+      const url = URL.createObjectURL(response.data);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = item.fileName;
+      anchor.click();
+      URL.revokeObjectURL(url);
+    } finally {
+      setDownloadingId(null);
+    }
+  }, [disputeId]);
+
   if (loading) {
     return (
       <div className="card">
@@ -178,22 +202,25 @@ export default function EvidenceViewer({
                   <p className="text-sm font-medium text-theme-heading truncate max-w-[220px]">
                     {item.fileName}
                   </p>
-                  <p className="text-[10px] text-theme-text-muted">
-                    {item.fileType}
-                    {item.sizeFormatted && ` · ${item.sizeFormatted}`}
-                  </p>
+                  <div className="mt-1 flex items-center gap-1.5 text-[10px] text-theme-text-muted">
+                    <span className="rounded-full bg-stellar-blue/10 px-1.5 py-0.5 font-medium text-stellar-blue">
+                      {item.fileType}
+                    </span>
+                    {item.sizeFormatted && <span>{item.sizeFormatted}</span>}
+                  </div>
                 </button>
-                {item.url && (
-                  <a
-                    href={`${API_URL.replace("/api", "")}${item.url}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-1 text-xs text-stellar-blue hover:underline flex-shrink-0 ml-3"
-                    aria-label={`View or download ${item.fileName}`}
+                <div className="flex items-center gap-3 flex-shrink-0 ml-3">
+                  <button
+                    type="button"
+                    onClick={() => downloadItem(item)}
+                    disabled={downloadingId === item.id}
+                    className="flex items-center gap-1 text-xs text-stellar-blue hover:underline disabled:opacity-50"
+                    aria-label={`Download ${item.fileName}`}
                   >
-                    View <ExternalLink size={11} />
-                  </a>
-                )}
+                    {downloadingId === item.id ? <Loader2 size={11} className="animate-spin" /> : <Download size={11} />}
+                    Download
+                  </button>
+                </div>
               </div>
  
               {item.sha256 && (

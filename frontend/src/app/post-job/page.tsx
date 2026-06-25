@@ -13,12 +13,20 @@ import { useWallet } from "@/context/WalletContext";
 import { JOB_CATEGORIES, JOB_SKILLS, PAYMENT_TOKENS } from "@/constants/jobs";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+const configuredPlatformMinimum = Number(
+  process.env.NEXT_PUBLIC_PLATFORM_MIN_BUDGET_XLM || "1",
+);
+const PLATFORM_MIN_BUDGET_XLM =
+  Number.isFinite(configuredPlatformMinimum) && configuredPlatformMinimum > 0
+    ? configuredPlatformMinimum
+    : 1;
+const minimumBudgetMessage = `Budget must be at least ${PLATFORM_MIN_BUDGET_XLM} XLM.`;
 
 const milestoneSchema = z.object({
   title: z.string().min(3, "Milestone title is too short"),
   description: z.string().min(5, "Milestone description is too short"),
-  amount: z.string().refine((value) => Number.parseFloat(value) > 0, {
-    message: "Milestone amount must be greater than 0",
+  amount: z.string().refine((value) => Number.parseFloat(value) >= PLATFORM_MIN_BUDGET_XLM, {
+    message: minimumBudgetMessage,
   }),
   deadline: z.string().refine((value) => {
     if (!value) return false;
@@ -463,6 +471,8 @@ export default function PostJobPage() {
                       type="number"
                       placeholder="Amount (XLM)"
                       className="input-field"
+                      min={PLATFORM_MIN_BUDGET_XLM}
+                      step="0.0000001"
                       {...register(`milestones.${index}.amount`)}
                     />
                   </div>

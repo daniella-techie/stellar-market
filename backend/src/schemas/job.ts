@@ -1,5 +1,11 @@
 import { z } from "zod";
 import { paginationSchema, jobStatusSchema } from "./common";
+import { config } from "../config";
+
+const platformMinimumBudget = Number.isFinite(config.platformMinBudgetXlm)
+  ? config.platformMinBudgetXlm
+  : 1;
+const minimumBudgetMessage = `Budget must be at least ${platformMinimumBudget} XLM`;
 
 export const createJobSchema = z.object({
   title: z
@@ -10,7 +16,7 @@ export const createJobSchema = z.object({
     .string()
     .min(20, "Description must be at least 20 characters long")
     .max(5000, "Description must be less than 5000 characters"),
-  budget: z.number().positive("Budget must be a positive number"),
+  budget: z.number().min(platformMinimumBudget, minimumBudgetMessage),
   skills: z
     .array(z.string())
     .min(1, "At least one skill is required")

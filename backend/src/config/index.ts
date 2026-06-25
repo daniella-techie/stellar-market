@@ -2,12 +2,27 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
+const configuredPlatformMinimum = Number(process.env.PLATFORM_MIN_BUDGET_XLM || "1");
+const platformMinBudgetXlm =
+  Number.isFinite(configuredPlatformMinimum) && configuredPlatformMinimum > 0
+    ? configuredPlatformMinimum
+    : 1;
+
 export const config = {
   port: process.env.PORT || 5000,
   jwtSecret: process.env.JWT_SECRET || "default-secret-change-me",
   databaseUrl: process.env.DATABASE_URL,
   frontendUrl: process.env.FRONTEND_URL || "http://localhost:3000",
   encryptionKey: process.env.ENCRYPTION_KEY || "",
+  // The minimum is kept server-side so clients cannot create zero-value jobs
+  // by bypassing the posting form.
+  platformMinBudgetXlm,
+  evidenceStorage: {
+    bucket: process.env.EVIDENCE_S3_BUCKET || "",
+    region: process.env.EVIDENCE_S3_REGION || process.env.AWS_REGION || "us-east-1",
+    endpoint: process.env.EVIDENCE_S3_ENDPOINT || undefined,
+    forcePathStyle: process.env.EVIDENCE_S3_FORCE_PATH_STYLE === "true",
+  },
   stellar: {
     networkPassphrase: process.env.STELLAR_NETWORK_PASSPHRASE || "Test SDF Network ; September 2015",
     rpcUrl: process.env.STELLAR_RPC_URL || "https://soroban-testnet.stellar.org",
