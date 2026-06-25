@@ -303,7 +303,7 @@ export default function DashboardPage() {
     { label: "Posted Jobs", value: `${stats.postedJobs}`, detail: `${stats.openJobs} open · ${stats.inProgressJobs} funded · ${stats.completedJobs} completed`, icon: Briefcase, color: "text-stellar-blue" },
     { label: "Pending Applications", value: `${stats.applicationsToReview}`, detail: "Awaiting your review", icon: FileText, color: "text-theme-warning" },
     { label: "Active Disputes", value: `${stats.activeDisputes}`, detail: "Require attention", icon: AlertTriangle, color: "text-theme-error" },
-    { label: "Total Spent", value: `${stats.totalSpent.toLocaleString()} XLM`, detail: `Rating: ${stats.rating > 0 ? `${stats.rating.toFixed(1)}/5` : "N/A"}`, icon: DollarSign, color: "text-stellar-purple" },
+    { label: "Total Spent", value: `${stats.totalSpent.toLocaleString()} XLM`, detail: `Rating: ${stats.rating > 0 ? `${stats.rating.toFixed(1)}/5` : "N/A"}`, icon: DollarSign, color: "text-stellar-purple", href: "/dashboard/client-earnings" },
   ];
 
   const freelancerStatCards = [
@@ -346,18 +346,30 @@ export default function DashboardPage() {
         <DashboardStatsSkeleton />
       ) : dataLoading ? null : (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          {displayStats.map((stat) => (
-            <div key={stat.label} className="card flex items-center gap-4">
-              <div className={`${stat.color}`}>
-                <stat.icon size={24} />
+          {displayStats.map((stat) => {
+            const content = (
+              <>
+                <div className={`${stat.color}`}>
+                  <stat.icon size={24} />
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-theme-heading">{stat.value}</div>
+                  <div className="text-sm text-theme-text">{stat.label}</div>
+                  <div className="text-xs text-theme-text/60 mt-0.5">{stat.detail}</div>
+                </div>
+              </>
+            );
+
+            return "href" in stat && stat.href ? (
+              <Link key={stat.label} href={stat.href} className="card flex items-center gap-4 hover:opacity-80 transition-opacity">
+                {content}
+              </Link>
+            ) : (
+              <div key={stat.label} className="card flex items-center gap-4">
+                {content}
               </div>
-              <div>
-                <div className="text-2xl font-bold text-theme-heading">{stat.value}</div>
-                <div className="text-sm text-theme-text">{stat.label}</div>
-                <div className="text-xs text-theme-text/60 mt-0.5">{stat.detail}</div>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
