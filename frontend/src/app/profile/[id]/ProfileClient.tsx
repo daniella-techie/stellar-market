@@ -187,6 +187,18 @@ export default function ProfileClient() {
             <span className="text-sm font-medium text-stellar-purple bg-stellar-purple/10 px-3 py-1 rounded-full border border-stellar-purple/20">
               {profile.role}
             </span>
+            {profile.role === "FREELANCER" && (() => {
+              const avail = profile.availability;
+              const label = avail === false ? "Unavailable" : "Available";
+              const cls = avail === false
+                ? "bg-gray-400/20 border-gray-400/40 text-gray-500"
+                : "bg-green-500/10 border-green-500/30 text-green-600 dark:text-green-400";
+              return (
+                <span className={`text-xs font-semibold px-3 py-1 rounded-full border ${cls}`}>
+                  {label}
+                </span>
+              );
+            })()}
             {isOwnProfile && (
               <Link
                 href="/settings"

@@ -364,13 +364,17 @@ router.get(
             role: true,
             skills: true,
             walletAddress: true,
+            availability: true,
             averageRating: true,
             reviewCount: true,
             createdAt: true,
             reviewsReceived: {
               orderBy: { createdAt: "desc" as const },
               select: {
+                id: true,
                 rating: true,
+                comment: true,
+                createdAt: true,
                 reviewer: {
                   select: {
                     id: true,
@@ -386,7 +390,9 @@ router.get(
               select: {
                 id: true,
                 title: true,
+                category: true,
                 status: true,
+                createdAt: true,
                 updatedAt: true,
               },
             },
@@ -396,7 +402,9 @@ router.get(
               select: {
                 id: true,
                 title: true,
+                category: true,
                 status: true,
+                createdAt: true,
                 updatedAt: true,
               },
             },
