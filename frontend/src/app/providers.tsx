@@ -1,6 +1,7 @@
 "use client";
 
-import { Suspense, useEffect } from "react";
+import { Suspense, useEffect, useState } from "react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { WalletProvider } from "@/context/WalletContext";
 import { SocketProvider } from "@/context/SocketContext";
 import { AuthProvider } from "@/context/AuthContext";
@@ -12,6 +13,7 @@ import NavigationProgress from "@/components/NavigationProgress";
 import PushNotificationPrompt from "@/components/PushNotificationPrompt";
 
 export default function Providers({ children }: { children: React.ReactNode }) {
+  const [queryClient] = useState(() => new QueryClient());
   useEffect(() => {
     // Register service worker
     registerServiceWorker();
@@ -36,27 +38,29 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <NextThemeProvider
-      attribute="data-theme"
-      defaultTheme="system"
-      enableSystem
-      disableTransitionOnChange
-    >
-      <ThemeProvider>
-        <ToastProvider>
-          <WalletProvider>
-            <AuthProvider>
-              <SocketProvider>
-                <Suspense fallback={null}>
-                  <NavigationProgress />
-                </Suspense>
-                {children}
-                <PushNotificationPrompt />
-              </SocketProvider>
-            </AuthProvider>
-          </WalletProvider>
-        </ToastProvider>
-      </ThemeProvider>
-    </NextThemeProvider>
+    <QueryClientProvider client={queryClient}>
+      <NextThemeProvider
+        attribute="data-theme"
+        defaultTheme="system"
+        enableSystem
+        disableTransitionOnChange
+      >
+        <ThemeProvider>
+          <ToastProvider>
+            <WalletProvider>
+              <AuthProvider>
+                <SocketProvider>
+                  <Suspense fallback={null}>
+                    <NavigationProgress />
+                  </Suspense>
+                  {children}
+                  <PushNotificationPrompt />
+                </SocketProvider>
+              </AuthProvider>
+            </WalletProvider>
+          </ToastProvider>
+        </ThemeProvider>
+      </NextThemeProvider>
+    </QueryClientProvider>
   );
 }

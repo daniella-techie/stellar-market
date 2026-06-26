@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useParams } from "next/navigation";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Clock,
   DollarSign,
@@ -80,10 +81,105 @@ export default function JobDetailClient() {
   const { address, balances, signAndBroadcastTransaction } = useWallet();
   const { user } = useAuth();
   const { toast } = useToast();
-  const [job, setJob] = useState<Job | null>(null);
-  const [reviews, setReviews] = useState<Review[]>([]);
-  const [reviewsLoading, setReviewsLoading] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+
+  const {
+    data: job = null,
+    isLoading: isJobLoading,
+    isFetching: isJobFetching,
+    error: jobError
+  } = useQuery<Job | null>({
+    queryKey: ["job", id],
+    queryFn: async () => {
+      const token = localStorage.getItem("token");
+      const res = await axios.get(`${API_URL}/jobs/${id}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      return res.data;
+    },
+    staleTime: 60_000,
+  });
+
+  const {
+    data: reviews = [],
+    isLoading: reviewsLoading
+  } = useQuery<Review[]>({
+    queryKey: ["reviews", id],
+    queryFn: async () => {
+      const token = localStorage.getItem("token");
+      const res = await axios.get<PaginatedResponse<Review>>(`${API_URL}/reviews`, {
+        params: { jobId: id, page: 1, limit: 50 },
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      return res.data.data ?? [];
+    },
+    staleTime: 60_000,
+  });
+
+  const {
+    data: myAppInfo
+  } = useQuery<{ applied: boolean; appId: string | null }>({
+    queryKey: ["application", id, user?.id],
+    queryFn: async () => {
+      const token = localStorage.getItem("token");
+      if (!token) return { applied: false, appId: null };
+      try {
+        const res = await axios.get<PaginatedResponse<Application>>(`${API_URL}/applications`, {
+          params: { jobId: id, freelancerId: user.id, limit: 1 },
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const applied = res.data.total > 0;
+        return {
+          applied,
+          appId: applied && res.data.data[0] ? res.data.data[0].id : null
+        };
+      } catch {
+        return { applied: false, appId: null };
+      }
+    },
+    enabled: !!user && user.role === "FREELANCER",
+    staleTime: 60_000,
+  });
+
+  const hasApplied = myAppInfo?.applied ?? false;
+  const myApplicationId = myAppInfo?.appId ?? null;
+
+  const {
+    data: applications = [],
+    isLoading: loadingApps
+  } = useQuery<Application[]>({
+    queryKey: ["applications", id],
+    queryFn: async () => {
+      const token = localStorage.getItem("token");
+      const res = await axios.get<{ data: Application[] }>(
+        `${API_URL}/jobs/${id}/applications`,
+        { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+      );
+      return res.data.data ?? [];
+    },
+    enabled: !!job && !!user && user.id === job.client.id,
+    staleTime: 60_000,
+  });
+
+  const loading = isJobLoading;
+
+  const setJob = useCallback((updater: Job | null | ((prev: Job | null) => Job | null)) => {
+    queryClient.setQueryData<Job | null>(["job", id], (old) => {
+      if (typeof updater === 'function') {
+        return updater(old ?? null);
+      }
+      return updater;
+    });
+  }, [queryClient, id]);
+
+  const setHasApplied = (val: boolean) => {
+    queryClient.setQueryData<{ applied: boolean; appId: string | null } | undefined>(["application", id, user?.id], (old) => old ? { ...old, applied: val } : undefined);
+  };
+
+  const setMyApplicationId = (val: string | null) => {
+    queryClient.setQueryData<{ applied: boolean; appId: string | null } | undefined>(["application", id, user?.id], (old) => old ? { ...old, appId: val } : undefined);
+  };
+
   const [processing, setProcessing] = useState(false);
   const [actioningMilestoneId, setActioningMilestoneId] = useState<
     string | null
@@ -92,15 +188,18 @@ export default function JobDetailClient() {
     string | null
   >(null);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (jobError) {
+      setError(jobError instanceof Error ? jobError.message : "Failed to fetch job details.");
+    }
+  }, [jobError]);
+
   const [applyModalOpen, setApplyModalOpen] = useState(false);
   const [disputeModalOpen, setDisputeModalOpen] = useState(false);
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
-  const [hasApplied, setHasApplied] = useState(false);
-  const [myApplicationId, setMyApplicationId] = useState<string | null>(null);
   const [withdrawConfirmOpen, setWithdrawConfirmOpen] = useState(false);
   const [withdrawing, setWithdrawing] = useState(false);
-  const [applications, setApplications] = useState<Application[]>([]);
-  const [loadingApps, setLoadingApps] = useState(false);
   const [actioningApp, setActioningApp] = useState<string | null>(null);
   const [proposeRevisionOpen, setProposeRevisionOpen] = useState(false);
   const [recentlyApprovedMilestoneId, setRecentlyApprovedMilestoneId] = useState<
@@ -113,85 +212,14 @@ export default function JobDetailClient() {
   const isClient = Boolean(job && address === job.client.walletAddress);
 
   const fetchJob = useCallback(async () => {
-    try {
-      const token = localStorage.getItem("token");
-      setHasApplied(false);
-
-      const res = await axios.get(`${API_URL}/jobs/${id}`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
-      setJob(res.data);
-
-      setReviewsLoading(true);
-      try {
-        const reviewsRes = await axios.get<PaginatedResponse<Review>>(
-          `${API_URL}/reviews`,
-          {
-            params: { jobId: id, page: 1, limit: 50 },
-            headers: token ? { Authorization: `Bearer ${token}` } : {},
-          },
-        );
-        setReviews(reviewsRes.data.data ?? []);
-      } catch {
-        setReviews([]);
-      } finally {
-        setReviewsLoading(false);
-      }
-
-      if (token && user?.role === "FREELANCER") {
-        try {
-          const appsRes = await axios.get<PaginatedResponse<Application>>(
-            `${API_URL}/applications`,
-            {
-              params: { jobId: id, freelancerId: user.id, limit: 1 },
-              headers: { Authorization: `Bearer ${token}` },
-            },
-          );
-          const applied = appsRes.data.total > 0;
-          setHasApplied(applied);
-          if (applied && appsRes.data.data[0]) {
-            setMyApplicationId(appsRes.data.data[0].id);
-          }
-        } catch {
-          setHasApplied(false);
-          setMyApplicationId(null);
-        }
-      }
-    } catch (err: unknown) {
-      setError(
-        err instanceof Error ? err.message : "Failed to fetch job details.",
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, [id, user]);
-
-  useEffect(() => {
-    fetchJob();
-  }, [fetchJob]);
+    await queryClient.invalidateQueries({ queryKey: ["job", id] });
+    await queryClient.invalidateQueries({ queryKey: ["reviews", id] });
+    await queryClient.invalidateQueries({ queryKey: ["application", id, user?.id] });
+  }, [queryClient, id, user?.id]);
 
   const fetchApplications = useCallback(async () => {
-    setLoadingApps(true);
-    try {
-      const token = localStorage.getItem("token");
-      const res = await axios.get<{ data: Application[] }>(
-        `${API_URL}/jobs/${id as string}/applications`,
-        { headers: token ? { Authorization: `Bearer ${token}` } : {} },
-      );
-      setApplications(res.data.data ?? []);
-    } catch {
-      setApplications([]);
-    } finally {
-      setLoadingApps(false);
-    }
-  }, [id]);
-
-  // Fetch applicants once job loads and current user is the owner
-  useEffect(() => {
-    if (job && user && user.id === job.client.id) {
-      void fetchApplications();
-    }
-  }, [job, user, fetchApplications]);
+    await queryClient.invalidateQueries({ queryKey: ["applications", id] });
+  }, [queryClient, id]);
 
   const handleApplicationStatus = async (
     appId: string,
@@ -765,8 +793,11 @@ export default function JobDetailClient() {
             </div>
           </div>
 
-          <h1 className="text-3xl font-bold text-theme-heading mb-4">
+          <h1 className="text-3xl font-bold text-theme-heading mb-4 flex items-center gap-3">
             {job.title}
+            {isJobFetching && (
+              <Loader2 className="animate-spin text-theme-text/50" size={20} aria-label="Refreshing data" />
+            )}
           </h1>
 
           <div className="flex flex-wrap items-center gap-4 mb-8">
