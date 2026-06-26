@@ -47,14 +47,14 @@ router.get(
       await Promise.all([
         prisma.transaction.aggregate({
           where: {
-            type: { in: SPEND_TX_TYPES },
+            type: { in: [...SPEND_TX_TYPES] },
             job: { clientId: user.id },
           },
           _sum: { amount: true },
         }),
         prisma.transaction.aggregate({
           where: {
-            type: { in: SPEND_TX_TYPES },
+            type: { in: [...SPEND_TX_TYPES] },
             job: { clientId: user.id },
             createdAt: { gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1) },
           },

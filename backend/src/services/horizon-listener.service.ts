@@ -154,7 +154,7 @@ export async function replayDLQ(): Promise<{
 
   for (const entry of entries) {
     try {
-      await processEvent(entry.payload as SorobanEvent);
+      await processEvent(entry.payload as unknown as SorobanEvent);
       await prisma.horizonDlq.update({
         where: { id: entry.id },
         data: { replayedAt: new Date() },

@@ -34,7 +34,7 @@ export async function withUpstreamTimeout<T>(
   const controller = new AbortController();
   const startedAt = Date.now();
 
-  let timer: ReturnType<typeof setTimeout>;
+  let timer!: ReturnType<typeof setTimeout>;
   const timeoutPromise = new Promise<never>((_resolve, reject) => {
     timer = setTimeout(() => {
       controller.abort();

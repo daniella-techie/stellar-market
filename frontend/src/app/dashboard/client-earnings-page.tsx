@@ -127,7 +127,7 @@ const ClientEarningsPage = () => {
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="month" />
               <YAxis />
-              <Tooltip formatter={(value: number) => [`${value.toLocaleString()} XLM`, "Spend"]} />
+              <Tooltip formatter={(value) => [`${Number(value ?? 0).toLocaleString()} XLM`, "Spend"]} />
               <Line type="monotone" dataKey="spend" stroke="#7C3AED" strokeWidth={2} dot={false} />
             </LineChart>
           </ResponsiveContainer>

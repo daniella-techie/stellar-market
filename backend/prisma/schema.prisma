@@ -660,3 +660,13 @@ model HorizonDlq {
   @@index([cursor])
   @@map("horizon_dlq")
 }
+
+model Skill {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  category  String?
+  aliases   String[]
+  createdAt DateTime @default(now())
+
+  @@index([name])
+}

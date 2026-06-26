@@ -554,27 +554,29 @@ export class ContractService {
     const simulation = await server.simulateTransaction(tx);
     if (rpc.Api.isSimulationError(simulation)) {
       const traceId = getRequestId();
+      const txXdr = tx.toXDR();
       logger.error({
         traceId,
-        xdr: tx.toXDR("base64"),
+        xdr: txXdr,
         events: (simulation as any).events ?? [],
         error: simulation.error,
       }, "Soroban simulation failed");
       if (process.env.NODE_ENV !== "production") {
-        void this.writeFailedSimulation(tx.toXDR("base64"));
+        void this.writeFailedSimulation(txXdr);
       }
       throw new ContractSimulationError(simulation.error);
     }
     if (!rpc.Api.isSimulationSuccess(simulation)) {
       const traceId = getRequestId();
+      const txXdr = tx.toXDR();
       logger.error({
         traceId,
-        xdr: tx.toXDR("base64"),
+        xdr: txXdr,
         events: (simulation as any).events ?? [],
         error: "Simulation did not succeed — state restore may be required",
       }, "Soroban simulation did not succeed");
       if (process.env.NODE_ENV !== "production") {
-        void this.writeFailedSimulation(tx.toXDR("base64"));
+        void this.writeFailedSimulation(txXdr);
       }
       throw new ContractSimulationError("Simulation did not succeed — state restore may be required");
     }

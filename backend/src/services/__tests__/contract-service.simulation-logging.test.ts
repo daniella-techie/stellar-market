@@ -69,15 +69,15 @@ describe("ContractService simulation failure logging", () => {
       }),
     }));
 
-    (rpc.Api.isSimulationError as jest.Mock).mockReturnValue(false);
-    (rpc.Api.isSimulationSuccess as jest.Mock).mockReturnValue(true);
+    (rpc.Api.isSimulationError as unknown as jest.Mock).mockReturnValue(false);
+    (rpc.Api.isSimulationSuccess as unknown as jest.Mock).mockReturnValue(true);
   });
 
   it("logs xdr and events when simulateTransaction returns a simulation error", async () => {
     const fakeEvents = [{ type: "diagnostic", body: "contract trap" }];
     const fakeSimulation = { error: "contract execution failed", events: fakeEvents };
 
-    (rpc.Api.isSimulationError as jest.Mock).mockReturnValue(true);
+    (rpc.Api.isSimulationError as unknown as jest.Mock).mockReturnValue(true);
     mockSimulateTransaction.mockResolvedValue(fakeSimulation);
 
     await expect(ContractService.simulateContractRead({} as any)).rejects.toThrow(
@@ -98,8 +98,8 @@ describe("ContractService simulation failure logging", () => {
   it("logs xdr and events when simulation does not succeed (restore needed)", async () => {
     const fakeSimulation = { events: [], restorePreamble: {} };
 
-    (rpc.Api.isSimulationError as jest.Mock).mockReturnValue(false);
-    (rpc.Api.isSimulationSuccess as jest.Mock).mockReturnValue(false);
+    (rpc.Api.isSimulationError as unknown as jest.Mock).mockReturnValue(false);
+    (rpc.Api.isSimulationSuccess as unknown as jest.Mock).mockReturnValue(false);
     mockSimulateTransaction.mockResolvedValue(fakeSimulation);
 
     await expect(ContractService.simulateContractRead({} as any)).rejects.toThrow(
@@ -118,8 +118,8 @@ describe("ContractService simulation failure logging", () => {
   it("does not log an error on successful simulation", async () => {
     const fakeSimulation = { result: { retval: {} }, events: [] };
 
-    (rpc.Api.isSimulationError as jest.Mock).mockReturnValue(false);
-    (rpc.Api.isSimulationSuccess as jest.Mock).mockReturnValue(true);
+    (rpc.Api.isSimulationError as unknown as jest.Mock).mockReturnValue(false);
+    (rpc.Api.isSimulationSuccess as unknown as jest.Mock).mockReturnValue(true);
     mockSimulateTransaction.mockResolvedValue(fakeSimulation);
 
     await ContractService.simulateContractRead({} as any);
