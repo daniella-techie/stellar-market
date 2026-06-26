@@ -14,7 +14,11 @@ const mockJobFindUnique = jest.fn();
 
 jest.mock("@prisma/client", () => ({
   PrismaClient: jest.fn().mockImplementation(() => ({
-    job: { findUnique: mockJobFindUnique },
+    // Use an arrow function so mockJobFindUnique is captured by reference (lazy
+    // evaluation at call-time, not at import-time) — avoids TDZ error because
+    // the outer `const mockJobFindUnique` declaration is hoisted above jest.mock
+    // but only initialized after the import phase completes.
+    job: { findUnique: (...args: any[]) => mockJobFindUnique(...args) },
   })),
 }));
 

@@ -29,7 +29,7 @@ export const errorHandler = (
   } else if (err instanceof ZodError) {
     code = ErrorCodes.VALIDATION_ERROR;
     statusCode = 400;
-    message = 'Validation Error';
+    message = 'Validation failed';
     details = err.issues.map(error => ({
       field: error.path.join('.'),
       message: error.message,
@@ -89,6 +89,7 @@ export const errorHandler = (
   res.status(statusCode).json({
     code,
     message,
+    error: message,
     requestId: req.requestId,
     ...(details && { details }),
   });
