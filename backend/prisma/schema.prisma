@@ -377,6 +377,8 @@ model Notification {
   title     String
   message   String
   read      Boolean          @default(false)
+  status    String           @default("pending") // "pending" | "sent" | "failed"
+  deliveredAt DateTime?
   metadata  Json?
   createdAt DateTime         @default(now())
 

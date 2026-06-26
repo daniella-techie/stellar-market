@@ -97,6 +97,27 @@ router.get(
 );
 
 /**
+ * GET /api/admin/notifications/failed
+ * List all failed notifications for manual re-trigger
+ */
+router.get(
+  "/notifications/failed",
+  async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+      const failed = await prisma.notification.findMany({
+        where: { status: "failed" },
+        orderBy: { createdAt: "desc" },
+        take: 50,
+      });
+      res.json({ failed });
+    } catch (error) {
+      console.error("Error fetching failed notifications:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  },
+);
+
+/**
  * PATCH /api/admin/users/:id/suspend
  * Suspend/unsuspend a user
  */
@@ -155,7 +176,7 @@ router.patch(
 
 /**
  * DELETE /api/admin/jobs/:id
- * Remove a fraudulent job listing (hard delete)
+ * Remove a job listing (soft-delete to preserve audit trail)
  */
 router.delete(
   "/jobs/:id",
@@ -169,8 +190,11 @@ router.delete(
         return;
       }
 
-      // Hard delete for admin (permanent removal)
-      await prisma.job.delete({ where: { id } });
+      // Soft-delete to preserve audit trail and related records
+      await prisma.job.update({
+        where: { id },
+        data: { deletedAt: new Date() },
+      });
 
       // Notify uploader
       if (job.clientId) {
