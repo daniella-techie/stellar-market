@@ -45,6 +45,7 @@ pub enum DisputeError {
     AlreadyAppealed = 20,
     AppealNotFound = 21,
     NonceReplay = 22,
+    DuplicateArbitrator = 23,
 }
 
 #[contracttype]
@@ -201,6 +202,7 @@ enum DataKey {
     Dispute(u64),
     DisputeCount,
     Votes(u64),
+    Voters(u64),
     LastDisputeClosedAt(u64),
     HasVoted(u64, Address),
     ReputationContract,
@@ -1015,6 +1017,20 @@ impl DisputeContract {
             }
         }
 
+        // Maintain Voters set
+        let mut voters: Vec<Address> = env
+            .storage()
+            .persistent()
+            .get(&DataKey::Voters(dispute_id))
+            .unwrap_or(Vec::new(&env));
+        if voters.contains(&voter) {
+            return Err(DisputeError::AlreadyVoted);
+        }
+        voters.push_back(voter.clone());
+        env.storage()
+            .persistent()
+            .set(&DataKey::Voters(dispute_id), &voters);
+
         // Record vote
         let vote = Vote {
             voter: voter.clone(),
@@ -1656,19 +1672,10 @@ impl DisputeContract {
 
     /// Get all arbitrators (voters) who have voted on a dispute.
     pub fn get_arbitrators(env: Env, dispute_id: u64) -> Vec<Address> {
-        let votes: Vec<Vote> = env
-            .storage()
+        env.storage()
             .persistent()
-            .get(&DataKey::Votes(dispute_id))
-            .unwrap_or(Vec::<Vote>::new(&env));
-
-        let mut arbitrators: Vec<Address> = Vec::new(&env);
-        for vote in votes.iter() {
-            if !arbitrators.contains(&vote.voter) {
-                arbitrators.push_back(vote.voter.clone());
-            }
-        }
-        arbitrators
+            .get(&DataKey::Voters(dispute_id))
+            .unwrap_or(Vec::<Address>::new(&env))
     }
 
     /// Get the assigned arbitrators for a dispute (those assigned via assign_arbitrators).
@@ -1853,16 +1860,18 @@ impl DisputeContract {
             .get(&DataKey::ArbitratorPool)
             .unwrap_or(Vec::new(&env));
 
-        if !pool.contains(&arbitrator) {
-            pool.push_back(arbitrator.clone());
-            env.storage().instance().set(&DataKey::ArbitratorPool, &pool);
-            bump_dispute_count_ttl(&env);
-
-            env.events().publish(
-                (symbol_short!("dispute"), symbol_short!("arb_added")),
-                (admin, arbitrator),
-            );
+        if pool.contains(&arbitrator) {
+            return Err(DisputeError::DuplicateArbitrator);
         }
+
+        pool.push_back(arbitrator.clone());
+        env.storage().instance().set(&DataKey::ArbitratorPool, &pool);
+        bump_dispute_count_ttl(&env);
+
+        env.events().publish(
+            (symbol_short!("dispute"), symbol_short!("arb_added")),
+            (admin, arbitrator),
+        );
 
         Ok(())
     }

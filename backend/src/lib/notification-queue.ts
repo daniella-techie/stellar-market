@@ -81,6 +81,34 @@ export function startNotificationWorker(
         return;
       }
 
+      // We need to try/catch external delivery here. If it fails, BullMQ handles retry.
+      // But we need to use `NotificationService` dynamically to avoid circular import.
+      // We pass the function in `startNotificationWorker` instead, but wait, `notificationQueue` is exported.
+      // Actually, we can just require it inline here.
+      const { NotificationService } = require("../services/notification.service");
+
+      try {
+        await NotificationService.deliverExternalNotification({
+          userId,
+          type: job.data.type,
+          title: job.data.title,
+          message: job.data.message,
+          metadata: job.data.metadata || {},
+        });
+        
+        await prisma.notification.update({
+          where: { id: notificationId },
+          data: { status: "sent", deliveredAt: new Date() },
+        });
+      } catch (error) {
+        // Update status to failed so it can be seen in the UI, but rethrow so BullMQ retries
+        await prisma.notification.update({
+          where: { id: notificationId },
+          data: { status: "failed" },
+        });
+        throw error;
+      }
+
       const isOnline = getSocketEmitter(userId);
       if (isOnline) {
         const notification = await prisma.notification.findUnique({

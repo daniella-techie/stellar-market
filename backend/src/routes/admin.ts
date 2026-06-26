@@ -97,6 +97,27 @@ router.get(
 );
 
 /**
+ * GET /api/admin/notifications/failed
+ * List all failed notifications for manual re-trigger
+ */
+router.get(
+  "/notifications/failed",
+  async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+      const failed = await prisma.notification.findMany({
+        where: { status: "failed" },
+        orderBy: { createdAt: "desc" },
+        take: 50,
+      });
+      res.json({ failed });
+    } catch (error) {
+      console.error("Error fetching failed notifications:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  },
+);
+
+/**
  * PATCH /api/admin/users/:id/suspend
  * Suspend/unsuspend a user
  */

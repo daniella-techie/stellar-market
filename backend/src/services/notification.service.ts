@@ -111,14 +111,6 @@ export class NotificationService {
       });
     });
 
-    void this.maybeSendEmailForNotification({
-      userId,
-      type,
-      title,
-      message,
-      metadata: metadata || {},
-    });
-
     const priority = getNotificationPriority(type);
     await notificationQueue.add(
       "send",
@@ -296,7 +288,7 @@ export class NotificationService {
     this.batches.clear();
   }
 
-  private static async maybeSendEmailForNotification(params: {
+  static async deliverExternalNotification(params: {
     userId: string;
     type: NotificationType;
     title: string;
@@ -363,21 +355,15 @@ export class NotificationService {
 
     if (!event) return;
 
-    try {
-      await EmailService.sendEventEmail({
-        to: email,
-        event,
-        title,
-        message,
-        outcome: metadata?.outcome,
-        actionUrl,
-      });
-    } catch (error) {
-      logger.error(
-        { err: error, userId, type },
-        "Failed to send notification email",
-      );
-    }
+    // Do not catch the error, let it propagate so the worker fails and retries
+    await EmailService.sendEventEmail({
+      to: email,
+      event,
+      title,
+      message,
+      outcome: metadata?.outcome,
+      actionUrl,
+    });
   }
 
   /**
