@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import axios from "axios";
 import type { DisputeEvidence, EvidenceVerification } from "@/types";
+import LocalTimestamp from "@/components/LocalTimestamp";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
@@ -307,7 +308,7 @@ export default function EvidenceViewer({
  
               <p className="text-[10px] text-theme-text-muted">
                 Uploaded{" "}
-                {new Date(item.uploadedAt).toLocaleString()}
+                <LocalTimestamp isoString={item.uploadedAt} />
                 {item.uploader && ` by ${item.uploader.username}`}
               </p>
             </li>

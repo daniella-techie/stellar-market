@@ -16,6 +16,7 @@ import {
 import StatusBadge from "@/components/StatusBadge";
 import type { Milestone } from "@/types";
 import { useOfflineStatus } from "@/hooks/useOfflineStatus";
+import { formatLocalTimestamp, formatUtcTimestamp } from "@/components/LocalTimestamp";
 
 const DRAFT_SAVE_DELAY_MS = 2000;
 
@@ -99,8 +100,13 @@ function formatDeadline(deadline: string | Date | null | undefined): string {
   } else if (diffDays <= 7) {
     return `Due in ${diffDays} days`;
   } else {
-    return date.toLocaleDateString();
+    return formatLocalTimestamp(String(deadline));
   }
+}
+
+function getDeadlineUtcTitle(deadline: string | Date | null | undefined): string | undefined {
+  if (!deadline) return undefined;
+  return formatUtcTimestamp(String(deadline));
 }
 
 function hasDraftContent(draft: MilestoneSubmissionDraft) {
@@ -444,6 +450,7 @@ export default function MilestoneTimeline({
                         </span>
                         {(milestone.contractDeadline) && (
                           <span
+                            title={getDeadlineUtcTitle(milestone.contractDeadline)}
                             className={`text-xs flex items-center gap-1 ${
                               milestoneOverdue &&
                               milestone.status !== "APPROVED"
