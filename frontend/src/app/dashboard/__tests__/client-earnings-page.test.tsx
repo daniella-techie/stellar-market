@@ -3,7 +3,10 @@ import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import axios from "axios";
 import ClientEarningsPage from "../client-earnings-page";
 
-jest.mock("axios");
+jest.mock("axios", () => ({
+  get: jest.fn(),
+  isAxiosError: jest.fn(),
+}));
 const mockedAxios = axios as jest.Mocked<typeof axios>;
 
 const mockPush = jest.fn();
@@ -89,7 +92,7 @@ describe("ClientEarningsPage", () => {
 
   it("shows an error message when the request fails with 403", async () => {
     mockedAxios.get.mockRejectedValue({ isAxiosError: true, response: { status: 403 } });
-    mockedAxios.isAxiosError = jest.fn().mockReturnValue(true) as any;
+    (mockedAxios.isAxiosError as jest.Mock).mockReturnValue(true);
 
     render(<ClientEarningsPage />);
 
