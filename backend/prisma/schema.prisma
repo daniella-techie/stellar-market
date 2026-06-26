@@ -377,6 +377,8 @@ model Notification {
   title     String
   message   String
   read      Boolean          @default(false)
+  status    String           @default("pending") // "pending" | "sent" | "failed"
+  deliveredAt DateTime?
   metadata  Json?
   createdAt DateTime         @default(now())
 
@@ -635,4 +637,26 @@ model PushSubscription {
   user User @relation("UserPushSubscriptions", fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+}
+
+model HorizonCursor {
+  id        Int      @id @default(1)
+  cursor    String
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("horizon_cursor")
+}
+
+model HorizonDlq {
+  id         Int       @id @default(autoincrement())
+  cursor     String
+  payload    Json
+  error      String
+  attempt    Int       @default(1)
+  createdAt  DateTime  @default(now()) @map("created_at")
+  replayedAt DateTime? @map("replayed_at")
+
+  @@index([replayedAt])
+  @@index([cursor])
+  @@map("horizon_dlq")
 }

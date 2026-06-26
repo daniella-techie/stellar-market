@@ -44,6 +44,8 @@ pub enum DisputeError {
     AppealWindowExpired = 19,
     AlreadyAppealed = 20,
     AppealNotFound = 21,
+    NonceReplay = 22,
+    DuplicateArbitrator = 23,
 }
 
 #[contracttype]
@@ -200,6 +202,7 @@ enum DataKey {
     Dispute(u64),
     DisputeCount,
     Votes(u64),
+    Voters(u64),
     LastDisputeClosedAt(u64),
     HasVoted(u64, Address),
     ReputationContract,
@@ -235,6 +238,10 @@ enum DataKey {
     AppealVotes(u64),
     /// Tracks whether a voter has already voted on a given appeal.
     HasVotedAppeal(u64, Address),
+    /// Per-caller nonce to prevent replay attacks within the TTL window.
+    Nonce(Address, Symbol, u64),
+    /// Stores the resolved split ratio for audit when a tie produces a 50/50 split.
+    SplitRatio(u64),
 }
 
 fn require_not_paused(env: &Env) -> Result<(), DisputeError> {
@@ -279,8 +286,20 @@ const APPEAL_WINDOW_SECS: u64 = 172_800; // 48 hours
 /// Minimum votes required to resolve an appeal.
 const APPEAL_MIN_VOTES: u32 = 3;
 
+const NONCE_EXPIRY_LEDGERS: u32 = 3;
+
 const MIN_TTL_THRESHOLD: u32 = 1_000;
 const MIN_TTL_EXTEND_TO: u32 = 10_000;
+
+fn consume_nonce(env: &Env, caller: &Address, function: &Symbol, nonce: u64) -> Result<(), DisputeError> {
+    let key = DataKey::Nonce(caller.clone(), function.clone(), nonce);
+    if env.storage().temporary().has(&key) {
+        return Err(DisputeError::NonceReplay);
+    }
+    env.storage().temporary().set(&key, &true);
+    env.storage().temporary().extend_ttl(&key, NONCE_EXPIRY_LEDGERS, NONCE_EXPIRY_LEDGERS);
+    Ok(())
+}
 
 fn bump_dispute_ttl(env: &Env, dispute_id: u64) {
     env.storage().persistent().extend_ttl(
@@ -920,6 +939,20 @@ impl DisputeContract {
             (count, job_id, initiator, client, freelancer, assigned_arbitrators),
         );
 
+        // Notify the escrow contract so it can transition the job to Disputed and emit
+        // a structured escrow-side DisputeRaised event that indexers can consume.
+        if let Some(escrow_contract) = env
+            .storage()
+            .instance()
+            .get::<DataKey, Address>(&DataKey::EscrowContract)
+        {
+            let _ = env.try_invoke_contract::<(), soroban_sdk::Error>(
+                &escrow_contract,
+                &Symbol::new(&env, "mark_job_disputed"),
+                vec![&env, job_id.into_val(&env), count.into_val(&env)],
+            );
+        }
+
         Ok(count)
     }
 
@@ -934,7 +967,9 @@ impl DisputeContract {
         voter: Address,
         choice: VoteChoice,
         reason: String,
+        nonce: u64,
     ) -> Result<(), DisputeError> {
+        consume_nonce(&env, &voter, &Symbol::new(&env, "cast_vote"), nonce)?;
         voter.require_auth();
         require_not_paused(&env)?;
 
@@ -995,6 +1030,20 @@ impl DisputeContract {
                 return Err(DisputeError::AlreadyVoted);
             }
         }
+
+        // Maintain Voters set
+        let mut voters: Vec<Address> = env
+            .storage()
+            .persistent()
+            .get(&DataKey::Voters(dispute_id))
+            .unwrap_or(Vec::new(&env));
+        if voters.contains(&voter) {
+            return Err(DisputeError::AlreadyVoted);
+        }
+        voters.push_back(voter.clone());
+        env.storage()
+            .persistent()
+            .set(&DataKey::Voters(dispute_id), &voters);
 
         // Record vote
         let vote = Vote {
@@ -1637,19 +1686,10 @@ impl DisputeContract {
 
     /// Get all arbitrators (voters) who have voted on a dispute.
     pub fn get_arbitrators(env: Env, dispute_id: u64) -> Vec<Address> {
-        let votes: Vec<Vote> = env
-            .storage()
+        env.storage()
             .persistent()
-            .get(&DataKey::Votes(dispute_id))
-            .unwrap_or(Vec::<Vote>::new(&env));
-
-        let mut arbitrators: Vec<Address> = Vec::new(&env);
-        for vote in votes.iter() {
-            if !arbitrators.contains(&vote.voter) {
-                arbitrators.push_back(vote.voter.clone());
-            }
-        }
-        arbitrators
+            .get(&DataKey::Voters(dispute_id))
+            .unwrap_or(Vec::<Address>::new(&env))
     }
 
     /// Get the assigned arbitrators for a dispute (those assigned via assign_arbitrators).
@@ -1834,16 +1874,18 @@ impl DisputeContract {
             .get(&DataKey::ArbitratorPool)
             .unwrap_or(Vec::new(&env));
 
-        if !pool.contains(&arbitrator) {
-            pool.push_back(arbitrator.clone());
-            env.storage().instance().set(&DataKey::ArbitratorPool, &pool);
-            bump_dispute_count_ttl(&env);
-
-            env.events().publish(
-                (symbol_short!("dispute"), symbol_short!("arb_added")),
-                (admin, arbitrator),
-            );
+        if pool.contains(&arbitrator) {
+            return Err(DisputeError::DuplicateArbitrator);
         }
+
+        pool.push_back(arbitrator.clone());
+        env.storage().instance().set(&DataKey::ArbitratorPool, &pool);
+        bump_dispute_count_ttl(&env);
+
+        env.events().publish(
+            (symbol_short!("dispute"), symbol_short!("arb_added")),
+            (admin, arbitrator),
+        );
 
         Ok(())
     }
@@ -2048,6 +2090,16 @@ fn internal_resolve(
     {
         let avg = dispute.refund_split_sum / dispute.votes_for_refund_split as u64;
         dispute.status = DisputeStatus::RefundSplit(avg as u32);
+    } else if dispute.tally.client_weight > 0
+        && dispute.tally.client_weight == dispute.tally.freelancer_weight
+    {
+        // Exact tie between client and freelancer — resolve as 50/50 split.
+        dispute.status = DisputeStatus::RefundSplit(50);
+
+        env.storage().persistent().set(
+            &DataKey::SplitRatio(dispute_id),
+            &(50u32, 50u32),
+        );
     } else {
         // Tie-break logic (applies if votes are tied OR if total_votes is 0 in force mode)
         match dispute.tie_break_method {

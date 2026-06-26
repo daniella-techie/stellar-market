@@ -291,8 +291,22 @@ router.get(
  */
 router.post(
   "/webhook",
+  // In a real app we'd parse rawBody. For now, assume req.body is what we sign.
   validate({ body: webhookPayloadSchema }),
   asyncHandler(async (req: Request, res: Response) => {
+    const signature = req.headers["x-stellar-signature"];
+    if (!signature || typeof signature !== "string") {
+      return res.status(401).json({ error: "Missing signature" });
+    }
+    const secret = process.env.WEBHOOK_SECRET || "default_secret";
+    const computedSignature = crypto
+      .createHmac("sha256", secret)
+      .update(JSON.stringify(req.body))
+      .digest("hex");
+      
+    if (signature.length !== computedSignature.length || !crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(computedSignature))) {
+      return res.status(401).json({ error: "Invalid signature" });
+    }
     const payload = req.body;
 
     const result = await DisputeService.processWebhook(payload);
@@ -352,7 +366,9 @@ router.post(
 
     if (!isEvidenceStorageConfigured()) {
       for (const f of files) fs.unlinkSync(f.path);
-      return res.status(503).json({ error: "Evidence S3 storage is not configured" });
+      return res
+        .status(503)
+        .json({ error: "Evidence S3 storage is not configured" });
     }
 
     for (let i = 0; i < files.length; i++) {
@@ -482,7 +498,9 @@ router.get(
       },
       include: {
         dispute: {
-          include: { votes: { where: { voterId: req.userId }, select: { id: true } } },
+          include: {
+            votes: { where: { voterId: req.userId }, select: { id: true } },
+          },
         },
       },
     });
@@ -510,7 +528,10 @@ router.get(
       });
       return res.redirect(302, url);
     } catch (error) {
-      if (error instanceof Error && error.message === "Evidence S3 storage is not configured") {
+      if (
+        error instanceof Error &&
+        error.message === "Evidence S3 storage is not configured"
+      ) {
         return res.status(503).json({ error: error.message });
       }
       throw error;
@@ -548,7 +569,9 @@ router.get(
       try {
         hash.update(await readEvidenceObject(attachment.filename));
       } catch {
-        return res.status(404).json({ error: "File not found in evidence storage" });
+        return res
+          .status(404)
+          .json({ error: "File not found in evidence storage" });
       }
     } else {
       // Legacy evidence uploaded before private S3 storage remains verifiable.
@@ -574,6 +597,76 @@ router.get(
       anchorTxHash: attachment.anchorTxHash,
       fileName: attachment.originalName,
     });
+  }),
+);
+
+/**
+ * GET /api/disputes/:id/tally
+ * Get current vote tally for a dispute
+ */
+router.get(
+  "/:id/tally",
+  authenticate,
+  validate({ params: disputeIdParamSchema }),
+  asyncHandler(async (req: AuthRequest, res: Response) => {
+    const disputeId = req.params.id as string;
+
+    const dispute = await prisma.dispute.findUnique({
+      where: { id: disputeId },
+      include: {
+        votes: {
+          include: {
+            voter: {
+              select: {
+                id: true,
+                username: true,
+                walletAddress: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!dispute) {
+      res.status(404).json({ error: "Dispute not found" });
+      return;
+    }
+
+    const totalVotes = dispute.votes.length;
+    const votesForClient = dispute.votes.filter(
+      (v) => v.choice === "CLIENT",
+    ).length;
+    const votesForFreelancer = dispute.votes.filter(
+      (v) => v.choice === "FREELANCER",
+    ).length;
+
+    const clientPercentage =
+      totalVotes > 0 ? (votesForClient / totalVotes) * 100 : 0;
+    const freelancerPercentage =
+      totalVotes > 0 ? (votesForFreelancer / totalVotes) * 100 : 0;
+
+    const tally = {
+      disputeId: dispute.id,
+      totalVotes,
+      votesForClient,
+      votesForFreelancer,
+      clientPercentage,
+      freelancerPercentage,
+      status: dispute.status,
+      // Only include individual votes if dispute is resolved
+      votes:
+        dispute.status === DisputeStatus.RESOLVED
+          ? dispute.votes.map((v) => ({
+              voterId: v.voter.id,
+              voterName: v.voter.username,
+              choice: v.choice,
+              timestamp: v.createdAt.toISOString(),
+            }))
+          : undefined,
+    };
+
+    res.json(tally);
   }),
 );
 

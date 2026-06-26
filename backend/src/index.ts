@@ -10,7 +10,9 @@ import { globalRateLimiter, writeRateLimiter } from "./middleware/rate-limit";
 import { sanitizeInput } from "./middleware/sanitize";
 import { errorHandler } from "./middleware/error";
 import { requestIdMiddleware } from "./middleware/request-id";
+import { requestTimeoutMiddleware } from "./middleware/timeout";
 import { initSocket } from "./socket";
+import { initYjsServer } from "./socket/yjsServer";
 import { startExpiryJob } from "./jobs/expiry.job";
 import { startPendingTxJob } from "./jobs/pending-tx.job";
 import { startEscrowTtlJob } from "./jobs/escrow-ttl.job";
@@ -34,10 +36,26 @@ import { swaggerUi, swaggerSpec } from "./config/swagger";
 const httpServer = createServer(app);
 const prisma = new PrismaClient();
 
+prisma.$use(async (params, next) => {
+  if (params.model === "Job") {
+    if (params.action === "findUnique" || params.action === "findFirst" || params.action === "findMany" || params.action === "count") {
+      if (!params.args) params.args = {};
+      const where = params.args.where || {};
+      if (where.deletedAt === undefined) {
+        where.deletedAt = null;
+        params.args.where = where;
+      }
+    }
+  }
+  return next(params);
+});
+
 installRequestIdConsolePatch();
 
 // Attach Socket.io
 initSocket(httpServer);
+// Attach Yjs WebSocket server (milestone negotiation rooms)
+initYjsServer(httpServer);
 
 const corsOptions: cors.CorsOptions = {
   origin: (origin, callback) => {
@@ -64,6 +82,7 @@ if (process.env.NODE_ENV !== "production") {
 app.use(cors(corsOptions));
 app.use(cookieParser());
 app.use(requestIdMiddleware);
+app.use(requestTimeoutMiddleware);
 app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: true, limit: "1mb" }));
 app.use(sanitizeInput);
@@ -111,8 +130,12 @@ app.use("/api", globalRateLimiter);
 app.use("/api", routes);
 
 // 404 handler
-app.use((_req, res) => {
-  res.status(404).json({ error: "Route not found." });
+app.use((req, res) => {
+  res.status(404).json({
+    code: "NOT_FOUND",
+    message: "Route not found.",
+    requestId: req.requestId,
+  });
 });
 
 // Error handler

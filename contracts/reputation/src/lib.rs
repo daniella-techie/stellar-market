@@ -1376,6 +1376,11 @@ impl ReputationContract {
             .get(&reviews_key)
             .unwrap_or(Vec::new(env));
 
+        // Extend TTL on read so that a frequently-read entry never silently expires.
+        if !reviews.is_empty() {
+            bump_reviews_ttl(env, &user);
+        }
+
         let review_count = reviews.len() as u32;
         let mut total_score = 0u64;
         let mut total_weight = 0u64;
@@ -1668,29 +1673,48 @@ impl ReputationContract {
         Ok(())
     }
 
-    /// Get the top N users by average rating. Returns a vector of (Address, average_rating)
-    /// tuples sorted by rating (highest first), up to top 50.
-    pub fn get_leaderboard(env: Env) -> Vec<(Address, u64)> {
+    /// Get a paginated list of top users by average rating.
+    pub fn get_leaderboard_page(env: Env, offset: u32, limit: u32) -> Vec<(Address, u64)> {
         let leaderboard_key = DataKey::Leaderboard;
         let leaderboard: Option<Vec<(Address, u64)>> =
             env.storage().instance().get(&leaderboard_key);
 
-        match leaderboard {
-            Some(list) => {
+        let list = match leaderboard {
+            Some(l) => {
                 env.storage()
                     .instance()
                     .extend_ttl(MIN_TTL_THRESHOLD, MIN_TTL_EXTEND_TO);
-                list
+                l
             }
-            None => Vec::new(&env),
+            None => return Vec::new(&env),
+        };
+
+        let total = list.len();
+        if offset >= total {
+            return Vec::new(&env);
         }
+
+        let actual_limit = if limit > 50 { 50 } else { limit };
+        let end = offset.saturating_add(actual_limit);
+        let end = if end > total { total } else { end };
+
+        let mut page = Vec::new(&env);
+        for i in offset..end {
+            page.push_back(list.get(i).unwrap());
+        }
+        page
+    }
+
+    /// Get the top N users by average rating. Returns a vector of (Address, average_rating)
+    /// tuples sorted by rating (highest first), up to top 50.
+    /// Deprecated: use get_leaderboard_page instead.
+    pub fn get_leaderboard(env: Env) -> Vec<(Address, u64)> {
+        Self::get_leaderboard_page(env, 0, 50)
     }
 
     /// Internal function to update the leaderboard after a review is submitted.
     /// Maintains a sorted list of top 50 users by average rating.
     fn update_leaderboard(env: &Env, reviewee: &Address) {
-        const TOP_N: u32 = 50;
-
         let avg_rating = match Self::get_average_rating(env.clone(), reviewee.clone()) {
             Ok(rating) => rating,
             Err(_) => return, // Skip if reputation not found
@@ -1726,13 +1750,8 @@ impl ReputationContract {
             pos += 1;
         }
 
-        if !inserted && leaderboard.len() < TOP_N {
+        if !inserted {
             leaderboard.push_back((reviewee.clone(), avg_rating));
-        }
-
-        // Truncate to top N
-        while leaderboard.len() > TOP_N {
-            leaderboard.pop_back();
         }
 
         env.storage().instance().set(&leaderboard_key, &leaderboard);

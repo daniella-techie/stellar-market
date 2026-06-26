@@ -14,6 +14,7 @@ import { asyncHandler } from "../middleware/error";
 import { avatarUpload } from "../config/upload";
 import { validate } from "../middleware/validation";
 import { ReputationService } from "../services/reputation.service";
+import { normalizeSkills } from "../services/skill.service";
 import { logger } from "../lib/logger";
 
 const router = Router();
@@ -88,6 +89,12 @@ router.put(
           res.status(409).json({ error: "Username is already taken." });
           return;
         }
+      }
+
+      // Normalise free-text skills against the canonical taxonomy so
+      // "ReactJS" / "react.js" collapse to one searchable value ("React").
+      if (data.skills) {
+        data.skills = await normalizeSkills(data.skills);
       }
 
       // Check email uniqueness if being updated

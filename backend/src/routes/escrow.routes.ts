@@ -6,6 +6,7 @@ import { asyncHandler } from "../middleware/error";
 import { ContractService, ContractSimulationError } from "../services/contract.service";
 import { NotificationService } from "../services/notification.service";
 import { config } from "../config";
+import { withUpstreamTimeout } from "../lib/upstream-timeout";
 import {
   invalidateCache,
   invalidateCacheKey,
@@ -129,12 +130,28 @@ router.post("/init-fund", authenticate, walletSourceGuard, asyncHandler(async (r
   // Pre-flight the parity check so an under-value or oracle failure is returned
   // as a structured 422 instead of letting the user sign a doomed transaction.
   if (agreedValueStroops > 0n) {
-    const sim = await ContractService.simulateFundJob(
-      job.client.walletAddress!,
-      job.contractJobId!,
-      agreedValueStroops,
-      effectiveSlippage,
-    );
+    let sim;
+    try {
+      sim = await withUpstreamTimeout(
+        () =>
+          ContractService.simulateFundJob(
+            job.client.walletAddress!,
+            job.contractJobId!,
+            agreedValueStroops,
+            effectiveSlippage,
+          ),
+        { route: "escrow.init-fund", target: "soroban-rpc.simulateTransaction", code: "OracleUnavailable" },
+      );
+    } catch (err) {
+      if (err instanceof Error && err.name === "UpstreamTimeoutError") {
+        return res.status(502).json({
+          error: "OracleUnavailable",
+          message: "The exchange-rate oracle is currently unavailable. Try again shortly.",
+        });
+      }
+      throw err;
+    }
+
     if (!sim.ok && sim.reason === "INSUFFICIENT_VALUE") {
       return res.status(422).json({
         error: "InsufficientValue",
@@ -640,7 +657,13 @@ router.get(
       return res.status(404).json({ error: "Job or escrow not found." });
     }
 
-    const ttlInfo = await ContractService.getEscrowTtl(job.contractJobId);
+    // asyncHandler forwards UpstreamTimeoutError to the global error handler,
+    // which responds 502 { error: "HorizonUnavailable" } on expiry.
+    const ttlInfo = await withUpstreamTimeout(
+      () => ContractService.getEscrowTtl(job.contractJobId as string),
+      { route: "escrow.ttl", target: "soroban-rpc.getLedgerEntries" },
+    );
+
     if (!ttlInfo) {
       return res.status(404).json({ error: "Escrow not found on-chain." });
     }

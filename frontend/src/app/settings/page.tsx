@@ -8,6 +8,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useWallet } from "@/context/WalletContext";
 import { useToast } from "@/components/Toast";
 import WalletAddress from "@/components/WalletAddress";
+import SkillCombobox from "@/components/SkillCombobox";
 import {
   User,
   Settings,
@@ -69,7 +70,6 @@ export default function SettingsPage() {
     user?.availability === false ? "unavailable" : "available"
   );
   const [skills, setSkills] = useState<string[]>(user?.skills ?? []);
-  const [newSkill, setNewSkill] = useState("");
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string>("");
   const [errors, setErrors] = useState<FormErrors>({});
@@ -372,28 +372,6 @@ export default function SettingsPage() {
     } finally {
       setIsUploadingAvatar(false);
     }
-  }
-
-  function addSkill() {
-    const trimmed = newSkill.trim();
-    if (!trimmed) return;
-
-    if (skills.includes(trimmed)) {
-      toast.error("Skill already added");
-      return;
-    }
-
-    if (skills.length >= 20) {
-      toast.error("Maximum 20 skills allowed");
-      return;
-    }
-
-    setSkills([...skills, trimmed]);
-    setNewSkill("");
-  }
-
-  function removeSkill(skill: string) {
-    setSkills(skills.filter((s) => s !== skill));
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -814,51 +792,9 @@ export default function SettingsPage() {
               <label className="block text-sm font-medium text-theme-heading mb-2">
                 Skills
               </label>
-              <div className="flex gap-2 mb-3">
-                <input
-                  type="text"
-                  value={newSkill}
-                  onChange={(e) => setNewSkill(e.target.value)}
-                  onKeyPress={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      addSkill();
-                    }
-                  }}
-                  className="input-field flex-1"
-                  placeholder="Add a skill (e.g., React, Node.js)"
-                  maxLength={50}
-                />
-                <button
-                  type="button"
-                  onClick={addSkill}
-                  className="btn-secondary flex items-center gap-2 text-sm"
-                >
-                  <Plus size={16} />
-                  Add
-                </button>
-              </div>
-              {skills.length > 0 ? (
-                <div className="flex flex-wrap gap-2">
-                  {skills.map((skill, idx) => (
-                    <span
-                      key={idx}
-                      className="px-3 py-1.5 bg-theme-card border border-theme-border rounded-full text-sm text-theme-text flex items-center gap-2"
-                    >
-                      {skill}
-                      <button
-                        type="button"
-                        onClick={() => removeSkill(skill)}
-                        className="text-theme-error hover:text-theme-error/80"
-                        aria-label={`Remove ${skill}`}
-                      >
-                        <X size={14} />
-                      </button>
-                    </span>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-theme-text text-sm">No skills added yet</p>
+              <SkillCombobox skills={skills} onChange={setSkills} />
+              {skills.length === 0 && (
+                <p className="text-theme-text text-sm mt-3">No skills added yet</p>
               )}
               {errors.skills && (
                 <p className="text-theme-error text-xs mt-1">{errors.skills}</p>
