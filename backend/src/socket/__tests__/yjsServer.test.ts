@@ -42,19 +42,30 @@ function connectWs(
     const ws = new WebSocket(url);
     let closeCode: number | null = null;
     let closeReason = "";
+    let timer: ReturnType<typeof setTimeout>;
+    let settled = false;
+
+    const settle = () => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      resolve({ ws, closeCode, closeReason });
+    };
 
     ws.on("open", () => {
-      resolve({ ws, closeCode, closeReason });
+      // Give the server 200 ms to close immediately-rejected connections
+      // before treating the connection as successfully open.
+      timer = setTimeout(settle, 200);
     });
 
     ws.on("close", (code, reason) => {
       closeCode = code;
       closeReason = reason.toString();
-      resolve({ ws, closeCode, closeReason });
+      settle();
     });
 
     ws.on("error", () => {
-      resolve({ ws, closeCode: closeCode ?? -1, closeReason });
+      settle();
     });
   });
 }

@@ -165,7 +165,7 @@ const ClientEarningsPage = () => {
                   dataKey="totalPaid"
                   fill="#2563EB"
                   cursor="pointer"
-                  onClick={(entry: FreelancerBreakdownEntry) => router.push(`/u/${entry.displayName}`)}
+                  onClick={(entry: any) => router.push(`/u/${(entry as FreelancerBreakdownEntry).displayName}`)}
                 />
               </BarChart>
             </ResponsiveContainer>

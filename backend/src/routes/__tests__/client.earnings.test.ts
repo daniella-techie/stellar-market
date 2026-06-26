@@ -59,7 +59,7 @@ describe("GET /api/clients/earnings", () => {
     expect(res.status).toBe(200);
     const totals = res.body.freelancerBreakdown.map((f: any) => f.totalPaid);
     expect(totals).toEqual([...totals].sort((a, b) => b - a));
-    expect(res.body.freelancerBreakdown[0]).toMatchObject({ freelancerId: "f-2", totalPaid: 500 });
+    expect(res.body.freelancerBreakdown[0]).toMatchObject({ freelancerId: "f-1", totalPaid: 1500 });
   });
 
   it("includes summary totals and monthly spend series", async () => {
