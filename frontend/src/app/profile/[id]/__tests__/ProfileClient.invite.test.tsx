@@ -3,6 +3,14 @@ import React from "react";
 import { render, screen, waitFor } from "@testing-library/react";
 import axios from "axios";
 import ProfileClient from "../ProfileClient";
+import { ToastProvider } from "@/components/Toast";
+
+const renderProfile = () =>
+  render(
+    <ToastProvider>
+      <ProfileClient />
+    </ToastProvider>,
+  );
 
 jest.mock("axios");
 const mockAxios = axios as jest.Mocked<typeof axios>;
@@ -57,7 +65,7 @@ beforeEach(() => {
 describe("ProfileClient — Invite to Job CTA", () => {
   it("shows the CTA when a client views a freelancer profile", async () => {
     mockCurrentUser = { id: "client-1", role: "CLIENT" };
-    render(<ProfileClient />);
+    renderProfile();
 
     await waitFor(() => expect(screen.getByText("alice")).toBeInTheDocument());
     expect(screen.getByRole("button", { name: /Invite to Job/i })).toBeInTheDocument();
@@ -65,7 +73,7 @@ describe("ProfileClient — Invite to Job CTA", () => {
 
   it("hides the CTA from a freelancer viewer", async () => {
     mockCurrentUser = { id: "freelancer-2", role: "FREELANCER" };
-    render(<ProfileClient />);
+    renderProfile();
 
     await waitFor(() => expect(screen.getByText("alice")).toBeInTheDocument());
     expect(screen.queryByRole("button", { name: /Invite to Job/i })).not.toBeInTheDocument();
@@ -73,7 +81,7 @@ describe("ProfileClient — Invite to Job CTA", () => {
 
   it("hides the CTA when the client views their own profile", async () => {
     mockCurrentUser = { id: "freelancer-1", role: "CLIENT" };
-    render(<ProfileClient />);
+    renderProfile();
 
     await waitFor(() => expect(screen.getByText("alice")).toBeInTheDocument());
     expect(screen.queryByRole("button", { name: /Invite to Job/i })).not.toBeInTheDocument();
