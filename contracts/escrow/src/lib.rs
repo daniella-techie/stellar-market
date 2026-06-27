@@ -61,7 +61,7 @@ pub enum EscrowError {
     /// The milestone list is empty.
     EmptyMilestones = 33,
     /// The number of milestones exceeds the permitted limit.
-    TooManyMilestones = 34,
+    TooManyMilestones = 48,
     /// The fee basis points exceed the maximum permitted limit.
     InvalidFee = 35,
     /// Proposal execution is time-locked and cannot be executed yet.
@@ -260,7 +260,7 @@ pub struct Job {
 }
 
 const MAX_FEE_BPS: u32 = 1000; // 10%
-const MAX_MILESTONES: u32 = 50;
+const MAX_MILESTONES: u32 = 20;
 
 /// A formal proposal to revise the milestones and total budget of an active job.
 #[contracttype]
