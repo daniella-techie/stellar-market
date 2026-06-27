@@ -21,6 +21,7 @@ import {
   stopHorizonListener,
 } from "./services/horizon-listener.service";
 import { installRequestIdConsolePatch, logger } from "./lib/logger";
+import { connectWithRetry } from "./lib/db-connect";
 import { getHealthStatus } from "./lib/health";
 import { RecommendationQueueService } from "./services/recommendation-queue.service";
 import { initializeVirusScanner } from "./utils/virusScanner";
@@ -185,7 +186,8 @@ app.use((req, res) => {
 // Error handler
 app.use(errorHandler);
 
-function startServer(): void {
+async function startServer(): Promise<void> {
+  await connectWithRetry(prisma);
   httpServer.listen(config.port, async () => {
     logger.info({ port: config.port }, "StellarMarket API running");
     startExpiryJob();
@@ -226,7 +228,10 @@ process.on("SIGTERM", () => void gracefulShutdown("SIGTERM"));
 process.on("SIGINT", () => void gracefulShutdown("SIGINT"));
 
 if (require.main === module) {
-  startServer();
+  startServer().catch((err) => {
+    logger.error({ err }, "Failed to start server");
+    process.exit(1);
+  });
 }
 
 export { app, httpServer, startServer };
