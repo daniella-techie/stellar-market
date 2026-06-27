@@ -1,28 +1,20 @@
 import type { PrismaClient } from "@prisma/client";
+import { rpc } from "@stellar/stellar-sdk";
 import RedisClient from "./redis";
-import { logger } from "./logger";
-import { getHorizonListenerHealth } from "../services/horizon-listener.service";
+import { config } from "../config";
 
-export type DependencyHealthStatus = "ok" | "error" | "degraded";
 export type DependencyHealthStatus = "ok" | "error";
-export type HorizonListenerStatus = "connected" | "degraded" | "down";
 
 export type HealthResponse = {
   status: "ok" | "degraded";
-  service: "stellarmarket-api";
   uptime: number;
+  version: string;
   checks: {
     database: DependencyHealthStatus;
     redis: DependencyHealthStatus;
-    horizonListener: DependencyHealthStatus;
+    sorobanRpc: DependencyHealthStatus;
   };
 };
-
-let horizonListenerHealthy = true;
-
-export function setHorizonListenerHealth(healthy: boolean): void {
-  horizonListenerHealthy = healthy;
-}
 
 export async function getHealthStatus(
   prisma: Pick<PrismaClient, "$queryRawUnsafe">,
@@ -30,14 +22,13 @@ export async function getHealthStatus(
   const checks: HealthResponse["checks"] = {
     database: "ok",
     redis: "ok",
-    horizonListener: horizonListenerHealthy ? "ok" : "degraded",
+    sorobanRpc: "ok",
   };
 
   try {
     await prisma.$queryRawUnsafe("SELECT 1");
-  } catch (error) {
+  } catch {
     checks.database = "error";
-    logger.error({ err: error }, "Health check database probe failed");
   }
 
   try {
@@ -45,19 +36,24 @@ export async function getHealthStatus(
       await RedisClient.connect();
     }
     await RedisClient.getInstance().ping();
-  } catch (error) {
+  } catch {
     checks.redis = "error";
-    logger.error({ err: error }, "Health check Redis probe failed");
   }
 
-  // Database and Redis are critical; Horizon listener is non-critical (degraded only)
+  try {
+    const server = new rpc.Server(config.stellar.rpcUrl);
+    await server.getHealth();
+  } catch {
+    checks.sorobanRpc = "error";
+  }
+
   const criticalHealthy =
     checks.database === "ok" && checks.redis === "ok";
 
   return {
     status: criticalHealthy ? "ok" : "degraded",
-    service: "stellarmarket-api",
     uptime: Math.floor(process.uptime()),
+    version: config.version,
     checks,
   };
 }

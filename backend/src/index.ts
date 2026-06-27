@@ -18,6 +18,7 @@ import {
 } from "./services/horizon-listener.service";
 import { installRequestIdConsolePatch, logger } from "./lib/logger";
 import { getHealthStatus } from "./lib/health";
+import { metricsHandler, requestDurationMiddleware } from "./lib/metrics";
 import { RecommendationQueueService } from "./services/recommendation-queue.service";
 import { initializeVirusScanner } from "./utils/virusScanner";
 
@@ -60,25 +61,15 @@ app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: true, limit: "1mb" }));
 app.use(sanitizeInput);
 
-// Health check
+// Health check and metrics (excluded from rate limiting and auth)
 app.get("/health", async (_req, res) => {
   const health = await getHealthStatus(prisma);
-  const httpStatus = health.checks.database === "error" || health.checks.redis === "error"
-    ? 503
-    : 200;
-  res.status(httpStatus).json(health);
+  res.status(health.status === "ok" ? 200 : 503).json(health);
 });
 
-// Database-only health probe (used by some platforms/LB checks)
-app.get("/health/db", async (_req, res) => {
-  try {
-    await prisma.$queryRawUnsafe("SELECT 1");
-    res.status(200).json({ status: "ok" });
-  } catch (error) {
-    logger.error({ err: error }, "Database health probe failed");
-    res.status(503).json({ status: "error" });
-  }
-});
+app.get("/metrics", metricsHandler);
+
+app.use(requestDurationMiddleware);
 
 // Rate limiting (route-specific auth limiters are applied in auth router)
 

@@ -17,13 +17,11 @@ import freelancerRoutes from "./freelancer.routes";
 import platformRoutes from "./platform.routes";
 import portfolioRoutes from "./portfolio.routes";
 import webhookRoutes from "./webhook.routes";
-import healthRoutes from "./health.routes";
 import referralRoutes from "./referral.routes";
 import reportRoutes from "./report.routes";
 
 const router = Router();
 
-router.use("/health", healthRoutes);
 router.use("/referrals", referralRoutes);
 router.use("/auth", authRoutes);
 router.use("/users", userRoutes);

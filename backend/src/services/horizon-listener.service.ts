@@ -3,7 +3,6 @@ import { PrismaClient, BadgeTier } from "@prisma/client";
 import { config } from "../config";
 import { NotificationService } from "./notification.service";
 import { logger } from "../lib/logger";
-import { setHorizonListenerHealth } from "../lib/health";
 import { CircuitBreaker } from "../lib/circuit-breaker";
 import type { CircuitBreakerStatus } from "../lib/circuit-breaker";
 
@@ -474,7 +473,6 @@ export function startHorizonListener(): void {
 
   if (contractIds.length === 0) {
     logger.info("[HorizonListener] No contract IDs configured — skipping");
-    setHorizonListenerHealth(false);
     return;
   }
 
@@ -484,15 +482,11 @@ export function startHorizonListener(): void {
   );
   logger.info({ contractIds }, "[HorizonListener] Watching contracts");
 
-  setHorizonListenerHealth(true);
-
   const runPoll = async () => {
     try {
       await poll();
-      setHorizonListenerHealth(true);
     } catch (err) {
       logger.error({ err }, "[HorizonListener] Poll error");
-      setHorizonListenerHealth(false);
     }
   };
 
@@ -504,7 +498,6 @@ export function stopHorizonListener(): void {
   if (intervalId) {
     clearInterval(intervalId);
     intervalId = null;
-    setHorizonListenerHealth(false);
     logger.info("[HorizonListener] Stopped");
   }
 }
