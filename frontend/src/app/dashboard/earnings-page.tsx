@@ -97,22 +97,32 @@ interface ReconcileResponse {
   }>;
 }
 
-type RangePreset = "this_month" | "last_3_months" | "this_year";
+type RangePreset = "last_7_days" | "last_30_days" | "last_3_months" | "this_year" | "all_time";
 
 const RANGE_PRESETS: { value: RangePreset; label: string }[] = [
-  { value: "this_month", label: "This month" },
+  { value: "last_7_days", label: "Last 7 days" },
+  { value: "last_30_days", label: "Last 30 days" },
   { value: "last_3_months", label: "Last 3 months" },
   { value: "this_year", label: "This year" },
+  { value: "all_time", label: "All time" },
 ];
 
-/** Resolve a preset to a concrete [from, to] ISO window. */
-function resolveRange(preset: RangePreset): { from: string; to: string } {
+const PRESET_STORAGE_KEY = "stellar_earnings_preset";
+
+/** Resolve a preset to a concrete [from, to] ISO window (null = unbounded). */
+function resolveRange(preset: RangePreset): { from: string | null; to: string | null } {
+  if (preset === "all_time") return { from: null, to: null };
   const now = new Date();
   const to = now.toISOString();
   let from: Date;
   switch (preset) {
-    case "this_month":
-      from = new Date(now.getFullYear(), now.getMonth(), 1);
+    case "last_7_days":
+      from = new Date(now);
+      from.setDate(from.getDate() - 7);
+      break;
+    case "last_30_days":
+      from = new Date(now);
+      from.setDate(from.getDate() - 30);
       break;
     case "last_3_months":
       from = new Date(now.getFullYear(), now.getMonth() - 3, 1);
@@ -121,7 +131,7 @@ function resolveRange(preset: RangePreset): { from: string; to: string } {
       from = new Date(now.getFullYear(), 0, 1);
       break;
   }
-  return { from: from.toISOString(), to };
+  return { from: from!.toISOString(), to };
 }
 
 const authHeader = () => ({
@@ -142,7 +152,13 @@ const EarningsPage = () => {
   const [reconcile, setReconcile] = useState<ReconcileResponse | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [preset, setPreset] = useState<RangePreset>("this_month");
+  const [preset, setPreset] = useState<RangePreset>(() => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem(PRESET_STORAGE_KEY) as RangePreset | null;
+      if (stored && RANGE_PRESETS.some((p) => p.value === stored)) return stored;
+    }
+    return "last_30_days";
+  });
   const [loading, setLoading] = useState(true);
   const [reconciling, setReconciling] = useState(false);
   const [exporting, setExporting] = useState(false);
@@ -161,12 +177,10 @@ const EarningsPage = () => {
     setError(null);
 
     try {
-      const params = new URLSearchParams({
-        page: currentPage.toString(),
-        limit: "10",
-        from: range.from,
-        to: range.to,
-      });
+      const rawParams: Record<string, string> = { page: currentPage.toString(), limit: "10" };
+      if (range.from) rawParams.from = range.from;
+      if (range.to) rawParams.to = range.to;
+      const params = new URLSearchParams(rawParams);
 
       const response = await axios.get<EarningsResponse>(
         `${API}/freelancers/earnings?${params.toString()}`,
@@ -193,7 +207,10 @@ const EarningsPage = () => {
     if (!user) return;
     setReconciling(true);
     try {
-      const params = new URLSearchParams({ from: range.from, to: range.to });
+      const rawReconcileParams: Record<string, string> = {};
+      if (range.from) rawReconcileParams.from = range.from;
+      if (range.to) rawReconcileParams.to = range.to;
+      const params = new URLSearchParams(rawReconcileParams);
       const response = await axios.get<ReconcileResponse>(
         `${API}/freelancers/earnings/reconcile?${params.toString()}`,
         { headers: authHeader() },
@@ -254,11 +271,10 @@ const EarningsPage = () => {
     setExporting(true);
     setError(null);
     try {
-      const params = new URLSearchParams({
-        from: range.from,
-        to: range.to,
-        format: "csv",
-      });
+      const rawExportParams: Record<string, string> = { format: "csv" };
+      if (range.from) rawExportParams.from = range.from;
+      if (range.to) rawExportParams.to = range.to;
+      const params = new URLSearchParams(rawExportParams);
       const response = await axios.get(
         `${API}/freelancers/earnings/export?${params.toString()}`,
         { headers: authHeader(), responseType: "blob" },
@@ -270,7 +286,7 @@ const EarningsPage = () => {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `earnings-${range.from.slice(0, 10)}-to-${range.to.slice(0, 10)}.csv`;
+      a.download = `earnings-${range.from ? range.from.slice(0, 10) : "all"}-to-${range.to ? range.to.slice(0, 10) : "now"}.csv`;
       a.click();
       URL.revokeObjectURL(url);
 
@@ -310,22 +326,27 @@ const EarningsPage = () => {
             export for taxes
           </p>
         </div>
-        <div className="flex items-center gap-2 self-start">
-          <label htmlFor="range-preset" className="sr-only">
-            Date range
-          </label>
-          <select
-            id="range-preset"
-            value={preset}
-            onChange={(e) => setPreset(e.target.value as RangePreset)}
-            className="btn-secondary px-3 py-2 text-sm"
-          >
+        <div className="flex flex-col gap-2 self-start">
+          <div className="flex flex-wrap gap-1.5" role="group" aria-label="Date range presets">
             {RANGE_PRESETS.map((p) => (
-              <option key={p.value} value={p.value}>
+              <button
+                key={p.value}
+                type="button"
+                data-testid={`preset-${p.value}`}
+                onClick={() => {
+                  setPreset(p.value);
+                  localStorage.setItem(PRESET_STORAGE_KEY, p.value);
+                }}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors border ${
+                  preset === p.value
+                    ? "bg-stellar-blue border-stellar-blue text-white"
+                    : "btn-secondary border-theme-border"
+                }`}
+              >
                 {p.label}
-              </option>
+              </button>
             ))}
-          </select>
+          </div>
           {!loading && !isNewAccount && (
             <button
               onClick={handleExportCSV}
