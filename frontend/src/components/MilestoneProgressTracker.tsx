@@ -3,6 +3,7 @@
 import { ArrowUpRight, AlertTriangle, CheckCircle2, Clock3, Circle } from "lucide-react";
 import Link from "next/link";
 import type { Milestone } from "@/types";
+import { formatLocalTimestamp, formatUtcTimestamp } from "@/components/LocalTimestamp";
 
 type TrackedMilestone = Milestone & {
   releaseTransactionHash?: string;
@@ -45,18 +46,14 @@ const statusMeta: Record<
   },
   PARTIALLY_PAID: {
     label: "Partially paid",
-    tone: "border-amber-500/30 bg-amber-500/10 text-amber-500",
+    tone: "border-theme-warning/30 bg-theme-warning/10 text-theme-warning",
     icon: ArrowUpRight,
   },
 };
 
 function formatDeadline(deadline?: string | null) {
   if (!deadline) return "No deadline";
-  return new Date(deadline).toLocaleDateString(undefined, {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
+  return formatLocalTimestamp(deadline);
 }
 
 export default function MilestoneProgressTracker({
@@ -72,7 +69,7 @@ export default function MilestoneProgressTracker({
     <section className="card overflow-hidden">
       <div className="mb-5 flex items-start justify-between gap-4">
         <div>
-          <p className="text-xs uppercase tracking-[0.24em] text-theme-text-muted">
+          <p className="text-xs uppercase tracking-wider text-theme-text">
             Milestone flow
           </p>
           <h2 className="mt-1 text-lg font-semibold text-theme-heading">
@@ -128,7 +125,10 @@ export default function MilestoneProgressTracker({
                       {milestone.contractDeadline && (
                         <>
                           {" "}
-                          · due {formatDeadline(milestone.contractDeadline)}
+                          ·{" "}
+                          <span title={formatUtcTimestamp(milestone.contractDeadline)}>
+                            due {formatDeadline(milestone.contractDeadline)}
+                          </span>
                         </>
                       )}
                     </div>

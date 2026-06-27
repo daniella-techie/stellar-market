@@ -73,6 +73,13 @@ enum TransactionType {
   DISPUTE_PAYOUT
 }
 
+enum TransactionStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  EXPIRED
+}
+
 enum NotificationType {
   JOB_APPLIED
   APPLICATION_ACCEPTED
@@ -84,6 +91,7 @@ enum NotificationType {
   DISPUTE_RESOLVED
   NEW_MESSAGE
   BADGE_AWARDED
+  ESCROW_TTL_WARNING
 }
 
 enum BadgeTier {
@@ -140,7 +148,8 @@ model User {
   transactionsFrom   Transaction[]  @relation("TransactionsFrom")
   transactionsTo     Transaction[]  @relation("TransactionsTo")
   attachments        Attachment[]
-  notifications      Notification[]
+  notifications        Notification[]
+  pendingNotifications PendingNotification[]
   auditLogs          AuditLog[]
   initiatedDisputes  Dispute[]      @relation("DisputeInitiated")
   clientDisputes     Dispute[]      @relation("DisputeClient")
@@ -152,6 +161,7 @@ model User {
   notificationPreference NotificationPreference?
   portfolioItems     PortfolioItem[]
   webhooks           Webhook[]
+  pushSubscriptions  PushSubscription[] @relation("UserPushSubscriptions")
 
   referralCode       String?   @unique
   referredById       String?
@@ -206,6 +216,7 @@ model Job {
   dispute      Dispute?
   savedBy      SavedJob[]    @relation("SavedByFreelancers")
   deadlineExtensionRequests DeadlineExtensionRequest[] @relation("DeadlineExtensions")
+  escrowEvents EscrowEvent[]
 
   @@index([deletedAt])
 }
@@ -303,27 +314,32 @@ model Review {
 }
 
 model Transaction {
-  id           String          @id @default(cuid())
-  jobId        String
-  milestoneId  String?
-  fromAddress  String
-  toAddress    String
-  amount       Float
-  tokenAddress String
-  txHash       String          @unique
-  type         TransactionType
-  createdAt    DateTime        @default(now())
+  id               String            @id @default(cuid())
+  jobId            String?
+  milestoneId      String?
+  fromAddress      String?
+  toAddress        String?
+  amount           Float?
+  tokenAddress     String?
+  txHash           String            @unique
+  type             TransactionType
+  status           TransactionStatus @default(PENDING)
+  maxLedger        Int?
+  confirmedLedger  Int?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
 
-  job       Job        @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  job       Job?       @relation(fields: [jobId], references: [id], onDelete: Cascade)
   milestone Milestone? @relation(fields: [milestoneId], references: [id], onDelete: SetNull)
-  from      User       @relation("TransactionsFrom", fields: [fromAddress], references: [walletAddress])
-  to        User       @relation("TransactionsTo", fields: [toAddress], references: [walletAddress])
+  from      User?      @relation("TransactionsFrom", fields: [fromAddress], references: [walletAddress])
+  to        User?      @relation("TransactionsTo", fields: [toAddress], references: [walletAddress])
 
   @@index([txHash])
   @@index([jobId])
   @@index([fromAddress])
   @@index([toAddress])
   @@index([type])
+  @@index([status])
   @@index([createdAt])
 }
 
@@ -338,6 +354,8 @@ model Attachment {
   mimeType     String
   size         Int
   url          String
+  sha256       String?
+  anchorTxHash String?
   createdAt    DateTime  @default(now())
 
   uploader  User       @relation(fields: [uploaderId], references: [id], onDelete: Cascade)
@@ -359,12 +377,29 @@ model Notification {
   title     String
   message   String
   read      Boolean          @default(false)
+  status    String           @default("pending") // "pending" | "sent" | "failed"
+  deliveredAt DateTime?
   metadata  Json?
   createdAt DateTime         @default(now())
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user                User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pendingNotification PendingNotification?
 
   @@index([userId, createdAt(sort: Desc)])
+}
+
+model PendingNotification {
+  id             String       @id @default(cuid())
+  userId         String
+  notificationId String       @unique
+  priority       Int          @default(3)
+  deliveredAt    DateTime?
+  createdAt      DateTime     @default(now())
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  notification Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+
+  @@index([userId, deliveredAt, priority])
 }
 
 model AuditLog {
@@ -563,4 +598,75 @@ model WebhookDelivery {
   @@index([webhookId])
   @@index([status])
   @@index([nextRetry])
+}
+
+enum EscrowEventType {
+  JOB_CREATED
+  JOB_FUNDED
+  PAYMENT_RELEASED
+  DISPUTE_OPENED
+  DISPUTE_RESOLVED
+  REFUNDED
+  EXPIRED
+}
+
+model EscrowEvent {
+  id            String          @id @default(cuid())
+  jobId         String
+  contractJobId String
+  eventType     EscrowEventType
+  ledgerSeq     Int
+  txHash        String
+  payload       Json
+  processedAt   DateTime        @default(now())
+
+  job           Job             @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@unique([contractJobId, eventType, ledgerSeq])
+  @@index([jobId, ledgerSeq])
+}
+
+model PushSubscription {
+  id         String   @id @default(cuid())
+  userId     String
+  endpoint   String   @unique
+  p256dh     String
+  auth       String
+  createdAt  DateTime @default(now())
+
+  user User @relation("UserPushSubscriptions", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model HorizonCursor {
+  id        Int      @id @default(1)
+  cursor    String
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("horizon_cursor")
+}
+
+model HorizonDlq {
+  id         Int       @id @default(autoincrement())
+  cursor     String
+  payload    Json
+  error      String
+  attempt    Int       @default(1)
+  createdAt  DateTime  @default(now()) @map("created_at")
+  replayedAt DateTime? @map("replayed_at")
+
+  @@index([replayedAt])
+  @@index([cursor])
+  @@map("horizon_dlq")
+}
+
+model Skill {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  category  String?
+  aliases   String[]
+  createdAt DateTime @default(now())
+
+  @@index([name])
 }

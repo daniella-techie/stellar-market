@@ -8,6 +8,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useWallet } from "@/context/WalletContext";
 import { useToast } from "@/components/Toast";
 import WalletAddress from "@/components/WalletAddress";
+import SkillCombobox from "@/components/SkillCombobox";
 import {
   User,
   Settings,
@@ -48,8 +49,8 @@ interface FormErrors {
 }
 
 export default function SettingsPage() {
-  const { user, token, isLoading: authLoading, updateUser } = useAuth();
-  const { address, connect, signMessage, isConnecting } = useWallet();
+  const { user, token, isLoading: authLoading, updateUser, refreshUser } = useAuth();
+  const { address, connect, bindWallet, isConnecting } = useWallet();
   const { toast } = useToast();
   const router = useRouter();
 
@@ -65,8 +66,10 @@ export default function SettingsPage() {
   const [role, setRole] = useState<"CLIENT" | "FREELANCER">(
     user?.role === "CLIENT" || user?.role === "FREELANCER" ? user.role : "FREELANCER",
   );
+  const [availabilityStatus, setAvailabilityStatus] = useState<"available" | "busy" | "unavailable">(
+    user?.availability === false ? "unavailable" : "available"
+  );
   const [skills, setSkills] = useState<string[]>(user?.skills ?? []);
-  const [newSkill, setNewSkill] = useState("");
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string>("");
   const [errors, setErrors] = useState<FormErrors>({});
@@ -124,6 +127,7 @@ export default function SettingsPage() {
         setRole(data.role ?? "FREELANCER");
         setSkills(data.skills ?? []);
         setTwoFAEnabled(data.twoFactorEnabled ?? false);
+        setAvailabilityStatus(data.availability === false ? "unavailable" : "available");
         updateUser({
           walletAddress: data.walletAddress ?? null,
           email: data.email ?? undefined,
@@ -370,28 +374,6 @@ export default function SettingsPage() {
     }
   }
 
-  function addSkill() {
-    const trimmed = newSkill.trim();
-    if (!trimmed) return;
-
-    if (skills.includes(trimmed)) {
-      toast.error("Skill already added");
-      return;
-    }
-
-    if (skills.length >= 20) {
-      toast.error("Maximum 20 skills allowed");
-      return;
-    }
-
-    setSkills([...skills, trimmed]);
-    setNewSkill("");
-  }
-
-  function removeSkill(skill: string) {
-    setSkills(skills.filter((s) => s !== skill));
-  }
-
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!validate()) return;
@@ -404,6 +386,7 @@ export default function SettingsPage() {
         username,
         role,
         skills,
+        availability: availabilityStatus !== "unavailable",
       };
       if (email) payload.email = email;
       else payload.email = null;
@@ -515,25 +498,32 @@ export default function SettingsPage() {
     if (!token || !user) return;
     setWalletLoading(true);
     try {
-      let publicKey = address;
-      if (!publicKey) {
-        publicKey = await connect();
+      // Ensure a wallet is connected before starting the challenge flow
+      if (!address) {
+        const connected = await connect();
+        if (!connected) {
+          toast.error("Select a wallet to link.");
+          return;
+        }
       }
-      if (!publicKey) {
-        toast.error("Select a wallet to link.");
+
+      // Challenge-response: fetch nonce → sign with wallet → verify on server
+      const result = await bindWallet(token);
+      if (!result.success) {
+        toast.error(result.error ?? "Failed to link wallet.");
         return;
       }
-      const message = `Link Stellar wallet ${publicKey} to StellarMarket account ${user.id} at ${Date.now()}`;
-      const signature = await signMessage(message);
-      const res = await axios.post(
-        `${API_URL}/auth/wallet/link`,
-        { publicKey, message, signature },
-        { headers: { Authorization: `Bearer ${token}` } },
-      );
-      updateUser(res.data.user);
+
+      // Store the refreshed JWT (now carries a verified walletAddress claim)
+      if (result.token) {
+        localStorage.setItem("stellarmarket_jwt", result.token);
+      }
+
+      // Sync user state so the UI reflects the newly bound address
+      await refreshUser();
       toast.success("Wallet linked.");
     } catch (error: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
-      toast.error(error.response?.data?.error || error.message || "Failed to link wallet.");
+      toast.error(error?.message ?? "Failed to link wallet.");
     } finally {
       setWalletLoading(false);
     }
@@ -802,51 +792,9 @@ export default function SettingsPage() {
               <label className="block text-sm font-medium text-theme-heading mb-2">
                 Skills
               </label>
-              <div className="flex gap-2 mb-3">
-                <input
-                  type="text"
-                  value={newSkill}
-                  onChange={(e) => setNewSkill(e.target.value)}
-                  onKeyPress={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      addSkill();
-                    }
-                  }}
-                  className="input-field flex-1"
-                  placeholder="Add a skill (e.g., React, Node.js)"
-                  maxLength={50}
-                />
-                <button
-                  type="button"
-                  onClick={addSkill}
-                  className="btn-secondary flex items-center gap-2 text-sm"
-                >
-                  <Plus size={16} />
-                  Add
-                </button>
-              </div>
-              {skills.length > 0 ? (
-                <div className="flex flex-wrap gap-2">
-                  {skills.map((skill, idx) => (
-                    <span
-                      key={idx}
-                      className="px-3 py-1.5 bg-theme-card border border-theme-border rounded-full text-sm text-theme-text flex items-center gap-2"
-                    >
-                      {skill}
-                      <button
-                        type="button"
-                        onClick={() => removeSkill(skill)}
-                        className="text-theme-error hover:text-theme-error/80"
-                        aria-label={`Remove ${skill}`}
-                      >
-                        <X size={14} />
-                      </button>
-                    </span>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-theme-text text-sm">No skills added yet</p>
+              <SkillCombobox skills={skills} onChange={setSkills} />
+              {skills.length === 0 && (
+                <p className="text-theme-text text-sm mt-3">No skills added yet</p>
               )}
               {errors.skills && (
                 <p className="text-theme-error text-xs mt-1">{errors.skills}</p>
@@ -885,6 +833,42 @@ export default function SettingsPage() {
                 </button>
               </div>
             </div>
+
+            {/* Availability Status (freelancers only) */}
+            {role === "FREELANCER" && (
+              <div>
+                <label className="block text-sm font-medium text-theme-heading mb-3">
+                  Availability Status
+                </label>
+                <div className="flex gap-3">
+                  {(["available", "busy", "unavailable"] as const).map((status) => {
+                    const config = {
+                      available: { label: "Available", active: "bg-green-500/20 border-green-500 text-green-600 dark:text-green-400" },
+                      busy: { label: "Busy", active: "bg-amber-400/20 border-amber-400 text-amber-600 dark:text-amber-400" },
+                      unavailable: { label: "Unavailable", active: "bg-gray-400/20 border-gray-400 text-gray-500" },
+                    }[status];
+                    return (
+                      <button
+                        key={status}
+                        type="button"
+                        onClick={() => setAvailabilityStatus(status)}
+                        className={`flex-1 py-3 px-4 rounded-lg border text-sm font-medium transition-colors ${
+                          availabilityStatus === status
+                            ? config.active
+                            : "bg-theme-card border-theme-border text-theme-text hover:border-theme-text"
+                        }`}
+                        aria-pressed={availabilityStatus === status}
+                      >
+                        {config.label}
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="text-xs text-theme-text mt-2">
+                  Clients can see your availability status on your profile and job applications.
+                </p>
+              </div>
+            )}
 
             {/* Submit */}
             <div className="flex justify-end pt-2">
@@ -952,7 +936,7 @@ export default function SettingsPage() {
                       type="button"
                       onClick={handleUnlinkWallet}
                       disabled={walletLoading}
-                      className="w-fit rounded-lg border border-red-600/50 px-3 py-2 text-sm text-red-400 hover:bg-red-900/20 disabled:opacity-60"
+                      className="w-fit rounded-lg border border-theme-error/50 px-3 py-2 text-sm text-theme-error hover:bg-theme-error/10 disabled:opacity-60"
                     >
                       {walletLoading ? "Updating..." : "Unlink"}
                     </button>
@@ -972,8 +956,8 @@ export default function SettingsPage() {
             </div>
 
             {recoveryCodesPending && recoveryCodesPending.length > 0 ? (
-              <div className="space-y-4 rounded-lg border border-amber-600/40 bg-amber-950/30 p-4">
-                <p className="text-amber-200 text-sm font-medium">
+              <div className="space-y-4 rounded-lg border border-theme-warning/40 bg-theme-warning/10 p-4">
+                <p className="text-theme-warning text-sm font-medium">
                   Save these recovery codes now. Each code works once instead of your authenticator at login. They will not be shown again.
                 </p>
                 <div className="flex items-center justify-between gap-2">
@@ -1007,9 +991,9 @@ export default function SettingsPage() {
               </div>
             ) : twoFAEnabled && !twoFASetupData ? (
               <div className="space-y-4">
-                <div className="flex items-center gap-3 p-4 bg-green-900/20 border border-green-700/30 rounded-lg">
-                  <ShieldCheck size={20} className="text-green-400" />
-                  <p className="text-green-300 text-sm">Two-factor authentication is enabled.</p>
+                <div className="flex items-center gap-3 p-4 bg-theme-success/10 border border-theme-success/30 rounded-lg">
+                  <ShieldCheck size={20} className="text-theme-success" />
+                  <p className="text-theme-success text-sm">Two-factor authentication is enabled.</p>
                 </div>
 
                 {showRegenerateModal ? (
@@ -1060,7 +1044,7 @@ export default function SettingsPage() {
                       <button
                         type="submit"
                         disabled={twoFALoading}
-                        className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+                        className="flex items-center gap-2 px-4 py-2 bg-theme-error hover:bg-theme-error/80 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
                       >
                         {twoFALoading ? <Loader2 size={14} className="animate-spin" /> : <ShieldOff size={14} />}
                         Confirm Disable
@@ -1087,7 +1071,7 @@ export default function SettingsPage() {
                     <button
                       type="button"
                       onClick={() => setShowDisableModal(true)}
-                      className="flex items-center gap-2 px-4 py-2 border border-red-600/50 text-red-400 rounded-lg text-sm hover:bg-red-900/20 transition-colors"
+                      className="flex items-center gap-2 px-4 py-2 border border-theme-error/50 text-theme-error rounded-lg text-sm hover:bg-theme-error/10 transition-colors"
                     >
                       <ShieldOff size={14} />
                       Disable 2FA
@@ -1298,7 +1282,7 @@ export default function SettingsPage() {
                           <button
                             type="button"
                             onClick={() => handlePortfolioDelete(item.id)}
-                            className="p-1.5 text-theme-text hover:text-red-400 transition-colors rounded"
+                            className="p-1.5 text-theme-text hover:text-theme-error transition-colors rounded"
                             title="Delete"
                           >
                             <Trash2 size={15} />

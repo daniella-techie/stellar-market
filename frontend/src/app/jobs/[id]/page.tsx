@@ -20,9 +20,10 @@ async function getJob(id: string) {
 export async function generateMetadata({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }): Promise<Metadata> {
-  const job = await getJob(params.id);
+  const { id } = await params;
+  const job = await getJob(id);
   if (!job) {
     return {
       title: "Job Not Found | StellarMarket",
@@ -33,7 +34,7 @@ export async function generateMetadata({
   return generateJobMetadata({
     title: job.title,
     description: job.description || "Check out this job on StellarMarket",
-    id: params.id,
+    id,
   });
 }
 

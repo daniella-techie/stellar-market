@@ -85,7 +85,7 @@ export function generateProfileMetadata(profile: {
   const description = profile.bio.length > 160 
     ? `${profile.bio.substring(0, 157)}...` 
     : profile.bio;
-  const canonical = new URL(`/profile/${profile.username}`, siteUrl).toString();
+  const canonical = new URL(`/u/${profile.username}`, siteUrl).toString();
   
   return generateSEOMetadata({
     title,

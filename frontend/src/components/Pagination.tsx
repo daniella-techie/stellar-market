@@ -30,6 +30,7 @@ export default function Pagination({ page, totalPages, total, limit, onPageChang
           }}
           disabled={page <= 1}
           className="p-2 rounded-lg border border-theme-border text-theme-text hover:border-stellar-blue disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          aria-label="Previous page"
         >
           <ChevronLeft size={18} />
         </button>
@@ -44,6 +45,7 @@ export default function Pagination({ page, totalPages, total, limit, onPageChang
           }}
           disabled={page >= totalPages}
           className="p-2 rounded-lg border border-theme-border text-theme-text hover:border-stellar-blue disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          aria-label="Next page"
         >
           <ChevronRight size={18} />
         </button>

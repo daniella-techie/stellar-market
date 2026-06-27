@@ -19,11 +19,12 @@ async function getProfile(id: string) {
 export async function generateMetadata({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }): Promise<Metadata> {
-  const profile = await getProfile(params.id);
+  const { id } = await params;
+  const profile = await getProfile(id);
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://stellarmarket.io";
-  const canonical = `${baseUrl}/profile/${params.id}`;
+  const canonical = `${baseUrl}/profile/${id}`;
 
   if (!profile) {
     return {

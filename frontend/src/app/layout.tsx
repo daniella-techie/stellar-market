@@ -3,6 +3,9 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import EmailVerificationBanner from "@/components/EmailVerificationBanner";
+import OfflineBanner from "@/components/OfflineBanner";
+import PushNotificationPrompt from "@/components/PushNotificationPrompt";
+import MobileNavigation from "@/components/MobileNavigation";
 import Footer from "@/components/Footer";
 import Providers from "./providers";
 
@@ -68,10 +71,13 @@ export default function RootLayout({
               (function() {
                 try {
                   var savedTheme = localStorage.getItem('stellar-market-theme');
-                  var supportDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                  if (!savedTheme && supportDarkMode) savedTheme = 'dark';
-                  if (!savedTheme) savedTheme = 'light';
+                  if (!savedTheme) {
+                    var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                    savedTheme = prefersDark ? 'dark' : 'light';
+                  }
                   document.documentElement.setAttribute('data-theme', savedTheme);
+                  if (savedTheme === 'dark') document.documentElement.classList.add('dark');
+                  else document.documentElement.classList.remove('dark');
                 } catch (e) {}
               })();
             `,
@@ -80,10 +86,19 @@ export default function RootLayout({
       </head>
       <body className={inter.className}>
         <Providers>
+          <a
+            href="#main-content"
+            className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[100] focus:px-4 focus:py-2 focus:bg-stellar-blue focus:text-white focus:rounded-lg focus:outline-none"
+          >
+            Skip to main content
+          </a>
           <Navbar />
           <EmailVerificationBanner />
-          <main className="min-h-screen">{children}</main>
+          <OfflineBanner />
+          <main id="main-content" className="min-h-screen pb-16 md:pb-0">{children}</main>
           <Footer />
+          <MobileNavigation />
+          <PushNotificationPrompt />
         </Providers>
       </body>
     </html>

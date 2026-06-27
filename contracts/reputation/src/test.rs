@@ -1,9 +1,7 @@
-#![cfg(test)]
-
 use super::*;
 use soroban_sdk::{
-    testutils::{Address as _, Ledger},
-    vec, Env, String,
+    testutils::{Address as _, Events as _, Ledger},
+    vec, Env, String, Symbol, TryFromVal,
 };
 use stellar_market_escrow::EscrowContract;
 
@@ -36,6 +34,7 @@ fn setup_completed_job(
         env,
         (String::from_str(env, "Task"), 100_i128, 9999999999u64),
     ];
+    let expiry = env.ledger().sequence() + 518_400;
     let job_id = escrow_client.create_job(
         client,
         freelancer,
@@ -43,10 +42,11 @@ fn setup_completed_job(
         &milestones,
         &9999999999u64,
         &86400u64,
+        &expiry,
     );
 
     // Fund the job
-    escrow_client.fund_job(&job_id, client);
+    escrow_client.fund_job(&job_id, client, &0, &0);
 
     // Mark the job as completed using the dispute resolution callback
     escrow_client.resolve_dispute_callback(&job_id, &stellar_market_escrow::DisputeResolution::FreelancerWins);
@@ -69,6 +69,7 @@ fn setup_in_progress_job(
         env,
         (String::from_str(env, "Task"), 100_i128, 9999999999u64),
     ];
+    let expiry = env.ledger().sequence() + 518_400;
     let job_id = escrow_client.create_job(
         client,
         freelancer,
@@ -76,10 +77,11 @@ fn setup_in_progress_job(
         &milestones,
         &9999999999u64,
         &86400u64,
+        &expiry,
     );
 
     // Fund the job to move it to Funded status
-    escrow_client.fund_job(&job_id, client);
+    escrow_client.fund_job(&job_id, client, &0, &0);
 }
 
 fn create_token(env: &Env, admin: &Address) -> Address {
@@ -836,7 +838,6 @@ fn test_get_reputation_with_decay() {
     // Initialize with 50% decay per year
     let admin = Address::generate(&env);
     reputation_client.initialize(&vec![&env, admin.clone()], &1u32, &50);
-    reputation_client.set_token(&admin, &Address::generate(&env)); // Needs a token set for transfers
 
     let reviewer = Address::generate(&env);
     let reviewee = Address::generate(&env);
@@ -844,8 +845,8 @@ fn test_get_reputation_with_decay() {
     let token_addr = create_token(&env, &token_admin);
     mint(&env, &token_addr, &token_admin, &reviewer, 100_000_000);
 
-    // Set token in reputation contract to match the job token
-    reputation_client.set_token(&admin, &token_addr);
+    // Configure the token used for stake transfers via admin action.
+    reputation_client.propose_admin_action(&admin, &AdminAction::SetToken(token_addr.clone()));
 
     setup_completed_job(&env, &escrow_id, 1u64, &reviewer, &reviewee, &token_addr);
 
@@ -1100,10 +1101,12 @@ fn test_decay_uses_timestamp_instead_of_ledger_sequence() {
         &MIN_STAKE,
     );
 
+    // Advance timestamp to 6 months; keep sequence small so entries are not archived.
+    // (The test verifies that decay is driven by timestamp, not ledger sequence.)
     env.ledger().set(soroban_sdk::testutils::LedgerInfo {
         timestamp: ONE_YEAR_IN_SECONDS / 2,
         protocol_version: 20,
-        sequence_number: 5_000_000,
+        sequence_number: 200,
         network_id: [0; 32],
         base_reserve: 10,
         min_temp_entry_ttl: 10,
@@ -1117,6 +1120,7 @@ fn test_decay_uses_timestamp_instead_of_ledger_sequence() {
     assert_eq!(rep.total_weight, expected_weight);
     assert_eq!(rep.total_score, 4 * expected_weight);
 
+    // Same timestamp, very different sequence number — result must be identical.
     env.ledger().set(soroban_sdk::testutils::LedgerInfo {
         timestamp: ONE_YEAR_IN_SECONDS / 2,
         protocol_version: 20,
@@ -1147,9 +1151,9 @@ fn test_get_set_min_stake() {
     // Default min stake
     assert_eq!(reputation_client.get_min_stake(), MIN_STAKE);
 
-    // Update min stake
+    // Update min stake via admin action
     let new_stake = 20_000_000_i128;
-    reputation_client.set_min_stake(&admin, &new_stake);
+    reputation_client.propose_admin_action(&admin, &AdminAction::SetMinStake(new_stake));
     assert_eq!(reputation_client.get_min_stake(), new_stake);
 }
 
@@ -1469,15 +1473,22 @@ fn test_reputation_multisig_flow() {
     let signers = vec![&env, signer1.clone(), signer2.clone()];
     
     client.initialize(&signers, &2, &0);
-    
-    // Propose pause
+
+    // Propose pause — needs 2-of-2 approval so contract is not yet paused.
     let prop_id = client.propose_admin_action(&signer1, &AdminAction::Pause);
     assert_eq!(prop_id, 1);
-    assert_eq!(client.is_paused(), false);
-    
-    // Approve
+    // Not yet executed — still should allow actions
+    client.propose_admin_action(&signer1, &AdminAction::Unpause); // sanity check: can propose while active
+
+    // Approve — crosses threshold, executes the Pause
     client.approve_admin_action(&signer2, &prop_id);
-    assert_eq!(client.is_paused(), true);
+    // Paused: submitting a noop endorse should now fail
+    let endorse_result = client.try_endorse(
+        &signer1,
+        &Address::generate(&env),
+        &String::from_str(&env, "Rust"),
+    );
+    assert!(endorse_result.is_err());
 }
 
 #[test]
@@ -1498,7 +1509,837 @@ fn test_reputation_slash_stake_multisig() {
     
     // Should be executed immediately (threshold 1)
     let rep = client.get_reputation(&loser);
-    // Since we started with 0, saturating_sub(100) is 0. 
+    // Since we started with 0, saturating_sub(100) is 0.
     // Actually, let's just check the event if we could, but assert_eq(0, 0) is trivial.
     // Let's at least check that it didn't fail.
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// #535 — Skill Endorsement System Tests
+// ─────────────────────────────────────────────────────────────────────────────
+
+#[test]
+fn test_endorse_success() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let reputation_id = env.register_contract(None, ReputationContract);
+    let client = ReputationContractClient::new(&env, &reputation_id);
+    let admin = Address::generate(&env);
+    client.initialize(&vec![&env, admin.clone()], &1u32, &0u32);
+
+    let endorser = Address::generate(&env);
+    let target = Address::generate(&env);
+    let skill = String::from_str(&env, "Rust");
+
+    assert_eq!(client.get_skill_score(&target, &skill), 0);
+    client.endorse(&endorser, &target, &skill);
+    // endorser has 0 avg_rating → fallback weight 1
+    assert_eq!(client.get_skill_score(&target, &skill), 1);
+}
+
+#[test]
+#[should_panic(expected = "Error(Contract, #23)")]
+fn test_endorse_duplicate_rejected() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let reputation_id = env.register_contract(None, ReputationContract);
+    let client = ReputationContractClient::new(&env, &reputation_id);
+    let admin = Address::generate(&env);
+    client.initialize(&vec![&env, admin.clone()], &1u32, &0u32);
+
+    let endorser = Address::generate(&env);
+    let target = Address::generate(&env);
+    let skill = String::from_str(&env, "Smart Contracts");
+
+    client.endorse(&endorser, &target, &skill);
+    client.endorse(&endorser, &target, &skill); // AlreadyEndorsed #23
+}
+
+#[test]
+fn test_endorse_different_skills_same_endorser_allowed() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let reputation_id = env.register_contract(None, ReputationContract);
+    let client = ReputationContractClient::new(&env, &reputation_id);
+    let admin = Address::generate(&env);
+    client.initialize(&vec![&env, admin.clone()], &1u32, &0u32);
+
+    let endorser = Address::generate(&env);
+    let target = Address::generate(&env);
+    let skill_rust = String::from_str(&env, "Rust");
+    let skill_ui   = String::from_str(&env, "UI Design");
+
+    client.endorse(&endorser, &target, &skill_rust);
+    client.endorse(&endorser, &target, &skill_ui);
+
+    assert_eq!(client.get_skill_score(&target, &skill_rust), 1);
+    assert_eq!(client.get_skill_score(&target, &skill_ui),   1);
+}
+
+#[test]
+fn test_endorse_multiple_endorsers_accumulate() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let reputation_id = env.register_contract(None, ReputationContract);
+    let client = ReputationContractClient::new(&env, &reputation_id);
+    let admin = Address::generate(&env);
+    client.initialize(&vec![&env, admin.clone()], &1u32, &0u32);
+
+    let target = Address::generate(&env);
+    let skill  = String::from_str(&env, "Rust");
+    for _ in 0..3u32 {
+        let e = Address::generate(&env);
+        client.endorse(&e, &target, &skill);
+    }
+    assert_eq!(client.get_skill_score(&target, &skill), 3);
+}
+
+#[test]
+fn test_endorse_weighted_by_endorser_rating() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let escrow_id     = env.register_contract(None, EscrowContract);
+    let reputation_id = env.register_contract(None, ReputationContract);
+    let client = ReputationContractClient::new(&env, &reputation_id);
+    let admin = Address::generate(&env);
+    client.initialize(&vec![&env, admin.clone()], &1u32, &0u32);
+
+    // Give endorser1 a 5-star rating → avg = 500 → weight = 500/100 = 5
+    let reviewer  = Address::generate(&env);
+    let endorser1 = Address::generate(&env);
+    let token_admin = Address::generate(&env);
+    let token_addr  = create_token(&env, &token_admin);
+    mint(&env, &token_addr, &token_admin, &reviewer, 100_000_000);
+
+    setup_completed_job(&env, &escrow_id, 1u64, &reviewer, &endorser1, &token_addr);
+    client.submit_review(
+        &escrow_id, &reviewer, &endorser1, &1u64, &5u32,
+        &String::from_str(&env, "Perfect"), &MIN_STAKE,
+    );
+
+    let endorser2 = Address::generate(&env); // no reputation → weight 1
+    let target    = Address::generate(&env);
+    let skill     = String::from_str(&env, "Rust");
+
+    client.endorse(&endorser1, &target, &skill);
+    client.endorse(&endorser2, &target, &skill);
+
+    // 5 + 1 = 6
+    assert_eq!(client.get_skill_score(&target, &skill), 6);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// #536 — Stake-Weighted Reputation Tests
+// ─────────────────────────────────────────────────────────────────────────────
+
+fn inject_stake(env: &Env, contract_id: &Address, user: &Address, balance: i128) {
+    env.as_contract(contract_id, || {
+        env.storage().persistent().set(&DataKey::StakeBalance(user.clone()), &balance);
+    });
+}
+
+fn set_tiers_via_admin(
+    client: &ReputationContractClient<'_>,
+    admin: &Address,
+    tiers: soroban_sdk::Vec<StakeTier>,
+) {
+    client.propose_admin_action(admin, &AdminAction::SetStakeTiers(tiers));
+}
+
+#[test]
+fn test_stake_no_tiers_default_1x() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let reputation_id = env.register_contract(None, ReputationContract);
+    let client = ReputationContractClient::new(&env, &reputation_id);
+    let admin = Address::generate(&env);
+    client.initialize(&vec![&env, admin.clone()], &1u32, &0u32);
+
+    let user = Address::generate(&env);
+    assert_eq!(client.get_stake_multiplier(&user), 100);
+}
+
+#[test]
+fn test_stake_tier_below_first_boundary() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let reputation_id = env.register_contract(None, ReputationContract);
+    let client = ReputationContractClient::new(&env, &reputation_id);
+    let admin = Address::generate(&env);
+    client.initialize(&vec![&env, admin.clone()], &1u32, &0u32);
+
+    let tiers = vec![
+        &env,
+        StakeTier { threshold: 100_0000000, multiplier: 120 },
+        StakeTier { threshold: 1000_0000000, multiplier: 150 },
+    ];
+    set_tiers_via_admin(&client, &admin, tiers);
+
+    let user = Address::generate(&env);
+    inject_stake(&env, &reputation_id, &user, 50_0000000); // 50 XLM < 100
+    assert_eq!(client.get_stake_multiplier(&user), 100);
+}
+
+#[test]
+fn test_stake_tier_at_first_boundary() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let reputation_id = env.register_contract(None, ReputationContract);
+    let client = ReputationContractClient::new(&env, &reputation_id);
+    let admin = Address::generate(&env);
+    client.initialize(&vec![&env, admin.clone()], &1u32, &0u32);
+
+    let tiers = vec![
+        &env,
+        StakeTier { threshold: 100_0000000, multiplier: 120 },
+        StakeTier { threshold: 1000_0000000, multiplier: 150 },
+    ];
+    set_tiers_via_admin(&client, &admin, tiers);
+
+    let user = Address::generate(&env);
+    inject_stake(&env, &reputation_id, &user, 100_0000000); // exactly 100 XLM
+    assert_eq!(client.get_stake_multiplier(&user), 120);
+}
+
+#[test]
+fn test_stake_tier_at_second_boundary() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let reputation_id = env.register_contract(None, ReputationContract);
+    let client = ReputationContractClient::new(&env, &reputation_id);
+    let admin = Address::generate(&env);
+    client.initialize(&vec![&env, admin.clone()], &1u32, &0u32);
+
+    let tiers = vec![
+        &env,
+        StakeTier { threshold: 100_0000000, multiplier: 120 },
+        StakeTier { threshold: 1000_0000000, multiplier: 150 },
+    ];
+    set_tiers_via_admin(&client, &admin, tiers);
+
+    let user = Address::generate(&env);
+    inject_stake(&env, &reputation_id, &user, 5000_0000000); // 5000 XLM
+    assert_eq!(client.get_stake_multiplier(&user), 150);
+}
+
+#[test]
+fn test_stake_multiplier_applied_to_avg_rating() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let escrow_id     = env.register_contract(None, EscrowContract);
+    let reputation_id = env.register_contract(None, ReputationContract);
+    let client = ReputationContractClient::new(&env, &reputation_id);
+    let admin = Address::generate(&env);
+    client.initialize(&vec![&env, admin.clone()], &1u32, &0u32);
+
+    let reviewer    = Address::generate(&env);
+    let reviewee    = Address::generate(&env);
+    let token_admin = Address::generate(&env);
+    let token_addr  = create_token(&env, &token_admin);
+    mint(&env, &token_addr, &token_admin, &reviewer, 100_000_000);
+
+    setup_completed_job(&env, &escrow_id, 1u64, &reviewer, &reviewee, &token_addr);
+    client.submit_review(
+        &escrow_id, &reviewer, &reviewee, &1u64, &4u32,
+        &String::from_str(&env, "Good"), &MIN_STAKE,
+    );
+
+    assert_eq!(client.get_average_rating(&reviewee), 400); // base
+
+    // 1.5× tier
+    let tiers = vec![&env, StakeTier { threshold: 100_0000000, multiplier: 150 }];
+    set_tiers_via_admin(&client, &admin, tiers);
+    inject_stake(&env, &reputation_id, &reviewee, 500_0000000);
+
+    // 400 * 150 / 100 = 600
+    assert_eq!(client.get_average_rating(&reviewee), 600);
+}
+
+#[test]
+fn test_score_capped_at_10000() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let escrow_id     = env.register_contract(None, EscrowContract);
+    let reputation_id = env.register_contract(None, ReputationContract);
+    let client = ReputationContractClient::new(&env, &reputation_id);
+    let admin = Address::generate(&env);
+    client.initialize(&vec![&env, admin.clone()], &1u32, &0u32);
+
+    let reviewer    = Address::generate(&env);
+    let reviewee    = Address::generate(&env);
+    let token_admin = Address::generate(&env);
+    let token_addr  = create_token(&env, &token_admin);
+    mint(&env, &token_addr, &token_admin, &reviewer, 100_000_000);
+
+    setup_completed_job(&env, &escrow_id, 1u64, &reviewer, &reviewee, &token_addr);
+    client.submit_review(
+        &escrow_id, &reviewer, &reviewee, &1u64, &5u32,
+        &String::from_str(&env, "Perfect"), &MIN_STAKE,
+    );
+
+    // 500,000× multiplier → would exceed cap
+    let tiers = vec![&env, StakeTier { threshold: 1, multiplier: 500_000 }];
+    set_tiers_via_admin(&client, &admin, tiers);
+    inject_stake(&env, &reputation_id, &reviewee, 100);
+
+    assert_eq!(client.get_average_rating(&reviewee), 10_000);
+}
+
+#[test]
+fn test_stake_tiers_require_multisig_threshold() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let reputation_id = env.register_contract(None, ReputationContract);
+    let client = ReputationContractClient::new(&env, &reputation_id);
+
+    let signer1 = Address::generate(&env);
+    let signer2 = Address::generate(&env);
+    client.initialize(&vec![&env, signer1.clone(), signer2.clone()], &2u32, &0u32);
+
+    let tiers = vec![&env, StakeTier { threshold: 100_0000000, multiplier: 120 }];
+    let prop_id = client.propose_admin_action(&signer1, &AdminAction::SetStakeTiers(tiers));
+
+    let user = Address::generate(&env);
+    assert_eq!(client.get_stake_multiplier(&user), 100); // not yet active
+
+    client.approve_admin_action(&signer2, &prop_id);
+
+    inject_stake(&env, &reputation_id, &user, 500_0000000);
+    assert_eq!(client.get_stake_multiplier(&user), 120); // now active
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// #534 — Ledger-Based Lazy Decay Tests
+// ─────────────────────────────────────────────────────────────────────────────
+
+fn advance_n_periods(env: &Env, periods: u32) {
+    let seq = env.ledger().sequence();
+    let ts  = env.ledger().timestamp();
+    env.ledger().set(soroban_sdk::testutils::LedgerInfo {
+        sequence_number:        seq + periods * 518_400,
+        timestamp:              ts  + (periods as u64) * ONE_YEAR_IN_SECONDS,
+        protocol_version:       20,
+        network_id:             [0; 32],
+        base_reserve:           10,
+        min_temp_entry_ttl:     10,
+        min_persistent_entry_ttl: 10,
+        max_entry_ttl:          500_000_000,
+    });
+}
+
+fn setup_review_for(
+    env: &Env,
+    escrow_id: &Address,
+    client: &ReputationContractClient<'_>,
+    job_id: u64,
+    reviewer: &Address,
+    reviewee: &Address,
+    rating: u32,
+) {
+    let token_admin = Address::generate(env);
+    let token_addr  = create_token(env, &token_admin);
+    mint(env, &token_addr, &token_admin, reviewer, 100_000_000);
+    setup_completed_job(env, escrow_id, job_id, reviewer, reviewee, &token_addr);
+    client.submit_review(
+        escrow_id, reviewer, reviewee, &job_id, &rating,
+        &String::from_str(env, "ok"), &MIN_STAKE,
+    );
+}
+
+#[test]
+fn test_lazy_decay_zero_periods_no_change() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let escrow_id     = env.register_contract(None, EscrowContract);
+    let reputation_id = env.register_contract(None, ReputationContract);
+    let client = ReputationContractClient::new(&env, &reputation_id);
+    let admin = Address::generate(&env);
+    client.initialize(&vec![&env, admin.clone()], &1u32, &1u32); // 1%/period
+
+    let reviewer = Address::generate(&env);
+    let reviewee = Address::generate(&env);
+    setup_review_for(&env, &escrow_id, &client, 1, &reviewer, &reviewee, 5);
+
+    let before = client.get_reputation(&reviewee);
+    let after  = client.get_reputation(&reviewee);
+    assert_eq!(before.total_score, after.total_score);
+    assert_eq!(before.total_weight, after.total_weight);
+}
+
+#[test]
+fn test_lazy_decay_one_period() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let escrow_id     = env.register_contract(None, EscrowContract);
+    let reputation_id = env.register_contract(None, ReputationContract);
+    let client = ReputationContractClient::new(&env, &reputation_id);
+    let admin = Address::generate(&env);
+    client.initialize(&vec![&env, admin.clone()], &1u32, &10u32); // 10%/period
+
+    let reviewer = Address::generate(&env);
+    let reviewee = Address::generate(&env);
+    setup_review_for(&env, &escrow_id, &client, 1, &reviewer, &reviewee, 5);
+
+    let before = client.get_reputation(&reviewee);
+    advance_n_periods(&env, 1);
+    let after = client.get_reputation(&reviewee);
+
+    assert_eq!(after.total_score,  (before.total_score  * 90) / 100);
+    assert_eq!(after.total_weight, (before.total_weight * 90) / 100);
+}
+
+#[test]
+fn test_lazy_decay_ten_periods() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let escrow_id     = env.register_contract(None, EscrowContract);
+    let reputation_id = env.register_contract(None, ReputationContract);
+    let client = ReputationContractClient::new(&env, &reputation_id);
+    let admin = Address::generate(&env);
+    client.initialize(&vec![&env, admin.clone()], &1u32, &10u32); // 10%/period
+
+    let reviewer = Address::generate(&env);
+    let reviewee = Address::generate(&env);
+    setup_review_for(&env, &escrow_id, &client, 1, &reviewer, &reviewee, 5);
+
+    let before = client.get_reputation(&reviewee);
+    // Linear annual decay at 10%/year for 10 years: max(0, 100 - 10*10) = 0% retained.
+    let exp_score  = 0u64;
+    let exp_weight = 0u64;
+    let _ = before; // used above for correctness reference
+
+    advance_n_periods(&env, 10);
+    let after = client.get_reputation(&reviewee);
+
+    assert_eq!(after.total_score,  exp_score);
+    assert_eq!(after.total_weight, exp_weight);
+}
+
+#[test]
+fn test_lazy_decay_zero_rate_no_decay() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let escrow_id     = env.register_contract(None, EscrowContract);
+    let reputation_id = env.register_contract(None, ReputationContract);
+    let client = ReputationContractClient::new(&env, &reputation_id);
+    let admin = Address::generate(&env);
+    client.initialize(&vec![&env, admin.clone()], &1u32, &0u32); // 0%/period
+
+    let reviewer = Address::generate(&env);
+    let reviewee = Address::generate(&env);
+    setup_review_for(&env, &escrow_id, &client, 1, &reviewer, &reviewee, 5);
+
+    let before = client.get_reputation(&reviewee);
+    advance_n_periods(&env, 10);
+    let after = client.get_reputation(&reviewee);
+
+    assert_eq!(before.total_score,  after.total_score);
+    assert_eq!(before.total_weight, after.total_weight);
+}
+
+#[test]
+fn test_last_updated_ledger_advances_on_write() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let escrow_id     = env.register_contract(None, EscrowContract);
+    let reputation_id = env.register_contract(None, ReputationContract);
+    let client = ReputationContractClient::new(&env, &reputation_id);
+    let admin = Address::generate(&env);
+    client.initialize(&vec![&env, admin.clone()], &1u32, &10u32);
+
+    let reviewer = Address::generate(&env);
+    let reviewee = Address::generate(&env);
+    setup_review_for(&env, &escrow_id, &client, 1, &reviewer, &reviewee, 5);
+
+    let ledger_before = client.get_reputation(&reviewee).last_updated_ledger;
+    advance_n_periods(&env, 2);
+
+    // Trigger write by adding a second review
+    let reviewer2 = Address::generate(&env);
+    setup_review_for(&env, &escrow_id, &client, 2, &reviewer2, &reviewee, 4);
+
+    let ledger_after = client.get_reputation(&reviewee).last_updated_ledger;
+    assert!(ledger_after > ledger_before);
+}
+
+// ── tier_up event tests (Issue #464) ────────────────────────────────────────
+
+// env.events().all() returns Vec<(Address, soroban_sdk::Vec<Val>, Val)>
+// where the Address is the emitting contract. Topics are compared by converting
+// each Val slot back to Symbol via TryFromVal.
+
+fn topics_match(env: &Env, topics: &soroban_sdk::Vec<soroban_sdk::Val>, sym0: Symbol, sym1: Symbol) -> bool {
+    topics.len() == 2
+        && topics
+            .get(0_u32)
+            .and_then(|v| Symbol::try_from_val(env, &v).ok())
+            == Some(sym0)
+        && topics
+            .get(1_u32)
+            .and_then(|v| Symbol::try_from_val(env, &v).ok())
+            == Some(sym1)
+}
+
+fn tier_up_event_count(env: &Env) -> usize {
+    env.events()
+        .all()
+        .iter()
+        .filter(|(_, topics, _)| {
+            topics_match(env, topics, symbol_short!("reput"), symbol_short!("tier_up"))
+        })
+        .count()
+}
+
+fn badge_event_count(env: &Env) -> usize {
+    env.events()
+        .all()
+        .iter()
+        .filter(|(_, topics, _)| {
+            topics_match(env, topics, symbol_short!("reput"), symbol_short!("badge"))
+        })
+        .count()
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// #648 — Unbounded decay loop DoS fix: tests for large periods, leaderboard, fuzz
+// ─────────────────────────────────────────────────────────────────────────────
+
+fn setup_high_ttl_env() -> Env {
+    let env = Env::default();
+    env.ledger().set(soroban_sdk::testutils::LedgerInfo {
+        timestamp: 0,
+        protocol_version: 20,
+        sequence_number: 0,
+        network_id: [0; 32],
+        base_reserve: 10,
+        min_temp_entry_ttl: 10,
+        min_persistent_entry_ttl: 10,
+        max_entry_ttl: 500_000_000,
+    });
+    env
+}
+
+#[test]
+fn test_lazy_decay_sixty_periods_no_revert() {
+    let env = setup_high_ttl_env();
+    env.mock_all_auths();
+    let escrow_id = env.register_contract(None, EscrowContract);
+    let reputation_id = env.register_contract(None, ReputationContract);
+    let client = ReputationContractClient::new(&env, &reputation_id);
+    let admin = Address::generate(&env);
+    client.initialize(&vec![&env, admin.clone()], &1u32, &1u32); // 1% per year
+
+    let reviewer = Address::generate(&env);
+    let reviewee = Address::generate(&env);
+    setup_review_for(&env, &escrow_id, &client, 1, &reviewer, &reviewee, 5);
+
+    let before = client.get_reputation(&reviewee);
+    advance_n_periods(&env, 60);
+
+    // 60 years * 1% = 60% decay, retained 40%
+    let after = client.get_reputation(&reviewee);
+    assert_eq!(after.total_score, (before.total_score * 40) / 100);
+    assert_eq!(after.total_weight, (before.total_weight * 40) / 100);
+    assert_eq!(after.review_count, before.review_count);
+}
+
+#[test]
+fn test_lazy_decay_sixty_periods_full_decay_saturates() {
+    let env = setup_high_ttl_env();
+    env.mock_all_auths();
+    let escrow_id = env.register_contract(None, EscrowContract);
+    let reputation_id = env.register_contract(None, ReputationContract);
+    let client = ReputationContractClient::new(&env, &reputation_id);
+    let admin = Address::generate(&env);
+    client.initialize(&vec![&env, admin.clone()], &1u32, &2u32); // 2% per year
+
+    let reviewer = Address::generate(&env);
+    let reviewee = Address::generate(&env);
+    setup_review_for(&env, &escrow_id, &client, 1, &reviewer, &reviewee, 5);
+
+    advance_n_periods(&env, 60);
+
+    // 60 years * 2% = 120% -> saturating_sub clamps to 0% retained
+    let after = client.get_reputation(&reviewee);
+    assert_eq!(after.total_score, 0);
+    assert_eq!(after.total_weight, 0);
+    assert_eq!(after.review_count, 1);
+}
+
+#[test]
+fn test_lazy_decay_high_rate_full_decay_saturates() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let escrow_id = env.register_contract(None, EscrowContract);
+    let reputation_id = env.register_contract(None, ReputationContract);
+    let client = ReputationContractClient::new(&env, &reputation_id);
+    let admin = Address::generate(&env);
+    client.initialize(&vec![&env, admin.clone()], &1u32, &50u32); // 50% per year
+
+    let reviewer = Address::generate(&env);
+    let reviewee = Address::generate(&env);
+    setup_review_for(&env, &escrow_id, &client, 1, &reviewer, &reviewee, 5);
+
+    advance_n_periods(&env, 5);
+
+    // 5 years * 50% = 250% -> saturates to 0%
+    let after = client.get_reputation(&reviewee);
+    assert_eq!(after.total_score, 0);
+    assert_eq!(after.total_weight, 0);
+}
+
+#[test]
+fn test_leaderboard_many_entries_all_dormant_fifty_periods() {
+    let env = setup_high_ttl_env();
+    env.mock_all_auths();
+    let escrow_id = env.register_contract(None, EscrowContract);
+    let reputation_id = env.register_contract(None, ReputationContract);
+    let client = ReputationContractClient::new(&env, &reputation_id);
+    let admin = Address::generate(&env);
+    client.initialize(&vec![&env, admin.clone()], &1u32, &10u32);
+
+    // Create 10 users with reviews to populate the leaderboard
+    for i in 0..10u64 {
+        let reviewer = Address::generate(&env);
+        let reviewee = Address::generate(&env);
+        setup_review_for(&env, &escrow_id, &client, i + 1, &reviewer, &reviewee, 5);
+    }
+
+    // All users dormant for 50 periods
+    advance_n_periods(&env, 50);
+
+    // Leaderboard should still return without reverting
+    let leaderboard = client.get_leaderboard();
+    assert!(leaderboard.len() <= 10);
+    // All entries should have decayed scores (fully decayed at 10%/yr * 50yr)
+    for (_addr, score) in leaderboard.iter() {
+        assert!(score <= 500);
+    }
+}
+
+#[test]
+fn test_decay_formula_consistent_across_period_ranges() {
+    let env = setup_high_ttl_env();
+    env.mock_all_auths();
+    let escrow_id = env.register_contract(None, EscrowContract);
+    let reputation_id = env.register_contract(None, ReputationContract);
+    let client = ReputationContractClient::new(&env, &reputation_id);
+    let admin = Address::generate(&env);
+    client.initialize(&vec![&env, admin.clone()], &1u32, &5u32); // 5% per year
+
+    let reviewer = Address::generate(&env);
+    let reviewee = Address::generate(&env);
+    setup_review_for(&env, &escrow_id, &client, 1, &reviewer, &reviewee, 5);
+
+    // retained_pct = max(0, 100 - 5 * periods)
+    let check_points: [(u32, u64); 5] = [
+        (0, 100),
+        (1, 95),
+        (2, 90),
+        (5, 75),
+        (10, 50),
+    ];
+
+    let mut cumulative = 0u32;
+    for (periods, expected_retained_pct) in &check_points {
+        let advance = *periods - cumulative;
+        advance_n_periods(&env, advance);
+        cumulative = *periods;
+
+        let rep = client.get_reputation(&reviewee);
+        let expected_score = (5u64 * (MIN_STAKE as u64) * expected_retained_pct) / 100;
+        let expected_weight = ((MIN_STAKE as u64) * expected_retained_pct) / 100;
+        assert_eq!(
+            rep.total_score, expected_score,
+            "score mismatch at {} periods", periods
+        );
+        assert_eq!(
+            rep.total_weight, expected_weight,
+            "weight mismatch at {} periods", periods
+        );
+    }
+}
+
+/// Verify O(1) decay for high rates and long periods — never panics, never exceeds original.
+#[test]
+fn test_decay_fuzz_never_exceeds_original() {
+    let env = setup_high_ttl_env();
+    env.mock_all_auths();
+    let reputation_id = env.register_contract(None, ReputationContract);
+    let client = ReputationContractClient::new(&env, &reputation_id);
+    let admin = Address::generate(&env);
+    client.initialize(&vec![&env, admin.clone()], &1u32, &10u32); // 10% per year
+
+    // Single user, test at key period milestones
+    let user = Address::generate(&env);
+    env.as_contract(&reputation_id, || {
+        env.storage().persistent().set(
+            &DataKey::Reputation(user.clone()),
+            &UserReputation {
+                user: user.clone(),
+                total_score: 1_000_000,
+                total_weight: 100_000,
+                review_count: 10,
+                last_updated_ledger: 0,
+            },
+        );
+    });
+
+    let mut cumulative = 0u32;
+    for periods in [0u32, 1, 5, 10, 15, 30, 60] {
+        let advance = periods - cumulative;
+        advance_n_periods(&env, advance);
+        cumulative = periods;
+
+        let rep = client.get_reputation(&user);
+        assert!(
+            rep.total_score <= 1_000_000,
+            "score exceeded original at {} periods", periods
+        );
+        assert!(
+            rep.total_weight <= 100_000,
+            "weight exceeded original at {} periods", periods
+        );
+    }
+}
+
+/// A tier upgrade (None -> Bronze) must emit exactly one tier_up event carrying
+/// the correct reviewee address and old/new tier values.
+#[test]
+fn test_tier_up_event_emitted_on_tier_upgrade() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let escrow_id = env.register_contract(None, EscrowContract);
+    let reputation_id = env.register_contract(None, ReputationContract);
+    let reputation_client = ReputationContractClient::new(&env, &reputation_id);
+
+    let reviewer = Address::generate(&env);
+    let reviewee = Address::generate(&env);
+    let token_admin = Address::generate(&env);
+    let token_addr = create_token(&env, &token_admin);
+    mint(&env, &token_addr, &token_admin, &reviewer, 100_000_000);
+
+    setup_completed_job(&env, &escrow_id, 1u64, &reviewer, &reviewee, &token_addr);
+
+    // Rating 2 -> avg 200 -> Bronze (previous tier: None)
+    reputation_client.submit_review(
+        &escrow_id,
+        &reviewer,
+        &reviewee,
+        &1u64,
+        &2u32,
+        &String::from_str(&env, "Good work"),
+        &MIN_STAKE,
+    );
+
+    assert_eq!(tier_up_event_count(&env), 1, "expected exactly one tier_up event");
+
+    // Validate payload: (reviewee, old_tier=None, new_tier=Bronze)
+    let event = env
+        .events()
+        .all()
+        .into_iter()
+        .find(|(_, topics, _)| {
+            topics_match(&env, topics, symbol_short!("reput"), symbol_short!("tier_up"))
+        })
+        .expect("tier_up event not found");
+
+    let (ev_reviewee, ev_old_tier, ev_new_tier): (Address, ReputationTier, ReputationTier) =
+        <(Address, ReputationTier, ReputationTier)>::try_from_val(&env, &event.2).unwrap();
+    assert_eq!(ev_reviewee, reviewee);
+    assert_eq!(ev_old_tier, ReputationTier::None);
+    assert_eq!(ev_new_tier, ReputationTier::Bronze);
+}
+
+/// When a review does not change the reputation tier (user stays in Bronze after
+/// a second Bronze-level review) no additional tier_up event must be emitted.
+#[test]
+fn test_no_tier_up_event_when_tier_unchanged() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let escrow_id = env.register_contract(None, EscrowContract);
+    let reputation_id = env.register_contract(None, ReputationContract);
+    let reputation_client = ReputationContractClient::new(&env, &reputation_id);
+
+    let reviewer1 = Address::generate(&env);
+    let reviewer2 = Address::generate(&env);
+    let reviewee = Address::generate(&env);
+    let token_admin = Address::generate(&env);
+    let token_addr = create_token(&env, &token_admin);
+    mint(&env, &token_addr, &token_admin, &reviewer1, 100_000_000);
+    mint(&env, &token_addr, &token_admin, &reviewer2, 100_000_000);
+
+    setup_completed_job(&env, &escrow_id, 1u64, &reviewer1, &reviewee, &token_addr);
+    setup_completed_job(&env, &escrow_id, 2u64, &reviewer2, &reviewee, &token_addr);
+
+    // First review: rating 2 -> avg 200 -> Bronze (tier_up: None -> Bronze)
+    reputation_client.submit_review(
+        &escrow_id,
+        &reviewer1,
+        &reviewee,
+        &1u64,
+        &2u32,
+        &String::from_str(&env, "Decent"),
+        &MIN_STAKE,
+    );
+    assert_eq!(tier_up_event_count(&env), 1);
+
+    // Second review: rating 2 -> avg still 200 -> stays Bronze (no tier change)
+    reputation_client.submit_review(
+        &escrow_id,
+        &reviewer2,
+        &reviewee,
+        &2u64,
+        &2u32,
+        &String::from_str(&env, "Consistent"),
+        &MIN_STAKE,
+    );
+
+    // Total tier_up events must still be exactly 1 (second review added none)
+    assert_eq!(
+        tier_up_event_count(&env),
+        1,
+        "second review must not emit tier_up when tier is unchanged"
+    );
+}
+
+/// The existing badge event must continue to be emitted alongside the new
+/// tier_up event, preserving backward compatibility for badge consumers.
+#[test]
+fn test_badge_event_preserved_alongside_tier_up() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let escrow_id = env.register_contract(None, EscrowContract);
+    let reputation_id = env.register_contract(None, ReputationContract);
+    let reputation_client = ReputationContractClient::new(&env, &reputation_id);
+
+    let reviewer = Address::generate(&env);
+    let reviewee = Address::generate(&env);
+    let token_admin = Address::generate(&env);
+    let token_addr = create_token(&env, &token_admin);
+    mint(&env, &token_addr, &token_admin, &reviewer, 100_000_000);
+
+    setup_completed_job(&env, &escrow_id, 1u64, &reviewer, &reviewee, &token_addr);
+
+    // Rating 4 -> avg 400 -> Silver tier
+    reputation_client.submit_review(
+        &escrow_id,
+        &reviewer,
+        &reviewee,
+        &1u64,
+        &4u32,
+        &String::from_str(&env, "Great"),
+        &MIN_STAKE,
+    );
+
+    assert_eq!(badge_event_count(&env), 1, "badge event must still be emitted");
+    assert_eq!(tier_up_event_count(&env), 1, "tier_up event must be emitted alongside badge");
+
+    // Functional sanity: badge is stored and matches expected tier
+    let badges = reputation_client.get_badges(&reviewee);
+    assert_eq!(badges.len(), 1);
+    assert_eq!(badges.get(0).unwrap().badge_type, ReputationTier::Silver);
 }

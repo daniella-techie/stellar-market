@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useParams } from "next/navigation";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Clock,
   DollarSign,
@@ -25,16 +26,21 @@ import StatusBadge from "@/components/StatusBadge";
 import ApplyModal from "@/components/ApplyModal";
 import RaiseDisputeModal from "@/components/RaiseDisputeModal";
 import ReviewModal from "@/components/ReviewModal";
-import MilestoneTimeline from "@/components/MilestoneTimeline";
+import MilestoneTimeline, {
+  getMilestoneDraftKey,
+} from "@/components/MilestoneTimeline";
 import MilestoneProgressTracker from "@/components/MilestoneProgressTracker";
 import TransactionConfirmationModal from "@/components/TransactionConfirmationModal";
+import DepositRateInfo from "@/components/DepositRateInfo";
 import ProposeRevisionModal, {
   type ProposeRevisionMilestoneInput,
 } from "@/components/ProposeRevisionModal";
 import { Job, Application, PaginatedResponse, Review } from "@/types";
 import { parseJobIdFromResult } from "@/utils/stellar";
 import ShareMenu from "@/components/ShareMenu";
+import { useToast } from "@/components/Toast";
 import WalletAddress from "@/components/WalletAddress";
+import ApproveMilestoneModal from "@/components/ApproveMilestoneModal";
 
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
@@ -66,16 +72,117 @@ type PendingOnChainAction = {
   milestoneId?: string;
   newDeadline?: string;
   onChainJobId?: number | string;
+  /** Exchange-rate parity context for the FUND_JOB confirmation. */
+  rateInfo?: {
+    agreedValueStroops: string;
+    maxSlippageBps: number;
+  };
 };
 
 export default function JobDetailClient() {
   const { id } = useParams();
   const { address, balances, signAndBroadcastTransaction } = useWallet();
   const { user } = useAuth();
-  const [job, setJob] = useState<Job | null>(null);
-  const [reviews, setReviews] = useState<Review[]>([]);
-  const [reviewsLoading, setReviewsLoading] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const {
+    data: job = null,
+    isLoading: isJobLoading,
+    isFetching: isJobFetching,
+    error: jobError
+  } = useQuery<Job | null>({
+    queryKey: ["job", id],
+    queryFn: async () => {
+      const token = localStorage.getItem("token");
+      const res = await axios.get(`${API_URL}/jobs/${id}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      return res.data;
+    },
+    staleTime: 60_000,
+  });
+
+  const {
+    data: reviews = [],
+    isLoading: reviewsLoading
+  } = useQuery<Review[]>({
+    queryKey: ["reviews", id],
+    queryFn: async () => {
+      const token = localStorage.getItem("token");
+      const res = await axios.get<PaginatedResponse<Review>>(`${API_URL}/reviews`, {
+        params: { jobId: id, page: 1, limit: 50 },
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      return res.data.data ?? [];
+    },
+    staleTime: 60_000,
+  });
+
+  const {
+    data: myAppInfo
+  } = useQuery<{ applied: boolean; appId: string | null }>({
+    queryKey: ["application", id, user?.id],
+    queryFn: async () => {
+      const token = localStorage.getItem("token");
+      if (!token) return { applied: false, appId: null };
+      try {
+        const res = await axios.get<PaginatedResponse<Application>>(`${API_URL}/applications`, {
+          params: { jobId: id, freelancerId: user.id, limit: 1 },
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const applied = res.data.total > 0;
+        return {
+          applied,
+          appId: applied && res.data.data[0] ? res.data.data[0].id : null
+        };
+      } catch {
+        return { applied: false, appId: null };
+      }
+    },
+    enabled: !!user && user.role === "FREELANCER",
+    staleTime: 60_000,
+  });
+
+  const hasApplied = myAppInfo?.applied ?? false;
+  const myApplicationId = myAppInfo?.appId ?? null;
+
+  const {
+    data: applications = [],
+    isLoading: loadingApps
+  } = useQuery<Application[]>({
+    queryKey: ["applications", id],
+    queryFn: async () => {
+      const token = localStorage.getItem("token");
+      const res = await axios.get<{ data: Application[] }>(
+        `${API_URL}/jobs/${id}/applications`,
+        { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+      );
+      return res.data.data ?? [];
+    },
+    enabled: !!job && !!user && user.id === job.client.id,
+    staleTime: 60_000,
+  });
+
+  const loading = isJobLoading;
+
+  const setJob = useCallback((updater: Job | null | ((prev: Job | null) => Job | null)) => {
+    queryClient.setQueryData<Job | null>(["job", id], (old) => {
+      if (typeof updater === 'function') {
+        return updater(old ?? null);
+      }
+      return updater;
+    });
+  }, [queryClient, id]);
+
+  const setHasApplied = (val: boolean) => {
+    queryClient.setQueryData<{ applied: boolean; appId: string | null } | undefined>(["application", id, user?.id], (old) => old ? { ...old, applied: val } : undefined);
+  };
+
+  const setMyApplicationId = (val: string | null) => {
+    queryClient.setQueryData<{ applied: boolean; appId: string | null } | undefined>(["application", id, user?.id], (old) => old ? { ...old, appId: val } : undefined);
+  };
+
   const [processing, setProcessing] = useState(false);
   const [actioningMilestoneId, setActioningMilestoneId] = useState<
     string | null
@@ -84,15 +191,18 @@ export default function JobDetailClient() {
     string | null
   >(null);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (jobError) {
+      setError(jobError instanceof Error ? jobError.message : "Failed to fetch job details.");
+    }
+  }, [jobError]);
+
   const [applyModalOpen, setApplyModalOpen] = useState(false);
   const [disputeModalOpen, setDisputeModalOpen] = useState(false);
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
-  const [hasApplied, setHasApplied] = useState(false);
-  const [myApplicationId, setMyApplicationId] = useState<string | null>(null);
   const [withdrawConfirmOpen, setWithdrawConfirmOpen] = useState(false);
   const [withdrawing, setWithdrawing] = useState(false);
-  const [applications, setApplications] = useState<Application[]>([]);
-  const [loadingApps, setLoadingApps] = useState(false);
   const [actioningApp, setActioningApp] = useState<string | null>(null);
   const [proposeRevisionOpen, setProposeRevisionOpen] = useState(false);
   const [recentlyApprovedMilestoneId, setRecentlyApprovedMilestoneId] = useState<
@@ -101,89 +211,19 @@ export default function JobDetailClient() {
   const [extendDeadlineDate, setExtendDeadlineDate] = useState<Record<string, string>>({});
   const [pendingOnChainAction, setPendingOnChainAction] = useState<PendingOnChainAction | null>(null);
   const [selectedPaymentToken, setSelectedPaymentToken] = useState<(typeof PAYMENT_TOKENS)[number]>("XLM");
+  const [approveMilestoneModalId, setApproveMilestoneModalId] = useState<string | null>(null);
 
   const isClient = Boolean(job && address === job.client.walletAddress);
 
   const fetchJob = useCallback(async () => {
-    try {
-      const token = localStorage.getItem("token");
-      setHasApplied(false);
-
-      const res = await axios.get(`${API_URL}/jobs/${id}`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
-      setJob(res.data);
-
-      setReviewsLoading(true);
-      try {
-        const reviewsRes = await axios.get<PaginatedResponse<Review>>(
-          `${API_URL}/reviews`,
-          {
-            params: { jobId: id, page: 1, limit: 50 },
-            headers: token ? { Authorization: `Bearer ${token}` } : {},
-          },
-        );
-        setReviews(reviewsRes.data.data ?? []);
-      } catch {
-        setReviews([]);
-      } finally {
-        setReviewsLoading(false);
-      }
-
-      if (token && user?.role === "FREELANCER") {
-        try {
-          const appsRes = await axios.get<PaginatedResponse<Application>>(
-            `${API_URL}/applications`,
-            {
-              params: { jobId: id, freelancerId: user.id, limit: 1 },
-              headers: { Authorization: `Bearer ${token}` },
-            },
-          );
-          const applied = appsRes.data.total > 0;
-          setHasApplied(applied);
-          if (applied && appsRes.data.data[0]) {
-            setMyApplicationId(appsRes.data.data[0].id);
-          }
-        } catch {
-          setHasApplied(false);
-          setMyApplicationId(null);
-        }
-      }
-    } catch (err: unknown) {
-      setError(
-        err instanceof Error ? err.message : "Failed to fetch job details.",
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, [id, user]);
-
-  useEffect(() => {
-    fetchJob();
-  }, [fetchJob]);
+    await queryClient.invalidateQueries({ queryKey: ["job", id] });
+    await queryClient.invalidateQueries({ queryKey: ["reviews", id] });
+    await queryClient.invalidateQueries({ queryKey: ["application", id, user?.id] });
+  }, [queryClient, id, user?.id]);
 
   const fetchApplications = useCallback(async () => {
-    setLoadingApps(true);
-    try {
-      const token = localStorage.getItem("token");
-      const res = await axios.get<{ data: Application[] }>(
-        `${API_URL}/jobs/${id as string}/applications`,
-        { headers: token ? { Authorization: `Bearer ${token}` } : {} },
-      );
-      setApplications(res.data.data ?? []);
-    } catch {
-      setApplications([]);
-    } finally {
-      setLoadingApps(false);
-    }
-  }, [id]);
-
-  // Fetch applicants once job loads and current user is the owner
-  useEffect(() => {
-    if (job && user && user.id === job.client.id) {
-      void fetchApplications();
-    }
-  }, [job, user, fetchApplications]);
+    await queryClient.invalidateQueries({ queryKey: ["applications", id] });
+  }, [queryClient, id]);
 
   const handleApplicationStatus = async (
     appId: string,
@@ -211,6 +251,26 @@ export default function JobDetailClient() {
     if (!user) return null;
     return reviews.find((r) => r.reviewerId === user.id) ?? null;
   }, [reviews, user]);
+
+  // Auto-show review modal when job is completed and current user hasn't reviewed yet.
+  // Runs once after job + reviews are loaded.
+  useEffect(() => {
+    if (!job || !user) return;
+    if (job.status !== "COMPLETED") return;
+    if (myReview) return; // already reviewed
+
+    const isParticipant =
+      user.id === job.client.id ||
+      (job.freelancer && user.id === job.freelancer.id);
+    if (!isParticipant) return;
+
+    // Only auto-open once per session per job
+    const sessionKey = `review_prompted_${job.id}`;
+    if (sessionStorage.getItem(sessionKey)) return;
+    sessionStorage.setItem(sessionKey, "1");
+
+    setReviewModalOpen(true);
+  }, [job, user, myReview]);
 
   useEffect(() => {
     if (!recentlyApprovedMilestoneId) return;
@@ -302,6 +362,21 @@ export default function JobDetailClient() {
         action.milestoneId
       ) {
         setRecentlyApprovedMilestoneId(action.milestoneId);
+      }
+
+      if (
+        action.confirmType === "SUBMIT_MILESTONE" &&
+        action.milestoneId &&
+        job
+      ) {
+        const milestoneIndex = job.milestones.findIndex(
+          (milestone) => milestone.id === action.milestoneId,
+        );
+        if (milestoneIndex !== -1) {
+          window.localStorage.removeItem(
+            getMilestoneDraftKey(job.id, milestoneIndex),
+          );
+        }
       }
 
       if (action.confirmType === "PROPOSE_REVISION") {
@@ -405,9 +480,29 @@ export default function JobDetailClient() {
           action === "extend-deadline" && milestoneId
             ? extendDeadlineDate[milestoneId]
             : undefined,
+        rateInfo:
+          action === "fund" && res.data.agreedValueStroops
+            ? {
+                agreedValueStroops: String(res.data.agreedValueStroops),
+                maxSlippageBps: Number(res.data.maxSlippageBps ?? 0),
+              }
+            : undefined,
       });
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Action failed.");
+      // Surface the contract's exchange-rate parity failures with their detail.
+      if (axios.isAxiosError(err) && err.response?.data?.error === "InsufficientValue") {
+        setError(
+          err.response.data.message ??
+            "The deposit is worth less than the agreed job value at the current exchange rate.",
+        );
+      } else if (axios.isAxiosError(err) && err.response?.data?.error === "OracleUnavailable") {
+        setError(
+          err.response.data.message ??
+            "The exchange-rate oracle is currently unavailable. Try again shortly.",
+        );
+      } else {
+        setError(err instanceof Error ? err.message : "Action failed.");
+      }
     }
   };
 
@@ -467,6 +562,79 @@ export default function JobDetailClient() {
   };
 
   const handleApproveMilestone = async (milestoneId: string) => {
+    setError(null);
+    setActioningMilestoneId(milestoneId);
+    const previousMilestones = job?.milestones ?? [];
+    setJob((prev) =>
+      prev
+        ? {
+            ...prev,
+            milestones: prev.milestones.map((m) =>
+              m.id === milestoneId ? { ...m, status: "APPROVED" } : m,
+            ),
+          }
+        : prev,
+    );
+    setConfirmingMilestoneId(milestoneId);
+    try {
+      const token =
+        localStorage.getItem("stellarmarket_jwt") ??
+        localStorage.getItem("token");
+
+      if (!token) {
+        throw new Error("Please log in again.");
+      }
+
+      const res = await axios.put(
+        `${API_URL}/milestones/${milestoneId}/approve`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+
+      const txResult = await signAndBroadcastTransaction(res.data.xdr);
+      if (!txResult.success) {
+        throw new Error(txResult.error || "Transaction failed");
+      }
+
+      await axios.post(
+        `${API_URL}/escrow/confirm-tx`,
+        {
+          hash: txResult.hash,
+          type: "APPROVE_MILESTONE",
+          jobId: id,
+          milestoneId,
+        },
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+
+      await fetchJob();
+      setRecentlyApprovedMilestoneId(milestoneId);
+    } catch (err: unknown) {
+      // Roll back optimistic milestone status if on-chain confirmation fails.
+      setJob((prev) =>
+        prev
+          ? {
+              ...prev,
+              milestones: prev.milestones.map((m) =>
+                m.id === milestoneId
+                  ? {
+                      ...m,
+                      status:
+                        previousMilestones.find((pm) => pm.id === milestoneId)
+                          ?.status ?? m.status,
+                    }
+                  : m,
+                ),
+            }
+          : prev,
+      );
+      setRecentlyApprovedMilestoneId(null);
+      setError(err instanceof Error ? err.message : "Action failed.");
+      toast.error("Failed to approve milestone. Please try again.");
+    } finally {
+      setConfirmingMilestoneId(null);
+      setActioningMilestoneId(null);
+    }
     await handleEscrowAction("approve", milestoneId);
   };
 
@@ -621,7 +789,38 @@ export default function JobDetailClient() {
         onConfirm={async (preparedXdr) => {
           await confirmPendingOnChainAction(preparedXdr);
         }}
+        extraContent={
+          pendingOnChainAction?.rateInfo ? (
+            <DepositRateInfo
+              agreedValueStroops={pendingOnChainAction.rateInfo.agreedValueStroops}
+              maxSlippageBps={pendingOnChainAction.rateInfo.maxSlippageBps}
+            />
+          ) : undefined
+        }
       />
+
+      {(() => {
+        const pendingMilestone = approveMilestoneModalId
+          ? job.milestones.find((m) => m.id === approveMilestoneModalId)
+          : null;
+        return (
+          <ApproveMilestoneModal
+            isOpen={Boolean(pendingMilestone)}
+            milestoneTitle={pendingMilestone?.title ?? ""}
+            milestoneAmount={pendingMilestone?.amount ?? 0}
+            freelancerName={job.freelancer?.username ?? job.freelancer?.walletAddress ?? "Freelancer"}
+            milestoneDescription={pendingMilestone?.description ?? ""}
+            isLoading={Boolean(approveMilestoneModalId && actioningMilestoneId === approveMilestoneModalId)}
+            onClose={() => setApproveMilestoneModalId(null)}
+            onConfirm={() => {
+              if (approveMilestoneModalId) {
+                setApproveMilestoneModalId(null);
+                void handleApproveMilestone(approveMilestoneModalId);
+              }
+            }}
+          />
+        );
+      })()}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Main Content */}
@@ -636,8 +835,11 @@ export default function JobDetailClient() {
             </div>
           </div>
 
-          <h1 className="text-3xl font-bold text-theme-heading mb-4">
+          <h1 className="text-3xl font-bold text-theme-heading mb-4 flex items-center gap-3">
             {job.title}
+            {isJobFetching && (
+              <Loader2 className="animate-spin text-theme-text/50" size={20} aria-label="Refreshing data" />
+            )}
           </h1>
 
           <div className="flex flex-wrap items-center gap-4 mb-8">
@@ -681,7 +883,7 @@ export default function JobDetailClient() {
           </div>
 
           {pendingRevision && canRespondToRevision && (
-            <div className="card mb-8 border-amber-500/40 bg-amber-500/5">
+            <div className="card mb-8 border-theme-warning/40 bg-theme-warning/5">
               <h2 className="text-lg font-semibold text-theme-heading mb-2">
                 Pending revision proposal
               </h2>
@@ -771,7 +973,7 @@ export default function JobDetailClient() {
               actioningMilestoneId={actioningMilestoneId}
               recentlyApprovedMilestoneId={recentlyApprovedMilestoneId}
               onSubmitMilestone={(milestoneId) => void handleSubmitMilestone(milestoneId)}
-              onApproveMilestone={(milestoneId) => void handleApproveMilestone(milestoneId)}
+              onApproveMilestone={(milestoneId) => setApproveMilestoneModalId(milestoneId)}
               onRequestRevision={(milestoneId) =>
                 void handleUpdateMilestoneStatus(milestoneId, "REJECTED")
               }
@@ -779,7 +981,10 @@ export default function JobDetailClient() {
             />
           </div>
 
-          {job.status === "COMPLETED" && !myReview && (
+          {job.status === "COMPLETED" && !myReview && user && (
+            user.id === job.client.id ||
+            (job.freelancer && user.id === job.freelancer.id)
+          ) && (
             <div className="card mt-8 border-stellar-blue/30 bg-stellar-blue/5">
               <h2 className="text-lg font-semibold text-theme-heading mb-2">
                 Leave a review
@@ -796,12 +1001,6 @@ export default function JobDetailClient() {
                 >
                   Review now
                 </button>
-                <Link
-                  href={`/jobs/${job.id}/review`}
-                  className="btn-secondary"
-                >
-                  Open review page
-                </Link>
               </div>
             </div>
           )}
@@ -861,7 +1060,7 @@ export default function JobDetailClient() {
                             size={16}
                             className={
                               star <= review.rating
-                                ? "fill-yellow-400 text-yellow-400"
+                                ? "fill-theme-warning text-theme-warning"
                                 : "text-theme-border"
                             }
                           />
@@ -877,103 +1076,6 @@ export default function JobDetailClient() {
             )}
           </div>
 
-          {job.status === "COMPLETED" && !myReview && (
-            <div className="card mt-8 border-stellar-blue/30 bg-stellar-blue/5">
-              <h2 className="text-lg font-semibold text-theme-heading mb-2">
-                Leave a review
-              </h2>
-              <p className="text-sm text-theme-text mb-4">
-                This job is complete. Share your experience to help build trust
-                on StellarMarket.
-              </p>
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  className="btn-primary"
-                  onClick={() => setReviewModalOpen(true)}
-                >
-                  Review now
-                </button>
-                <Link
-                  href={`/jobs/${job.id}/review`}
-                  className="btn-secondary"
-                >
-                  Open review page
-                </Link>
-              </div>
-            </div>
-          )}
-
-          {/* Reviews */}
-          <div className="card mt-8">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-theme-heading">
-                Reviews
-              </h2>
-              {myReview ? (
-                <span className="text-xs text-theme-text">Already reviewed</span>
-              ) : null}
-            </div>
-
-            {reviewsLoading ? (
-              <div className="flex justify-center py-6">
-                <Loader2 className="animate-spin text-stellar-blue" size={28} />
-              </div>
-            ) : reviews.length === 0 ? (
-              <p className="text-sm text-theme-text">No reviews yet.</p>
-            ) : (
-              <div className="space-y-4">
-                {reviews.map((review) => (
-                  <div
-                    key={review.id}
-                    className="p-4 bg-theme-bg rounded-lg border border-theme-border"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-stellar-blue to-stellar-purple flex items-center justify-center text-white text-sm font-bold overflow-hidden">
-                          {review.reviewer.avatarUrl ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img
-                              src={review.reviewer.avatarUrl}
-                              alt={review.reviewer.username}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            review.reviewer.username.charAt(0).toUpperCase()
-                          )}
-                        </div>
-                        <div>
-                          <div className="text-sm font-medium text-theme-heading">
-                            {review.reviewer.username}
-                          </div>
-                          <div className="text-xs text-theme-text">
-                            {new Date(review.createdAt).toLocaleDateString()}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-1">
-                        {[1, 2, 3, 4, 5].map((star) => (
-                          <Star
-                            key={star}
-                            size={16}
-                            className={
-                              star <= review.rating
-                                ? "fill-yellow-400 text-yellow-400"
-                                : "text-theme-border"
-                            }
-                          />
-                        ))}
-                      </div>
-                    </div>
-                    <p className="text-sm text-theme-text mt-3 whitespace-pre-line">
-                      {review.comment}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
           {/* Applicants — visible to owning client only */}
           {isOwnJob && (
             <div className="card mt-8">
@@ -1020,7 +1122,7 @@ export default function JobDetailClient() {
                               onClick={() =>
                                 void handleApplicationStatus(app.id, "ACCEPTED")
                               }
-                              className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg bg-green-500/10 text-green-400 hover:bg-green-500/20 transition-colors disabled:opacity-50"
+                              className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg bg-theme-success/10 text-theme-success hover:bg-theme-success/20 transition-colors disabled:opacity-50"
                             >
                               {actioningApp === app.id ? (
                                 <Loader2 size={12} className="animate-spin" />
@@ -1228,7 +1330,7 @@ export default function JobDetailClient() {
               job.status === "OPEN" &&
               (hasApplied ? (
                 <div className="space-y-2">
-                  <div className="flex items-center justify-center gap-2 w-full py-2 px-4 rounded-lg bg-green-500/10 text-green-400 text-sm font-medium border border-green-500/20">
+                  <div className="flex items-center justify-center gap-2 w-full py-2 px-4 rounded-lg bg-theme-success/10 text-theme-success text-sm font-medium border border-theme-success/20">
                     <CheckCircle size={16} /> Applied
                   </div>
                   <button
@@ -1363,12 +1465,9 @@ export default function JobDetailClient() {
       {job.freelancer && (
         <ReviewModal
           job={job}
-          revieweeId={isClient ? job.freelancer.id : job.client.id}
+          revieweeId={user?.id === job.client.id ? job.freelancer.id : job.client.id}
           revieweeName={
-            isClient ? job.freelancer.username : job.client.username
-          }
-          revieweeWalletAddress={
-            isClient ? job.freelancer.walletAddress : job.client.walletAddress
+            user?.id === job.client.id ? job.freelancer.username : job.client.username
           }
           isOpen={reviewModalOpen}
           onClose={() => {
@@ -1428,6 +1527,21 @@ export default function JobDetailClient() {
           </div>
         </div>
       )}
+
+      {/* Sticky Apply bar — mobile only, freelancers, open jobs not yet applied */}
+      {user?.role === "FREELANCER" &&
+        !isOwnJob &&
+        job.status === "OPEN" &&
+        !hasApplied && (
+          <div className="sm:hidden fixed bottom-0 inset-x-0 z-40 border-t border-theme-border bg-theme-card/95 px-4 py-3 backdrop-blur-sm">
+            <button
+              className="btn-primary w-full"
+              onClick={() => setApplyModalOpen(true)}
+            >
+              Apply for this Job
+            </button>
+          </div>
+        )}
     </div>
   );
 }

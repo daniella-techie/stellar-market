@@ -159,7 +159,6 @@ export default function JobReviewPage() {
           job={job}
           revieweeId={reviewee.id}
           revieweeName={reviewee.name}
-          revieweeWalletAddress={reviewee.walletAddress}
           isOpen={modalOpen}
           onClose={() => setModalOpen(false)}
           onSuccess={() => {

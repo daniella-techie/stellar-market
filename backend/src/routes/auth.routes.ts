@@ -21,6 +21,7 @@ import {
   loginSchema,
   walletAuthSchema,
   walletLinkSchema,
+  walletVerifySchema,
   forgotPasswordSchema,
   resetPasswordSchema,
   verifyEmailParamSchema,
@@ -28,6 +29,7 @@ import {
   twoFactorDisableSchema,
   twoFactorValidateSchema,
 } from "../schemas";
+import RedisClient from "../lib/redis";
 import { generateToken, hashToken } from "../utils/token";
 import { sendPasswordResetEmail, sendVerificationEmail } from "../utils/email";
 
@@ -390,6 +392,98 @@ router.delete(
     });
 
     res.json({ user: userPayload(updated) });
+  }),
+);
+
+// ─── Wallet Challenge / Verify ───────────────────────────────────────────────
+
+const WALLET_CHALLENGE_TTL_SECS = 300; // 5 minutes
+const WALLET_CHALLENGE_KEY = (userId: string) => `wallet_challenge:${userId}`;
+
+/**
+ * POST /auth/wallet/challenge
+ * Issues a one-time challenge that the client must sign with their Stellar
+ * private key to prove ownership before binding a wallet address.
+ */
+router.post(
+  "/wallet/challenge",
+  authenticate,
+  asyncHandler(async (req: AuthRequest, res: Response) => {
+    const nonce = crypto.randomBytes(32).toString("hex");
+    const challenge = `stellar-market:bind:${req.userId}:${nonce}`;
+    const expiresAt = new Date(Date.now() + WALLET_CHALLENGE_TTL_SECS * 1000).toISOString();
+
+    const redis = RedisClient.getInstance();
+    await redis.set(WALLET_CHALLENGE_KEY(req.userId!), challenge, "EX", WALLET_CHALLENGE_TTL_SECS);
+
+    res.json({ challenge, expires_at: expiresAt });
+  }),
+);
+
+/**
+ * POST /auth/wallet/verify
+ * Verifies an ed25519 signature over the active challenge, binds the Stellar
+ * address to the authenticated user, and re-issues a JWT that includes the
+ * walletAddress claim.
+ *
+ * Freighter's signMessage() signs raw UTF-8 bytes. LOBSTR may apply a
+ * different internal derivation — both produce an ed25519 signature that can
+ * be verified with Keypair.verify(rawMessageBytes, sigBytes).
+ */
+router.post(
+  "/wallet/verify",
+  authenticate,
+  validate({ body: walletVerifySchema }),
+  asyncHandler(async (req: AuthRequest, res: Response) => {
+    const { address, signature } = req.body as { address: string; signature: string };
+
+    const redis = RedisClient.getInstance();
+    const challengeKey = WALLET_CHALLENGE_KEY(req.userId!);
+    const challenge = await redis.get(challengeKey);
+
+    if (!challenge) {
+      return res.status(401).json({ error: "CHALLENGE_EXPIRED" });
+    }
+
+    let isValid = false;
+    try {
+      const keypair = Keypair.fromPublicKey(address);
+      isValid = keypair.verify(
+        Buffer.from(challenge, "utf8"),
+        Buffer.from(signature, "base64"),
+      );
+    } catch {
+      return res.status(401).json({ error: "INVALID_SIGNATURE" });
+    }
+
+    if (!isValid) {
+      return res.status(401).json({ error: "INVALID_SIGNATURE" });
+    }
+
+    // Ensure no other account already owns this address
+    const existing = await prisma.user.findUnique({ where: { walletAddress: address } });
+    if (existing && existing.id !== req.userId) {
+      return res.status(409).json({ error: "Wallet is already linked to another account." });
+    }
+
+    // Consume the nonce — one-time use
+    await redis.del(challengeKey);
+
+    const user = await prisma.user.update({
+      where: { id: req.userId },
+      data: { walletAddress: address },
+    });
+
+    // Issue a fresh access token that includes the verified walletAddress claim
+    const token = jwt.sign(
+      { userId: user.id, walletAddress: user.walletAddress },
+      config.jwtSecret,
+      { expiresIn: ACCESS_TOKEN_EXPIRY },
+    );
+    const refreshRaw = await issueRefreshToken(user.id);
+    setRefreshCookie(res, refreshRaw);
+
+    res.json({ user: userPayload(user), token });
   }),
 );
 

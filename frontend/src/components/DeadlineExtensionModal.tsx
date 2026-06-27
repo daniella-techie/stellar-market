@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { X, AlertCircle, Loader2, Calendar } from "lucide-react";
 import axios, { AxiosError } from "axios";
+import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { Milestone } from "@/types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
@@ -22,6 +23,10 @@ export default function DeadlineExtensionModal({
   onClose,
   onSuccess,
 }: DeadlineExtensionModalProps) {
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  useFocusTrap(modalRef, { open: isOpen, onClose });
+
   const [newDeadline, setNewDeadline] = useState<string>("");
   const [reason, setReason] = useState("");
   const [processing, setProcessing] = useState(false);
@@ -111,7 +116,7 @@ export default function DeadlineExtensionModal({
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-theme-bg-primary rounded-lg shadow-xl max-w-md w-full">
+      <div ref={modalRef} className="bg-theme-bg-primary rounded-lg shadow-xl max-w-md w-full">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-theme-border">
           <div className="flex items-center gap-2">
@@ -123,6 +128,7 @@ export default function DeadlineExtensionModal({
           <button
             onClick={onClose}
             className="text-theme-text-secondary hover:text-theme-text transition-colors"
+            aria-label="Close deadline extension modal"
           >
             <X size={24} />
           </button>
@@ -150,10 +156,11 @@ export default function DeadlineExtensionModal({
 
           {/* New Deadline Input */}
           <div>
-            <label className="block text-sm font-medium text-theme-heading mb-2">
+            <label htmlFor="deadline-new-date" className="block text-sm font-medium text-theme-heading mb-2">
               New Deadline *
             </label>
             <input
+              id="deadline-new-date"
               type="datetime-local"
               value={newDeadline}
               onChange={(e) => setNewDeadline(e.target.value)}
@@ -168,10 +175,11 @@ export default function DeadlineExtensionModal({
 
           {/* Reason Input */}
           <div>
-            <label className="block text-sm font-medium text-theme-heading mb-2">
+            <label htmlFor="deadline-reason" className="block text-sm font-medium text-theme-heading mb-2">
               Reason for Extension *
             </label>
             <textarea
+              id="deadline-reason"
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               onBlur={() => setReasonTouched(true)}

@@ -9,6 +9,9 @@ import { useWallet } from "@/context/WalletContext";
 import { useAuth } from "@/context/AuthContext";
 import { Dispute, Vote } from "@/types";
 import DisputeVoteProgress from "@/components/DisputeVoteProgress";
+import EvidenceViewer from "@/components/EvidenceViewer";
+import EvidenceUpload from "@/components/EvidenceUpload";
+import DisputeOutcomeBanner from "@/components/DisputeOutcomeBanner";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
@@ -194,6 +197,10 @@ export default function DisputeDetailPage() {
         </div>
       )}
 
+      <div className="mb-6">
+        <DisputeOutcomeBanner status={dispute.status} />
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
@@ -226,6 +233,19 @@ export default function DisputeDetailPage() {
               </p>
             </div>
             
+            <EvidenceViewer disputeId={dispute.id} />
+
+            {isParticipant &&
+              dispute.status !== "RESOLVED_CLIENT" &&
+              dispute.status !== "RESOLVED_FREELANCER" && (
+                <div className="card">
+                  <EvidenceUpload
+                    disputeId={dispute.id}
+                    onUploadComplete={fetchDispute}
+                  />
+                </div>
+              )}
+
             <h2 className="text-xl font-bold text-theme-heading mb-4 border-b border-theme-border pb-2">
               Community Votes
             </h2>
@@ -239,7 +259,7 @@ export default function DisputeDetailPage() {
                         <div className="flex items-center justify-between mb-2">
                             <div className="font-medium text-theme-heading flex items-center gap-2">
                                 {vote.voter.username}
-                                <span className={`text-xs px-2 py-0.5 rounded ${vote.choice === 'CLIENT' ? 'bg-indigo-500/10 text-indigo-400' : 'bg-orange-500/10 text-orange-400'}`}>
+                                <span className={`text-xs px-2 py-0.5 rounded ${vote.choice === 'CLIENT' ? 'bg-stellar-blue/10 text-stellar-blue' : 'bg-theme-warning/10 text-theme-warning'}`}>
                                     Voted for {vote.choice.toLowerCase()}
                                 </span>
                             </div>
@@ -258,6 +278,34 @@ export default function DisputeDetailPage() {
         <div className="space-y-6">
           {/* Real-time Vote Progress Component */}
           <DisputeVoteProgress disputeId={id as string} showVoterDetails={true} />
+          
+          <div className="card">
+            <h3 className="font-semibold text-theme-heading mb-4 flex items-center gap-2">
+              <ShieldCheck className="text-stellar-blue" size={18} />
+              Assigned Arbitrators
+            </h3>
+            <div className="space-y-3">
+              {dispute.arbitrators && dispute.arbitrators.length > 0 ? (
+                dispute.arbitrators.map((arb) => (
+                  <div key={arb.address} className="flex items-center gap-3 p-2 bg-theme-bg-secondary border border-theme-border rounded-lg">
+                    {arb.avatarUrl ? (
+                      <img src={arb.avatarUrl} alt={arb.displayName} className="w-8 h-8 rounded-full object-cover" />
+                    ) : (
+                      <div className="w-8 h-8 rounded-full bg-stellar-blue/10 text-stellar-blue flex items-center justify-center font-bold text-sm">
+                        {arb.displayName[0].toUpperCase()}
+                      </div>
+                    )}
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-theme-heading truncate">{arb.displayName}</p>
+                      <p className="text-[10px] text-theme-text-muted font-mono truncate">{arb.address}</p>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-theme-text-muted italic text-center py-2">No arbitrators assigned.</p>
+              )}
+            </div>
+          </div>
           
           <div className="card border-theme-border border-2">
             <h3 className="font-semibold text-theme-heading mb-4 flex items-center justify-center gap-2 text-lg">
@@ -296,7 +344,7 @@ export default function DisputeDetailPage() {
                         onClick={() => setVoteChoice("CLIENT")}
                         className={`py-2 px-3 rounded-lg text-sm font-medium border transition-colors ${
                             voteChoice === "CLIENT" 
-                            ? "bg-indigo-500/20 border-indigo-500 text-indigo-400" 
+                            ? "bg-stellar-blue/20 border-stellar-blue text-stellar-blue" 
                             : "bg-theme-bg border-theme-border text-theme-text hover:border-indigo-500/50"
                         }`}
                     >
@@ -307,7 +355,7 @@ export default function DisputeDetailPage() {
                         onClick={() => setVoteChoice("FREELANCER")}
                         className={`py-2 px-3 rounded-lg text-sm font-medium border transition-colors ${
                             voteChoice === "FREELANCER" 
-                            ? "bg-orange-500/20 border-orange-500 text-orange-400" 
+                            ? "bg-theme-warning/20 border-theme-warning text-theme-warning" 
                             : "bg-theme-bg border-theme-border text-theme-text hover:border-orange-500/50"
                         }`}
                     >

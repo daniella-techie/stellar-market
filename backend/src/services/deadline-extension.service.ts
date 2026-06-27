@@ -164,7 +164,7 @@ export class DeadlineExtensionService {
     }
 
     // Update approval status
-    let newStatus = DeadlineExtensionStatus.PENDING;
+    let newStatus: DeadlineExtensionStatus = DeadlineExtensionStatus.PENDING;
     let updateData: any = { updatedAt: new Date() };
 
     if (isClient) {

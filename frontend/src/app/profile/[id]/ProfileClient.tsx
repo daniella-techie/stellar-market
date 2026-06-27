@@ -129,7 +129,7 @@ export default function ProfileClient() {
             size={16}
             className={
               s <= rating
-                ? "fill-yellow-400 text-yellow-400"
+                ? "fill-theme-warning text-theme-warning"
                 : "text-theme-border"
             }
           />
@@ -187,6 +187,18 @@ export default function ProfileClient() {
             <span className="text-sm font-medium text-stellar-purple bg-stellar-purple/10 px-3 py-1 rounded-full border border-stellar-purple/20">
               {profile.role}
             </span>
+            {profile.role === "FREELANCER" && (() => {
+              const avail = profile.availability;
+              const label = avail === false ? "Unavailable" : "Available";
+              const cls = avail === false
+                ? "bg-gray-400/20 border-gray-400/40 text-gray-500"
+                : "bg-green-500/10 border-green-500/30 text-green-600 dark:text-green-400";
+              return (
+                <span className={`text-xs font-semibold px-3 py-1 rounded-full border ${cls}`}>
+                  {label}
+                </span>
+              );
+            })()}
             {isOwnProfile && (
               <Link
                 href="/settings"
@@ -284,7 +296,7 @@ export default function ProfileClient() {
             ) : reputation ? (
               <div>
                 <div className="flex items-center gap-2">
-                  <Star className="text-yellow-400 fill-yellow-400" size={20} />
+                  <Star className="text-theme-warning fill-theme-warning" size={20} />
                   <span className="text-2xl font-bold text-theme-heading">
                     {reputation.score.toFixed(1)} / 5
                   </span>
@@ -328,7 +340,7 @@ export default function ProfileClient() {
                       key={idx}
                       className="text-xs flex items-center gap-2 text-theme-text"
                     >
-                      <AlertCircle size={14} className="text-amber-500" />
+                      <AlertCircle size={14} className="text-theme-warning" />
                       Add {step.label}
                     </li>
                   ))}
@@ -358,7 +370,7 @@ export default function ProfileClient() {
               </div>
               <div className="flex justify-between items-center p-3 bg-theme-bg rounded-lg border border-theme-border">
                 <span className="text-theme-text flex items-center gap-2">
-                  <Star size={18} className="text-yellow-400" /> Reputation
+                  <Star size={18} className="text-theme-warning" /> Reputation
                 </span>
                 <span className="text-theme-heading font-bold">
                   {reputation ? reputation.badgeTier : "No score yet"}
@@ -373,11 +385,11 @@ export default function ProfileClient() {
             </h3>
             <ul className="space-y-3">
               <li className="flex items-center gap-3 text-sm text-theme-text">
-                <ShieldCheck size={18} className="text-green-500" /> Wallet
+                <ShieldCheck size={18} className="text-theme-success" /> Wallet
                 Verified
               </li>
               <li className="flex items-center gap-3 text-sm text-theme-text">
-                <ShieldCheck size={18} className="text-green-500" /> Email
+                <ShieldCheck size={18} className="text-theme-success" /> Email
                 Verified
               </li>
             </ul>

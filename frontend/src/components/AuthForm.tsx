@@ -167,31 +167,32 @@ export default function AuthForm({ type }: AuthFormProps) {
 
   if (twoFactorPending) {
     return (
-      <div className="w-full max-w-md p-8 bg-dark-card border border-dark-border rounded-2xl shadow-xl">
+      <div className="w-full max-w-md p-8 bg-theme-card border border-theme-border rounded-2xl shadow-xl">
         <div className="text-center mb-8">
           <ShieldCheck size={48} className="mx-auto mb-4 text-stellar-blue" />
-          <h1 className="text-3xl font-bold text-dark-heading mb-2">Two-Factor Authentication</h1>
-          <p className="text-dark-muted">
+          <h1 className="text-3xl font-bold text-theme-heading mb-2">Two-Factor Authentication</h1>
+          <p className="text-theme-text">
             Enter the 6-digit code from your authenticator app, or an 8-character recovery code.
           </p>
         </div>
 
         <form onSubmit={handleTwoFactorSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-dark-text mb-1">
+            <label htmlFor="auth-2fa-code" className="block text-sm font-medium text-theme-text mb-1">
               Verification Code
             </label>
             <div className="relative">
               <ShieldCheck
                 size={18}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-dark-muted"
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-theme-text"
               />
               <input
+                id="auth-2fa-code"
                 type="text"
                 required
                 value={totpCode}
                 onChange={(e) => setTotpCode(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 bg-dark-bg border border-dark-border rounded-lg focus:ring-2 focus:ring-stellar-blue outline-none transition-all text-dark-text text-center tracking-widest"
+                className="w-full pl-10 pr-4 py-2 bg-theme-bg border border-theme-border rounded-lg focus:ring-2 focus:ring-stellar-blue outline-none transition-all text-theme-text text-center tracking-widest"
                 placeholder="000000 or recovery"
                 autoFocus
                 autoComplete="one-time-code"
@@ -201,7 +202,7 @@ export default function AuthForm({ type }: AuthFormProps) {
           </div>
 
           {error && (
-            <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm">
+            <div className="p-3 bg-theme-error/10 border border-theme-error/20 rounded-lg text-theme-error text-sm">
               {error}
             </div>
           )}
@@ -222,7 +223,7 @@ export default function AuthForm({ type }: AuthFormProps) {
               setTotpCode("");
               setError(null);
             }}
-            className="w-full py-2 text-dark-muted hover:text-dark-text text-sm transition-colors"
+            className="w-full py-2 text-theme-text hover:text-theme-heading text-sm transition-colors"
           >
             Back to login
           </button>
@@ -248,7 +249,7 @@ export default function AuthForm({ type }: AuthFormProps) {
         {type === "register" && (
           <>
             <div>
-              <label className="block text-sm font-medium text-theme-text mb-1">
+              <label htmlFor="auth-username" className="block text-sm font-medium text-theme-text mb-1">
                 Username
               </label>
               <div className="relative">
@@ -257,6 +258,7 @@ export default function AuthForm({ type }: AuthFormProps) {
                   className="absolute left-3 top-1/2 -translate-y-1/2 text-theme-text"
                 />
                 <input
+                  id="auth-username"
                   type="text"
                   name="username"
                   required
@@ -269,10 +271,11 @@ export default function AuthForm({ type }: AuthFormProps) {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-theme-text mb-1">
+              <label htmlFor="auth-role" className="block text-sm font-medium text-theme-text mb-1">
                 Role
               </label>
               <select
+                id="auth-role"
                 name="role"
                 value={formData.role}
                 onChange={handleChange}
@@ -284,7 +287,7 @@ export default function AuthForm({ type }: AuthFormProps) {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-theme-text mb-1">
+              <label htmlFor="auth-wallet" className="block text-sm font-medium text-theme-text mb-1">
                 Wallet Address
               </label>
               <div className="flex gap-2">
@@ -294,6 +297,7 @@ export default function AuthForm({ type }: AuthFormProps) {
                     className="absolute left-3 top-1/2 -translate-y-1/2 text-theme-text"
                   />
                   <input
+                    id="auth-wallet"
                     type="text"
                     readOnly
                     value={address || ""}
@@ -304,7 +308,7 @@ export default function AuthForm({ type }: AuthFormProps) {
                 {!address && (
                   <button
                     type="button"
-                    onClick={connect}
+                    onClick={() => connect()}
                     disabled={isConnecting}
                     className="btn-primary py-2 px-4 text-sm flex items-center gap-2 disabled:opacity-60"
                   >
@@ -331,7 +335,12 @@ export default function AuthForm({ type }: AuthFormProps) {
                   Please unlock your Freighter wallet and try again.
                 </p>
               )}
-              {walletError && walletError !== "NOT_INSTALLED" && walletError !== "LOCKED" && (
+              {walletError === "TIMEOUT" && (
+                <p className="text-xs text-theme-error mt-1">
+                  Wallet connection timed out. Make sure Freighter is unlocked and try again.
+                </p>
+              )}
+              {walletError && walletError !== "NOT_INSTALLED" && walletError !== "LOCKED" && walletError !== "TIMEOUT" && (
                 <p className="text-xs text-theme-error mt-1">{walletError}</p>
               )}
               {!address && !walletError && type === "register" && (
@@ -361,6 +370,7 @@ export default function AuthForm({ type }: AuthFormProps) {
                       className="absolute left-3 top-1/2 -translate-y-1/2 text-theme-text"
                     />
                     <input
+                      id="auth-referral"
                       type="text"
                       name="referralCode"
                       value={formData.referralCode}
@@ -376,7 +386,7 @@ export default function AuthForm({ type }: AuthFormProps) {
         )}
 
         <div>
-          <label className="block text-sm font-medium text-theme-text mb-1">
+          <label htmlFor="auth-email" className="block text-sm font-medium text-theme-text mb-1">
             Email Address
           </label>
           <div className="relative">
@@ -385,6 +395,7 @@ export default function AuthForm({ type }: AuthFormProps) {
               className="absolute left-3 top-1/2 -translate-y-1/2 text-theme-text"
             />
             <input
+              id="auth-email"
               type="email"
               name="email"
               required
@@ -397,7 +408,7 @@ export default function AuthForm({ type }: AuthFormProps) {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-theme-text mb-1">
+          <label htmlFor="auth-password" className="block text-sm font-medium text-theme-text mb-1">
             Password
           </label>
           <div className="relative">
@@ -406,6 +417,7 @@ export default function AuthForm({ type }: AuthFormProps) {
               className="absolute left-3 top-1/2 -translate-y-1/2 text-theme-text"
             />
             <input
+              id="auth-password"
               type="password"
               name="password"
               required

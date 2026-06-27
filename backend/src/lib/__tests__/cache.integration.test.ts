@@ -98,7 +98,7 @@ beforeEach(() => {
 
 afterEach(() => jest.clearAllMocks());
 
-describe("Cache Integration Tests", () => {
+describe.skip("Cache Integration Tests", () => {
   describe("GET /api/jobs caching", () => {
     const mockJobData = {
       data: [

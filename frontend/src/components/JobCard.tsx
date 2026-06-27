@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useContext } from "react";
 import {
   Bookmark,
   BookmarkCheck,
@@ -14,7 +13,8 @@ import {
 import StatusBadge from "./StatusBadge";
 import EscrowStatusBadge from "./EscrowStatusBadge";
 import { Job, User as UserType } from "@/types";
-import { AuthContext } from "@/context/AuthContext";
+import { useAuth } from "@/context/AuthContext";
+import { useRelativeTime } from "@/hooks/useRelativeTime";
 
 interface JobCardProps {
   job: Job;
@@ -71,8 +71,9 @@ export default function JobCard({
   onToggleSave,
   onTagClick,
 }: JobCardProps) {
-  const authUser = useContext(AuthContext)?.user ?? null;
+  const authUser = useAuth().user ?? null;
   const user = viewer ?? authUser;
+  const postedAt = useRelativeTime(new Date(job.createdAt));
   const isFreelancer = user?.role === "FREELANCER";
   const isClient = user?.role === "CLIENT";
   const isOwnJob = user?.id === job.client.id;
@@ -107,7 +108,7 @@ export default function JobCard({
           {canSave && (
             <button
               type="button"
-              onClick={() => void onToggleSave(job)}
+              onClick={() => void onToggleSave?.(job)}
               className={`inline-flex items-center justify-center rounded-full border px-2.5 py-2 text-xs font-medium transition-colors ${
                 isSaved
                   ? "border-stellar-blue/30 bg-stellar-blue/10 text-stellar-blue"
@@ -180,7 +181,7 @@ export default function JobCard({
         </div>
         <div className="flex items-center gap-1">
           <Clock size={14} />
-          <span>{new Date(job.createdAt).toLocaleDateString()}</span>
+          <span>{postedAt}</span>
         </div>
       </div>
 

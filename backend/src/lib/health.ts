@@ -3,16 +3,17 @@ import { rpc } from "@stellar/stellar-sdk";
 import RedisClient from "./redis";
 import { config } from "../config";
 
-export type DependencyHealthStatus = "ok" | "error";
+export type DependencyHealthStatus = "ok" | "error" | "degraded";
+export type HorizonListenerStatus = "connected" | "degraded" | "down";
 
 export type HealthResponse = {
   status: "ok" | "degraded";
-  uptime: number;
-  version: string;
+  service: "stellarmarket-api";
+  uptime?: number;
   checks: {
     database: DependencyHealthStatus;
     redis: DependencyHealthStatus;
-    sorobanRpc: DependencyHealthStatus;
+    horizonListener: HorizonListenerStatus | DependencyHealthStatus;
   };
 };
 
@@ -23,6 +24,7 @@ export async function getHealthStatus(
     database: "ok",
     redis: "ok",
     sorobanRpc: "ok",
+    horizonListener: getHorizonListenerHealth(),
   };
 
   try {
@@ -47,8 +49,11 @@ export async function getHealthStatus(
     checks.sorobanRpc = "error";
   }
 
+  // Database and Redis are critical; horizon listener "down" is also critical
   const criticalHealthy =
-    checks.database === "ok" && checks.redis === "ok";
+    checks.database === "ok" &&
+    checks.redis === "ok" &&
+    checks.horizonListener !== "down";
 
   return {
     status: criticalHealthy ? "ok" : "degraded",

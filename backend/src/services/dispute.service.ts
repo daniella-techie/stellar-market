@@ -10,6 +10,8 @@ import {
 } from "@prisma/client";
 import { createError } from "../middleware/error";
 import { NotificationService } from "./notification.service";
+import { ContractService } from "./contract.service";
+import { logger } from "../lib/logger";
 
 const prisma = new PrismaClient();
 
@@ -323,7 +325,42 @@ export class DisputeService {
       throw new Error("Dispute not found");
     }
 
-    return dispute;
+    let arbitrators: Array<{ address: string; displayName: string; avatarUrl: string | null }> = [];
+    if (dispute.onChainDisputeId) {
+      try {
+        const addresses = await ContractService.getOnChainAssignedArbitrators(dispute.onChainDisputeId);
+        if (addresses && addresses.length > 0) {
+          arbitrators = await Promise.all(
+            addresses.map(async (address) => {
+              const user = await prisma.user.findFirst({
+                where: { walletAddress: address },
+                select: { username: true, avatarUrl: true },
+              });
+              if (user) {
+                return {
+                  address,
+                  displayName: user.username,
+                  avatarUrl: user.avatarUrl,
+                };
+              } else {
+                return {
+                  address,
+                  displayName: `${address.slice(0, 4)}...${address.slice(-4)}`,
+                  avatarUrl: null,
+                };
+              }
+            })
+          );
+        }
+      } catch (err) {
+        logger.warn({ err, onChainDisputeId: dispute.onChainDisputeId }, "Failed to get on-chain arbitrators");
+      }
+    }
+
+    return {
+      ...dispute,
+      arbitrators,
+    };
   }
 
   /**

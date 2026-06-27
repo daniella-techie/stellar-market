@@ -7,10 +7,14 @@ const config: Config = {
   moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/src/$1",
   },
+  setupFilesAfterEnv: ["<rootDir>/jest.setup.ts"],
   clearMocks: true,
   transform: {
-    "^.+\\.tsx?$": ["ts-jest", { diagnostics: false }],
+    "^.+\\.[tj]sx?$": ["ts-jest", { diagnostics: false, allowJs: true }],
   },
+  transformIgnorePatterns: [
+    "/node_modules/(?!(@scure|@otplib|otplib)/)",
+  ],
 };
 
 export default config;

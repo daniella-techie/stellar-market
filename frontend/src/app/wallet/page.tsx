@@ -15,6 +15,8 @@ import {
   RefreshCw,
   Wallet,
 } from "lucide-react";
+import TransactionRowSkeleton from "@/components/skeletons/TransactionRowSkeleton";
+import { useDelay } from "@/hooks/useDelay";
 import { useAuth } from "@/context/AuthContext";
 import { useWallet } from "@/context/WalletContext";
 
@@ -133,7 +135,7 @@ function txTypeLabel(type: TransactionType) {
 function txTypeClasses(type: TransactionType) {
   switch (type) {
     case "DEPOSIT":
-      return "bg-amber-500/10 text-amber-500 border-amber-500/30";
+      return "bg-theme-warning/10 text-theme-warning border-theme-warning/30";
     case "RELEASE":
       return "bg-theme-success/10 text-theme-success border-theme-success/30";
     case "REFUND":
@@ -163,6 +165,8 @@ export default function WalletPage() {
   const [minAmount, setMinAmount] = useState("");
   const [maxAmount, setMaxAmount] = useState("");
   const [totalPages, setTotalPages] = useState(1);
+
+  const ready = useDelay();
 
   const fetchHistory = useCallback(async () => {
     if (!token) return;
@@ -542,19 +546,13 @@ export default function WalletPage() {
               </div>
             </div>
 
-            {loading ? (
-              <div className="space-y-3 px-5 py-5">
+            {loading && ready ? (
+              <div className="divide-y divide-theme-border">
                 {Array.from({ length: 6 }).map((_, index) => (
-                  <div
-                    key={index}
-                    className="animate-pulse rounded-xl border border-theme-border bg-theme-bg px-4 py-4"
-                  >
-                    <div className="h-4 w-1/3 rounded bg-theme-border" />
-                    <div className="mt-3 h-3 w-1/2 rounded bg-theme-border" />
-                  </div>
+                  <TransactionRowSkeleton key={index} />
                 ))}
               </div>
-            ) : visibleTransactions.length === 0 ? (
+            ) : loading ? null : visibleTransactions.length === 0 ? (
               <div className="px-5 py-16 text-center">
                 <Wallet size={40} className="mx-auto mb-4 text-theme-text" />
                 <h3 className="text-lg font-semibold text-theme-heading">
@@ -737,7 +735,7 @@ function MetricCard({
 }) {
   const toneClasses: Record<"success" | "warning" | "info" | "neutral", string> = {
     success: "bg-theme-success/10 text-theme-success",
-    warning: "bg-amber-500/10 text-amber-500",
+    warning: "bg-theme-warning/10 text-theme-warning",
     info: "bg-stellar-blue/10 text-stellar-blue",
     neutral: "bg-theme-border/60 text-theme-heading",
   };

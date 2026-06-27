@@ -10,8 +10,12 @@ import { globalRateLimiter, writeRateLimiter } from "./middleware/rate-limit";
 import { sanitizeInput } from "./middleware/sanitize";
 import { errorHandler } from "./middleware/error";
 import { requestIdMiddleware } from "./middleware/request-id";
+import { requestTimeoutMiddleware } from "./middleware/timeout";
 import { initSocket } from "./socket";
+import { initYjsServer } from "./socket/yjsServer";
 import { startExpiryJob } from "./jobs/expiry.job";
+import { startPendingTxJob } from "./jobs/pending-tx.job";
+import { startEscrowTtlJob } from "./jobs/escrow-ttl.job";
 import {
   startHorizonListener,
   stopHorizonListener,
@@ -21,16 +25,71 @@ import { getHealthStatus } from "./lib/health";
 import { metricsHandler, requestDurationMiddleware } from "./lib/metrics";
 import { RecommendationQueueService } from "./services/recommendation-queue.service";
 import { initializeVirusScanner } from "./utils/virusScanner";
+import { ReputationCacheService } from "./services/reputation-cache.service";
+import { createBullBoard } from "@bull-board/api";
+import { BullMQAdapter } from "@bull-board/api/bullMQAdapter";
+import { ExpressAdapter } from "@bull-board/express";
+import { notificationQueue, stopNotificationWorker } from "./lib/notification-queue";
+import { requireAdmin } from "./middleware/auth";
 
 const app = express();
 import { swaggerUi, swaggerSpec } from "./config/swagger";
 const httpServer = createServer(app);
-const prisma = new PrismaClient();
+
+// Pool metrics tracked via middleware (Prisma JS client does not expose pool internals)
+const poolMetrics = { active: 0, waiting: 0, exhaustedCount: 0 };
+
+const prisma = new PrismaClient({
+  datasources: {
+    db: {
+      // connection_limit should be set in DATABASE_URL query string, e.g.:
+      // postgresql://user:pass@host/db?connection_limit=10&pool_timeout=10
+      // We honour the env var as-is; the pool_metrics middleware tracks exhaustion.
+      url: process.env.DATABASE_URL,
+    },
+  },
+});
+
+prisma.$use(async (params, next) => {
+  if (params.model === "Job") {
+    if (params.action === "findUnique" || params.action === "findFirst" || params.action === "findMany" || params.action === "count") {
+      if (!params.args) params.args = {};
+      const where = params.args.where || {};
+      if (where.deletedAt === undefined) {
+        where.deletedAt = null;
+        params.args.where = where;
+      }
+    }
+  }
+  return next(params);
+});
+
+// Detect Prisma connection-pool exhaustion (P2024) and alert
+prisma.$use(async (params, next) => {
+  poolMetrics.active += 1;
+  try {
+    const result = await next(params);
+    return result;
+  } catch (err: any) {
+    if (err?.code === "P2024") {
+      poolMetrics.exhaustedCount += 1;
+      logger.error(
+        { err, model: params.model, action: params.action },
+        "Connection pool exhausted — consider increasing connection_limit in DATABASE_URL",
+      );
+    }
+    throw err;
+  } finally {
+    poolMetrics.active -= 1;
+  }
+});
 
 installRequestIdConsolePatch();
 
 // Attach Socket.io
 initSocket(httpServer);
+// Attach Yjs WebSocket server (milestone negotiation rooms)
+initYjsServer(httpServer);
 
 const corsOptions: cors.CorsOptions = {
   origin: (origin, callback) => {
@@ -57,6 +116,7 @@ if (process.env.NODE_ENV !== "production") {
 app.use(cors(corsOptions));
 app.use(cookieParser());
 app.use(requestIdMiddleware);
+app.use(requestTimeoutMiddleware);
 app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: true, limit: "1mb" }));
 app.use(sanitizeInput);
@@ -70,6 +130,36 @@ app.get("/health", async (_req, res) => {
 app.get("/metrics", metricsHandler);
 
 app.use(requestDurationMiddleware);
+// Metrics endpoint — exposes pool stats and process counters
+app.get("/metrics", (_req, res) => {
+  res.json({
+    db_pool_size: poolMetrics.active,
+    db_pool_waiting: poolMetrics.waiting,
+    db_pool_exhausted_total: poolMetrics.exhaustedCount,
+    process_uptime_seconds: Math.floor(process.uptime()),
+    process_memory_rss_bytes: process.memoryUsage().rss,
+  });
+});
+
+// Database-only health probe (used by some platforms/LB checks)
+app.get("/health/db", async (_req, res) => {
+  try {
+    await prisma.$queryRawUnsafe("SELECT 1");
+    res.status(200).json({ status: "ok" });
+  } catch (error) {
+    logger.error({ err: error }, "Database health probe failed");
+    res.status(503).json({ status: "error" });
+  }
+});
+
+// Bull Board — queue dashboard (admin-gated)
+const bullBoardAdapter = new ExpressAdapter();
+bullBoardAdapter.setBasePath("/admin/queues");
+createBullBoard({
+  queues: [new BullMQAdapter(notificationQueue)],
+  serverAdapter: bullBoardAdapter,
+});
+app.use("/admin/queues", requireAdmin, bullBoardAdapter.getRouter());
 
 // Rate limiting (route-specific auth limiters are applied in auth router)
 
@@ -85,8 +175,12 @@ app.use("/api", globalRateLimiter);
 app.use("/api", routes);
 
 // 404 handler
-app.use((_req, res) => {
-  res.status(404).json({ error: "Route not found." });
+app.use((req, res) => {
+  res.status(404).json({
+    code: "NOT_FOUND",
+    message: "Route not found.",
+    requestId: req.requestId,
+  });
 });
 
 // Error handler
@@ -96,11 +190,18 @@ function startServer(): void {
   httpServer.listen(config.port, async () => {
     logger.info({ port: config.port }, "StellarMarket API running");
     startExpiryJob();
+    startPendingTxJob();
+    startEscrowTtlJob();
     startHorizonListener();
     RecommendationQueueService.startWorker();
 
     // Initialize virus scanner (non-blocking)
     await initializeVirusScanner();
+
+    // Warm reputation cache and start periodic refresh
+    logger.info("Initializing reputation cache...");
+    await ReputationCacheService.warmCache();
+    ReputationCacheService.startPeriodicRefresh();
   });
 }
 
@@ -109,6 +210,8 @@ async function gracefulShutdown(signal: string): Promise<void> {
 
   stopHorizonListener();
   RecommendationQueueService.stopWorker();
+  ReputationCacheService.stopPeriodicRefresh();
+  await stopNotificationWorker();
 
   const { NotificationService } =
     await import("./services/notification.service");

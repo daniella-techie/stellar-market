@@ -337,8 +337,8 @@ router.put(
     }
 
     const xdr = await ContractService.buildSubmitMilestoneTx(
-      milestone.job.freelancer.walletAddress,
-      milestone.job.contractJobId,
+      milestone.job.freelancer.walletAddress ?? "",
+      milestone.job.contractJobId ?? "",
       milestone.onChainIndex,
     );
 
@@ -541,8 +541,8 @@ router.put(
     }
 
     const xdr = await ContractService.buildApproveMilestoneTx(
-      milestone.job.client.walletAddress,
-      milestone.job.contractJobId,
+      milestone.job.client.walletAddress ?? "",
+      milestone.job.contractJobId ?? "",
       milestone.onChainIndex,
     );
 

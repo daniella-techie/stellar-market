@@ -1,4 +1,5 @@
 import { AuthRequest, authenticate } from "../middleware/auth";
+import { walletSourceGuard } from "../middleware/wallet-guard";
 import { Prisma, PrismaClient } from "@prisma/client";
 import { Response, Router } from "express";
 import {
@@ -108,6 +109,7 @@ router.post("/",
    *               $ref: '#/components/schemas/ReviewsResponse'
    */
   authenticate,
+  walletSourceGuard,
   validate({ body: createReviewSchema }),
   asyncHandler(async (req: AuthRequest, res: Response) => {
     const { jobId, revieweeId, rating, comment } = req.body;
@@ -260,6 +262,7 @@ router.get("/:id",
 // Update a review
 router.put("/:id",
   authenticate,
+  walletSourceGuard,
   validate({
     params: getReviewByIdParamSchema,
     body: updateReviewSchema

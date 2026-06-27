@@ -14,6 +14,7 @@ import { asyncHandler } from "../middleware/error";
 import { avatarUpload } from "../config/upload";
 import { validate } from "../middleware/validation";
 import { ReputationService } from "../services/reputation.service";
+import { normalizeSkills } from "../services/skill.service";
 import { logger } from "../lib/logger";
 
 const router = Router();
@@ -88,6 +89,12 @@ router.put(
           res.status(409).json({ error: "Username is already taken." });
           return;
         }
+      }
+
+      // Normalise free-text skills against the canonical taxonomy so
+      // "ReactJS" / "react.js" collapse to one searchable value ("React").
+      if (data.skills) {
+        data.skills = await normalizeSkills(data.skills);
       }
 
       // Check email uniqueness if being updated
@@ -364,13 +371,17 @@ router.get(
             role: true,
             skills: true,
             walletAddress: true,
+            availability: true,
             averageRating: true,
             reviewCount: true,
             createdAt: true,
             reviewsReceived: {
               orderBy: { createdAt: "desc" as const },
               select: {
+                id: true,
                 rating: true,
+                comment: true,
+                createdAt: true,
                 reviewer: {
                   select: {
                     id: true,
@@ -386,7 +397,9 @@ router.get(
               select: {
                 id: true,
                 title: true,
+                category: true,
                 status: true,
+                createdAt: true,
                 updatedAt: true,
               },
             },
@@ -396,7 +409,9 @@ router.get(
               select: {
                 id: true,
                 title: true,
+                category: true,
                 status: true,
+                createdAt: true,
                 updatedAt: true,
               },
             },
@@ -552,7 +567,8 @@ router.put(
     if (body.skills !== undefined) data.skills = body.skills;
     if (body.availability !== undefined) data.availability = body.availability;
     if (body.name !== undefined) data.username = body.name;
-    if (body.stellarAddress !== undefined) data.walletAddress = body.stellarAddress;
+    // walletAddress is never written here — use POST /auth/wallet/challenge
+    // then POST /auth/wallet/verify to prove key ownership before binding.
 
     const user = await prisma.user.update({
       where: { id },

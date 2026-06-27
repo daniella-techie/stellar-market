@@ -56,6 +56,14 @@
                   "map": [
                     {
                       "key": {
+                        "symbol": "last_updated_ledger"
+                      },
+                      "val": {
+                        "u32": 0
+                      }
+                    },
+                    {
+                      "key": {
                         "symbol": "review_count"
                       },
                       "val": {

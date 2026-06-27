@@ -12,6 +12,7 @@ const config: Config = {
   transform: {
     "^.+\\.(ts|tsx)$": ["ts-jest", { tsconfig: { jsx: "react-jsx" } }],
   },
+  setupFilesAfterEnv: ["<rootDir>/jest.setup.ts"],
   clearMocks: true,
 };
 

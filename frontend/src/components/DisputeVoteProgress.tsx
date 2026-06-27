@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { ShieldCheck, Users } from "lucide-react";
 import { useDisputeStatus } from "@/hooks/useDisputeStatus";
+import type { Vote } from "@/types";
 
 interface DisputeVoteProgressProps {
   disputeId: string;
@@ -86,22 +87,22 @@ export default function DisputeVoteProgress({
       {/* Split Progress Bar */}
       <div className="mb-4">
         <div className="flex justify-between text-xs mb-2">
-          <span className="font-medium text-indigo-400">
+          <span className="font-medium text-stellar-blue">
             Client ({dispute.votesForClient})
           </span>
-          <span className="font-medium text-orange-400">
+          <span className="font-medium text-theme-warning">
             Freelancer ({dispute.votesForFreelancer})
           </span>
         </div>
         <div className="w-full flex h-6 rounded-lg overflow-hidden bg-theme-bg-secondary border border-theme-border/50 shadow-inner">
           <div 
-            className="h-full bg-gradient-to-r from-indigo-500 to-indigo-600 transition-all duration-500 ease-out flex items-center justify-center text-white text-xs font-semibold" 
+            className="h-full bg-gradient-to-r from-stellar-blue to-stellar-purple transition-all duration-500 ease-out flex items-center justify-center text-white text-xs font-semibold" 
             style={{ width: `${clientPercentage}%` }}
           >
             {dispute.votesForClient > 0 && clientPercentage > 15 && `${Math.round(clientPercentage)}%`}
           </div>
           <div 
-            className="h-full bg-gradient-to-r from-orange-500 to-orange-600 transition-all duration-500 ease-out flex items-center justify-center text-white text-xs font-semibold" 
+            className="h-full bg-gradient-to-r from-amber-500 to-amber-600 transition-all duration-500 ease-out flex items-center justify-center text-white text-xs font-semibold" 
             style={{ width: `${freelancerPercentage}%` }}
           >
             {dispute.votesForFreelancer > 0 && freelancerPercentage > 15 && `${Math.round(freelancerPercentage)}%`}
@@ -121,7 +122,7 @@ export default function DisputeVoteProgress({
           <div 
             className={`h-full transition-all duration-500 ease-out ${
               progressPercentage >= 100 
-                ? 'bg-gradient-to-r from-theme-success to-green-500' 
+                ? 'bg-gradient-to-r from-theme-success to-emerald-500' 
                 : 'bg-gradient-to-r from-stellar-blue to-stellar-purple'
             }`}
             style={{ width: `${progressPercentage}%` }}
@@ -130,7 +131,7 @@ export default function DisputeVoteProgress({
       </div>
 
       {/* Status Message */}
-      <div className="text-center">
+      <div className="text-center" aria-live="polite" aria-atomic="true">
         {totalVotes >= dispute.minVotes ? (
           <p className="text-sm text-theme-success font-medium flex items-center justify-center gap-2">
             <ShieldCheck size={16} />
@@ -148,16 +149,16 @@ export default function DisputeVoteProgress({
         <div className="mt-4 pt-4 border-t border-theme-border">
           <p className="text-xs text-theme-text mb-2 font-medium">Recent Voters (Anonymized)</p>
           <div className="flex flex-wrap gap-2">
-            {dispute.votes.slice(-5).map((vote) => (
+            {dispute.votes.slice(-5).map((vote: Vote) => (
               <span 
                 key={vote.id}
                 className={`text-xs px-2 py-1 rounded-full border ${
                   vote.choice === 'CLIENT' 
-                    ? 'bg-indigo-500/10 border-indigo-500/30 text-indigo-400' 
-                    : 'bg-orange-500/10 border-orange-500/30 text-orange-400'
+                    ? 'bg-stellar-blue/10 border-stellar-blue/30 text-stellar-blue' 
+                    : 'bg-theme-warning/10 border-theme-warning/30 text-theme-warning'
                 }`}
               >
-                {anonymizeAddress(vote.voter.walletAddress)}
+                {anonymizeAddress(vote.voter.walletAddress ?? "")}
               </span>
             ))}
           </div>
