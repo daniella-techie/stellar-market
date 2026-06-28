@@ -323,6 +323,13 @@ export default function SettingsPage() {
 
   // ─── Profile Functions ──────────────────────────────────────────────────────
 
+  function handleAvatarFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (file) {
+      setAvatarFile(file);
+      setAvatarPreview(URL.createObjectURL(file));
+    }
+  }
   async function handleAvatarUpload() {
     if (!avatarFile || !token) return;
 
