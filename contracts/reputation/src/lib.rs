@@ -91,6 +91,10 @@ pub enum ReputationError {
     AppealNotFound = 21,
     AppealAlreadyResolved = 22,
     AlreadyEndorsed = 23,
+    // Rejected when a referral bonus is recorded with a timestamp in the future.
+    // A future-dated bonus would keep `get_decay_factor` at `elapsed_seconds = 0`,
+    // permanently exempting it from decay and inflating the score (issue #781).
+    InvalidTimestamp = 24,
 }
 
 #[contracttype]
@@ -841,6 +845,87 @@ impl ReputationContract {
             .instance()
             .set(&DataKey::ReferralBonus, &bonus);
         bump_instance_ttl(&env);
+        Ok(())
+    }
+
+    /// Record a referral bonus for `user` with an explicit `timestamp`.
+    ///
+    /// Restricted to registered multi-sig signers — used for migrations and
+    /// manual corrections that need to backfill a bonus with its original date.
+    ///
+    /// Security (issue #781): the `timestamp` is validated to be at or before the
+    /// current ledger time. A future-dated bonus would make `get_decay_factor`
+    /// compute `elapsed_seconds = 0` forever, permanently exempting the bonus
+    /// from time decay and inflating the user's score regardless of how much
+    /// time actually passes. Past and current timestamps are accepted so the
+    /// bonus decays from its true origin date.
+    pub fn add_referral_bonus(
+        env: Env,
+        signer: Address,
+        user: Address,
+        amount: u64,
+        weight: u64,
+        timestamp: u64,
+    ) -> Result<(), ReputationError> {
+        signer.require_auth();
+        if !is_signer(&env, &signer) {
+            return Err(ReputationError::NotAdmin);
+        }
+        require_not_paused(&env)?;
+
+        // Reject future timestamps that would bypass decay (see doc comment).
+        if timestamp > env.ledger().timestamp() {
+            return Err(ReputationError::InvalidTimestamp);
+        }
+
+        let bonuses_key = DataKey::ReferralBonusList(user.clone());
+        let mut bonuses: Vec<ReferralBonusRecord> = env
+            .storage()
+            .persistent()
+            .get(&bonuses_key)
+            .unwrap_or(Vec::new(&env));
+        bonuses.push_back(ReferralBonusRecord {
+            amount,
+            weight,
+            timestamp,
+        });
+        env.storage().persistent().set(&bonuses_key, &bonuses);
+        env.storage().persistent().extend_ttl(
+            &bonuses_key,
+            MIN_TTL_THRESHOLD,
+            MIN_TTL_EXTEND_TO,
+        );
+
+        // Mirror `process_referral_bonus`: keep the legacy reputation accumulator
+        // present so `get_reputation` resolves the user. The decayed totals are
+        // always recomputed from the bonus list, so this stays consistent.
+        let rep_key = DataKey::Reputation(user.clone());
+        let mut reputation: UserReputation = env
+            .storage()
+            .persistent()
+            .get(&rep_key)
+            .unwrap_or(UserReputation {
+                user: user.clone(),
+                total_score: 0,
+                total_weight: 0,
+                review_count: 0,
+                last_updated_ledger: env.ledger().timestamp() as u32,
+            });
+        apply_lazy_decay(&env, &mut reputation);
+        reputation.total_score = reputation.total_score.saturating_add(amount);
+        reputation.total_weight = reputation.total_weight.saturating_add(weight);
+        reputation.last_updated_ledger = env.ledger().timestamp() as u32;
+        env.storage().persistent().set(&rep_key, &reputation);
+        bump_reputation_ttl(&env, &user);
+
+        // Keep the leaderboard consistent with the user's new decayed totals.
+        Self::update_leaderboard(&env, &user);
+
+        env.events().publish(
+            (symbol_short!("reput"), symbol_short!("ref_add")),
+            (user, amount, timestamp),
+        );
+
         Ok(())
     }
 

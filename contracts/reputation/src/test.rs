@@ -2343,3 +2343,67 @@ fn test_badge_event_preserved_alongside_tier_up() {
     assert_eq!(badges.len(), 1);
     assert_eq!(badges.get(0).unwrap().badge_type, ReputationTier::Silver);
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// #781 — Referral bonus timestamp validation
+// A future-dated bonus keeps `get_decay_factor` at elapsed_seconds = 0,
+// permanently exempting it from decay and inflating the score.
+// ─────────────────────────────────────────────────────────────────────────────
+
+#[test]
+#[should_panic(expected = "Error(Contract, #24)")]
+fn test_add_referral_bonus_rejects_future_timestamp() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let reputation_id = env.register_contract(None, ReputationContract);
+    let client = ReputationContractClient::new(&env, &reputation_id);
+    let admin = Address::generate(&env);
+    client.initialize(&vec![&env, admin.clone()], &1u32, &0u32);
+    env.ledger().with_mut(|l| l.timestamp = 1_000);
+
+    let user = Address::generate(&env);
+    // timestamp 1_001 > current ledger timestamp 1_000 -> InvalidTimestamp (#24)
+    client.add_referral_bonus(&admin, &user, &5u64, &1u64, &1_001u64);
+}
+
+#[test]
+fn test_add_referral_bonus_accepts_current_timestamp() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let reputation_id = env.register_contract(None, ReputationContract);
+    let client = ReputationContractClient::new(&env, &reputation_id);
+    let admin = Address::generate(&env);
+    client.initialize(&vec![&env, admin.clone()], &1u32, &0u32); // no decay
+    env.ledger().with_mut(|l| l.timestamp = 1_000);
+
+    let user = Address::generate(&env);
+    // Current timestamp is accepted.
+    client.add_referral_bonus(&admin, &user, &5u64, &1u64, &1_000u64);
+
+    let rep = client.get_reputation(&user);
+    assert_eq!(rep.total_score, 5u64);
+    assert_eq!(rep.total_weight, 1u64);
+}
+
+#[test]
+fn test_add_referral_bonus_accepts_past_timestamp() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let reputation_id = env.register_contract(None, ReputationContract);
+    let client = ReputationContractClient::new(&env, &reputation_id);
+    let admin = Address::generate(&env);
+    client.initialize(&vec![&env, admin.clone()], &1u32, &0u32); // no decay
+    env.ledger().with_mut(|l| l.timestamp = 1_000);
+
+    let user = Address::generate(&env);
+    // A past timestamp is accepted so the bonus decays from its true origin.
+    client.add_referral_bonus(&admin, &user, &5u64, &1u64, &500u64);
+
+    let rep = client.get_reputation(&user);
+    assert_eq!(rep.total_score, 5u64);
+    assert_eq!(rep.total_weight, 1u64);
+}
+
