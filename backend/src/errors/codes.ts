@@ -15,6 +15,7 @@ export const ErrorCodes = {
   EXTERNAL_SERVICE_UNAVAILABLE: "EXTERNAL_SERVICE_UNAVAILABLE",
   RATE_LIMITED: "RATE_LIMITED",
   ACCOUNT_DELETED: "ACCOUNT_DELETED",
+  INVALID_CATEGORY: "InvalidCategory",
 } as const;
 
 export type ErrorCode = (typeof ErrorCodes)[keyof typeof ErrorCodes];
