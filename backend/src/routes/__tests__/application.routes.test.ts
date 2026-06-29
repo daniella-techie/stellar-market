@@ -25,6 +25,7 @@ jest.mock("@prisma/client", () => {
         id: "00000000-0000-4000-8000-000000000001",
         role: "CLIENT",
         emailVerified: true,
+        walletAddress: "GDTESTWALLETADDRESS000000000000000000000000000000000000000",
       }),
     },
   };
@@ -44,10 +45,17 @@ jest.mock("../../services/notification.service", () => ({
   },
 }));
 
+jest.mock("../../services/recommendation.service", () => ({
+  RecommendationService: {
+    invalidateUserRecommendations: jest.fn().mockResolvedValue(undefined),
+  },
+}));
+
 import { PrismaClient } from "@prisma/client";
 const prismaMock = new PrismaClient() as any;
 const jobMock = prismaMock.job;
 const applicationMock = prismaMock.application;
+const userMock = prismaMock.user;
 
 // ─── App setup ────────────────────────────────────────────────────────────────
 const app = express();
@@ -209,6 +217,50 @@ describe("POST /api/jobs/:jobId/apply", () => {
 
     expect(res.status).toBe(400);
     expect(res.body).toEqual({ error: "Job is not accepting applications." });
+  });
+});
+
+// ─── Wallet verification on POST /apply (#801) ────────────────────────────────
+describe("POST /api/jobs/:jobId/apply — wallet verification (#801)", () => {
+  const FREELANCER_ID = "00000000-0000-4000-8000-000000000300";
+  const VALID_BODY = {
+    jobId: JOB_ID,
+    proposal:
+      "I am highly experienced and would love to work on this project. This proposal meets the minimum length requirement.",
+    estimatedDuration: 14,
+    bidAmount: 500,
+  };
+
+  it("returns 422 WalletRequired when freelancer has no wallet connected", async () => {
+    userMock.findUnique.mockResolvedValueOnce({ walletAddress: null });
+
+    const res = await request(app)
+      .post(`/api/jobs/${JOB_ID}/apply`)
+      .set(authHeader(FREELANCER_ID))
+      .send(VALID_BODY);
+
+    expect(res.status).toBe(422);
+    expect(res.body.code).toBe("WalletRequired");
+    expect(res.body.message).toMatch(/wallet/i);
+    expect(jobMock.findUnique).not.toHaveBeenCalled();
+    expect(applicationMock.create).not.toHaveBeenCalled();
+  });
+
+  it("proceeds past wallet check when freelancer has a wallet connected", async () => {
+    userMock.findUnique.mockResolvedValueOnce({
+      walletAddress: "GDTEST000000000000000000000000000000000000000000000000000",
+    });
+    jobMock.findUnique.mockResolvedValueOnce(null);
+
+    const res = await request(app)
+      .post(`/api/jobs/${JOB_ID}/apply`)
+      .set(authHeader(FREELANCER_ID))
+      .send(VALID_BODY);
+
+    // Wallet check passed → proceeds to job lookup → 404 (job not found)
+    expect(res.status).toBe(404);
+    expect(res.body.code).toBeUndefined();
+    expect(jobMock.findUnique).toHaveBeenCalled();
   });
 });
 

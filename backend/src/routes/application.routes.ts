@@ -35,6 +35,17 @@ router.post(
     const jobId = req.params.jobId as string;
     const { proposal, estimatedDuration, bidAmount } = req.body;
 
+    const freelancer = await prisma.user.findUnique({
+      where: { id: req.userId },
+      select: { walletAddress: true },
+    });
+    if (!freelancer?.walletAddress) {
+      return res.status(422).json({
+        code: "WalletRequired",
+        message: "You must connect a Stellar wallet before applying.",
+      });
+    }
+
     const job = await prisma.job.findUnique({ where: { id: jobId } });
     if (!job) {
       return res.status(404).json({ error: "Job not found." });
