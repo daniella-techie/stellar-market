@@ -1899,8 +1899,10 @@ impl ReputationContract {
 
         // Do NOT update legacy accumulators here; recomputation is lazy on next read.
 
+        // NOTE: Soroban symbol literals have a hard 9-character limit.
+        // Keep event topic symbols <= 9 chars.
         env.events().publish(
-            (symbol_short!("reput"), symbol_short!("review_removed")),
+            (symbol_short!("reput"), symbol_short!("rev_rm")),
             (user, review_index, admin),
         );
 
