@@ -11,8 +11,9 @@ import { Dispute, Vote } from "@/types";
 import DisputeVoteProgress from "@/components/DisputeVoteProgress";
 import EvidenceViewer from "@/components/EvidenceViewer";
 import EvidenceUpload from "@/components/EvidenceUpload";
+import DisputeOutcomeBanner from "@/components/DisputeOutcomeBanner";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api/v1";
 
 export default function DisputeDetailPage() {
   const { id } = useParams();
@@ -195,6 +196,10 @@ export default function DisputeDetailPage() {
           <p className="text-sm">{error}</p>
         </div>
       )}
+
+      <div className="mb-6">
+        <DisputeOutcomeBanner status={dispute.status} />
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Main Content */}
