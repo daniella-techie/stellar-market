@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import helmet from "helmet";
+import compression from "compression";
 import { createServer } from "http";
 import { PrismaClient } from "@prisma/client";
 import { config } from "./config";
@@ -142,6 +143,20 @@ app.use(requestTimeoutMiddleware);
 app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: true, limit: "1mb" }));
 app.use(sanitizeInput);
+
+// Compression — skip streaming endpoints
+app.use(compression({
+  threshold: 1024,
+  filter: (req, res) => {
+    if (req.path.includes("/transactions/export") ||
+        req.path.includes("/uploads/") ||
+        req.path.includes("/avatars/") ||
+        req.path.includes("/portfolio/files/")) {
+      return false;
+    }
+    return compression.filter(req, res);
+  },
+}));
 
 // Health check
 app.get("/health", async (_req, res) => {
