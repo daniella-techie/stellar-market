@@ -101,11 +101,11 @@ fn test_happy_path_job_completion_with_reputation() {
     // Step 1: Create job with milestones
     let milestones = vec![
         &env,
-        (String::from_str(&env, "Design phase"), 1_000_i128, DEADLINE),
+        (String::from_str(&env, "Design phase"), 1_000_i128, DEADLINE / 3),
         (
             String::from_str(&env, "Development phase"),
             2_000_i128,
-            DEADLINE,
+            DEADLINE * 2 / 3,
         ),
         (
             String::from_str(&env, "Testing phase"),
@@ -343,7 +343,7 @@ fn test_dispute_resolved_for_client() {
     // Create job with multiple milestones
     let milestones = vec![
         &env,
-        (String::from_str(&env, "Milestone 1"), 1_000_i128, DEADLINE),
+        (String::from_str(&env, "Milestone 1"), 1_000_i128, DEADLINE / 2),
         (String::from_str(&env, "Milestone 2"), 2_000_i128, DEADLINE),
     ];
 
@@ -436,8 +436,8 @@ fn test_full_workflow_with_partial_completion_and_cancellation() {
     // Create job with 3 milestones
     let milestones = vec![
         &env,
-        (String::from_str(&env, "Phase 1"), 1_000_i128, DEADLINE),
-        (String::from_str(&env, "Phase 2"), 1_500_i128, DEADLINE),
+        (String::from_str(&env, "Phase 1"), 1_000_i128, DEADLINE / 3),
+        (String::from_str(&env, "Phase 2"), 1_500_i128, DEADLINE * 2 / 3),
         (String::from_str(&env, "Phase 3"), 2_000_i128, DEADLINE),
     ];
 

@@ -194,6 +194,7 @@ model NotificationPreference {
   emailMilestoneApproved Boolean  @default(true)
   emailPaymentReleased   Boolean  @default(true)
   emailApplicationAccepted Boolean @default(true)
+  marketingEmails        Boolean  @default(true)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
@@ -232,6 +233,8 @@ model Job {
   savedBy      SavedJob[]    @relation("SavedByFreelancers")
   deadlineExtensionRequests DeadlineExtensionRequest[] @relation("DeadlineExtensions")
   escrowEvents EscrowEvent[]
+
+  contractPaused  Boolean  @default(false)
 
   @@index([deletedAt])
 }

@@ -2506,3 +2506,109 @@ fn test_leaderboard_removes_fully_decayed_user() {
     assert_eq!(after.len(), 0);
     assert!(!after.iter().any(|(addr, _)| addr == reviewee));
 }
+
+// ── Issue #771: minimum stake weight threshold ───────────────────────────────
+
+#[test]
+#[should_panic(expected = "Error(Contract, #26)")]
+fn test_submit_review_with_zero_stake_weight_rejected() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let escrow_id = env.register_contract(None, EscrowContract);
+    let reputation_id = env.register_contract(None, ReputationContract);
+    let client = ReputationContractClient::new(&env, &reputation_id);
+    let admin = Address::generate(&env);
+    client.initialize(&vec![&env, admin.clone()], &1u32, &0u32);
+
+    // Lower the economic min_stake to 0 so we can test the stake weight check directly.
+    client.propose_admin_action(&admin, &AdminAction::SetMinStake(0));
+
+    let reviewer = Address::generate(&env);
+    let reviewee = Address::generate(&env);
+    let token_admin = Address::generate(&env);
+    let token_addr = create_token(&env, &token_admin);
+    mint(&env, &token_addr, &token_admin, &reviewer, 1_000_000_000);
+    setup_completed_job(&env, &escrow_id, 1, &reviewer, &reviewee, &token_addr);
+
+    // stake_weight = 0 is below MIN_STAKE_WEIGHT = 1 → StakeTooLow (#26)
+    client.submit_review(
+        &escrow_id,
+        &reviewer,
+        &reviewee,
+        &1u64,
+        &5u32,
+        &String::from_str(&env, "ok"),
+        &0i128,
+    );
+}
+
+#[test]
+fn test_stake_too_low_error_code_is_26() {
+    assert_eq!(ReputationError::StakeTooLow as u32, 26);
+}
+
+#[test]
+fn test_get_min_stake_weight_returns_default() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let reputation_id = env.register_contract(None, ReputationContract);
+    let client = ReputationContractClient::new(&env, &reputation_id);
+    let admin = Address::generate(&env);
+    client.initialize(&vec![&env, admin.clone()], &1u32, &0u32);
+
+    let weight = client.get_min_stake_weight();
+    assert_eq!(weight, MIN_STAKE_WEIGHT);
+}
+
+#[test]
+fn test_set_min_stake_weight_admin_only() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let reputation_id = env.register_contract(None, ReputationContract);
+    let client = ReputationContractClient::new(&env, &reputation_id);
+    let admin = Address::generate(&env);
+    client.initialize(&vec![&env, admin.clone()], &1u32, &0u32);
+
+    client.set_min_stake_weight(&admin, &5u64);
+    assert_eq!(client.get_min_stake_weight(), 5u64);
+}
+
+#[test]
+#[should_panic]
+fn test_set_min_stake_weight_non_signer_fails() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let reputation_id = env.register_contract(None, ReputationContract);
+    let client = ReputationContractClient::new(&env, &reputation_id);
+    let admin = Address::generate(&env);
+    let outsider = Address::generate(&env);
+    client.initialize(&vec![&env, admin.clone()], &1u32, &0u32);
+
+    // Clear auths so the signer check actually fires.
+    env.set_auths(&[]);
+    client.set_min_stake_weight(&outsider, &10u64);
+}
+
+#[test]
+fn test_submit_review_with_stake_weight_at_minimum_accepted() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let escrow_id = env.register_contract(None, EscrowContract);
+    let reputation_id = env.register_contract(None, ReputationContract);
+    let client = ReputationContractClient::new(&env, &reputation_id);
+    let admin = Address::generate(&env);
+    client.initialize(&vec![&env, admin.clone()], &1u32, &0u32);
+
+    // Keep default min_stake, submit with exactly MIN_STAKE (which is >= MIN_STAKE_WEIGHT).
+    let reviewer = Address::generate(&env);
+    let reviewee = Address::generate(&env);
+    setup_review_for(&env, &escrow_id, &client, 1, &reviewer, &reviewee, 5);
+
+    let rep = client.get_reputation(&reviewee);
+    assert!(rep.total_weight > 0, "review should be recorded");
+}

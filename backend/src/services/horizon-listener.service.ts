@@ -549,6 +549,48 @@ async function handleBadgeAwarded(
   );
 }
 
+/**
+ * escrow / paused — Paused { paused_by: Address }
+ */
+async function handleContractPaused(event: SorobanEvent): Promise<void> {
+  const data = scValToNative(event.value) as Record<string, unknown>;
+  const pausedBy = String(data?.paused_by ?? "");
+
+  // Mark all active jobs as paused in PostgreSQL
+  await prisma.job.updateMany({
+    where: {
+      status: {
+        in: ["CREATED", "FUNDED", "IN_PROGRESS", "DISPUTED"],
+      },
+    },
+    data: {
+      contractPaused: true,
+    },
+  });
+
+  logger.info({ pausedBy, ledger: event.ledger }, "[HorizonListener] ContractPaused");
+}
+
+/**
+ * escrow / unpaused — Unpaused { unpaused_by: Address }
+ */
+async function handleContractUnpaused(event: SorobanEvent): Promise<void> {
+  const data = scValToNative(event.value) as Record<string, unknown>;
+  const unpausedBy = String(data?.unpaused_by ?? "");
+
+  // Unmark all paused jobs
+  await prisma.job.updateMany({
+    where: {
+      contractPaused: true,
+    },
+    data: {
+      contractPaused: false,
+    },
+  });
+
+  logger.info({ unpausedBy, ledger: event.ledger }, "[HorizonListener] ContractUnpaused");
+}
+
 // ─── event dispatch ───────────────────────────────────────────────────────────
 
 async function resolvePreRegisteredTx(
@@ -616,19 +658,29 @@ function eventTimestamp(event: SorobanEvent): Date {
   return Number.isNaN(timestamp.getTime()) ? new Date() : timestamp;
 }
 
-  if (contract === "escrow") {
-    if (name === "created") return await handleJobCreated(event);
-    if (name === "funded") return await handleJobFunded(event);
-    if (name === "pmt_released") return await handlePaymentReleased(event);
-  }
+  try {
+    if (contract === "escrow") {
+      if (name === "created") return await handleJobCreated(event);
+      if (name === "funded") return await handleJobFunded(event);
+      if (name === "pmt_released") return await handlePaymentReleased(event);
+      if (name === "paused")       return await handleContractPaused(event);
+      if (name === "unpaused")     return await handleContractUnpaused(event);
+    }
 
-  if (contract === "dispute") {
-    if (name === "raised") return await handleDisputeOpened(event);
-    if (name === "resolved") return await handleDisputeResolved(event);
-  }
+    if (contract === "dispute") {
+      if (name === "raised") return await handleDisputeOpened(event);
+      if (name === "resolved") return await handleDisputeResolved(event);
+    }
 
-  if (contract === "reput") {
-    if (name === "badge") return await handleBadgeAwarded(event);
+    if (contract === "reput") {
+      if (name === "badge") return await handleBadgeAwarded(event);
+    }
+  } catch (err) {
+    logger.error(
+      { err, contract, name, ledger: event.ledger },
+      "[HorizonListener] processEvent handler threw",
+    );
+    throw err; // re-throw so processEventWithRetry can handle retries/DLQ
   }
 
   const cursor = eventCursor(event);
@@ -874,6 +926,9 @@ export function startHorizonListener(): void {
 }
 
 export function stopHorizonListener(): void {
+  if (intervalId) {
+    clearInterval(intervalId);
+    intervalId = null;
   running = false;
   if (timerId) {
     clearTimeout(timerId);
