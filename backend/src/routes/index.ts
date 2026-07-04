@@ -24,6 +24,7 @@ import reportRoutes from "./report.routes";
 import categoriesRoutes from "./categories.routes";
 import skillRoutes from "./skill.routes";
 import emailPreviewRoutes from "./admin/emailPreview";
+import unsubscribeRoutes from "./unsubscribe.routes";
 
 const router = Router();
 
@@ -52,5 +53,6 @@ router.use("/platform", platformRoutes);
 router.use("/portfolio", portfolioRoutes);
 router.use("/webhooks", webhookRoutes);
 router.use("/reports", reportRoutes);
+router.use("/unsubscribe", unsubscribeRoutes);
 
 export default router;

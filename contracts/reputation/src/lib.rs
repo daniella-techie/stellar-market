@@ -99,6 +99,10 @@ pub enum ReputationError {
     // decay rate (e.g. 99%) would wipe out the leaderboard in a single period
     // and make reputation meaningless (issue #783).
     DecayRateTooHigh = 25,
+    /// Rejected when stake_weight is below the configured minimum stake weight.
+    /// A zero-stake review carries vote weight of 1 even though the reviewer has
+    /// no economic skin in the game; the minimum stake weight floor prevents this.
+    StakeTooLow = 26,
 }
 
 #[contracttype]
@@ -277,6 +281,9 @@ enum DataKey {
     Endorsement(Address, String, Address),
     SkillEndorsers(Address, String),
     StakeTiers,
+    /// Admin-configurable minimum stake weight. Reviews with stake_weight below
+    /// this value are rejected even when the economic min_stake allows zero stakes.
+    MinStakeWeight,
 }
 
 fn require_not_paused(env: &Env) -> Result<(), ReputationError> {
@@ -314,6 +321,9 @@ fn effective_max_decay_rate(env: &Env) -> u32 {
 
 const MIN_REVIEW_STAKE_DEFAULT: i128 = 10_000_000; // 1.0 unit (7 decimals)
 const RATE_LIMIT_LEDGERS_DEFAULT: u32 = 120; // ~10 minutes
+/// Hard floor on the stake_weight used as reputation vote weight.
+/// Prevents zero-weight reviews from gaining weight=1 via the fallback path.
+pub const MIN_STAKE_WEIGHT: u64 = 1;
 const DEFAULT_REFERRAL_BONUS: u64 = 5; // Equivalates to a 5-star review bonus
 /// Weight used when crediting referral bonus to reputation (not min review stake).
 const REFERRAL_BONUS_REPUTATION_WEIGHT: u64 = 1;
@@ -480,6 +490,19 @@ impl ReputationContract {
             .unwrap_or(MIN_REVIEW_STAKE_DEFAULT);
         if stake_weight < min_stake {
             return Err(ReputationError::BelowMinStake);
+        }
+
+        // 1b. Minimum Stake Weight Check — enforces a hard floor on the vote weight
+        // regardless of how the economic min_stake is configured. A zero-stake review
+        // would otherwise use weight=1 via the fallback path, letting stake-free
+        // reviewers influence the leaderboard without any economic commitment.
+        let min_stake_weight: u64 = env
+            .storage()
+            .instance()
+            .get(&DataKey::MinStakeWeight)
+            .unwrap_or(MIN_STAKE_WEIGHT);
+        if stake_weight < min_stake_weight as i128 {
+            return Err(ReputationError::StakeTooLow);
         }
 
         // 2. Rate Limit Check
@@ -1246,6 +1269,38 @@ impl ReputationContract {
             .instance()
             .get(&DataKey::RateLimit)
             .unwrap_or(RATE_LIMIT_LEDGERS_DEFAULT)
+    }
+
+    /// Get the current minimum stake weight threshold.
+    pub fn get_min_stake_weight(env: Env) -> u64 {
+        env.storage()
+            .instance()
+            .get(&DataKey::MinStakeWeight)
+            .unwrap_or(MIN_STAKE_WEIGHT)
+    }
+
+    /// Set the minimum stake weight threshold (admin/signer only).
+    /// Reviews submitted with stake_weight below this value are rejected with StakeTooLow.
+    pub fn set_min_stake_weight(
+        env: Env,
+        admin: Address,
+        weight: u64,
+    ) -> Result<(), ReputationError> {
+        admin.require_auth();
+        if !is_signer(&env, &admin) {
+            return Err(ReputationError::NotAdmin);
+        }
+        env.storage()
+            .instance()
+            .set(&DataKey::MinStakeWeight, &weight);
+        bump_instance_ttl(&env);
+
+        env.events().publish(
+            (symbol_short!("reput"), Symbol::new(&env, "min_wt_set")),
+            (admin, weight),
+        );
+
+        Ok(())
     }
 
     pub fn propose_admin_action(
