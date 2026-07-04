@@ -10,10 +10,12 @@ export type HorizonListenerStatus = "connected" | "degraded" | "down";
 export type HealthResponse = {
   status: "ok" | "degraded";
   service: "stellarmarket-api";
+  version?: string;
   uptime?: number;
   checks: {
     database: DependencyHealthStatus;
     redis: DependencyHealthStatus;
+    sorobanRpc?: DependencyHealthStatus;
     horizonListener: HorizonListenerStatus | DependencyHealthStatus;
     sorobanRpc: DependencyHealthStatus;
   };
