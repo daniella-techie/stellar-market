@@ -20,6 +20,8 @@ import {
   overrideHorizonCursor,
   replayHorizonDlq,
 } from "../services/horizon-listener.service";
+import { projectJobState } from "../services/escrow-projection.service";
+import { ReputationCacheService } from "../services/reputation-cache.service";
 
 const router = Router();
 const prisma = new PrismaClient();
