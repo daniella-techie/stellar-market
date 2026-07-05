@@ -50,6 +50,7 @@ jest.mock("@prisma/client", () => {
       create: jest.fn(),
       findUnique: jest.fn(),
       findMany: jest.fn(),
+      count: jest.fn(),
     },
     $disconnect: jest.fn(),
   };
@@ -74,6 +75,13 @@ jest.mock("@prisma/client", () => {
       COMPLETED: "COMPLETED",
       CANCELLED: "CANCELLED",
       DISPUTED: "DISPUTED",
+    } as any,
+    DisputeEventType: {
+      DISPUTE_OPENED: "DISPUTE_OPENED",
+      EVIDENCE_SUBMITTED: "EVIDENCE_SUBMITTED",
+      ARBITRATOR_ASSIGNED: "ARBITRATOR_ASSIGNED",
+      VOTE_CAST: "VOTE_CAST",
+      VERDICT_REACHED: "VERDICT_REACHED",
     } as any,
   };
 });
@@ -335,6 +343,7 @@ describe("Dispute Management System", () => {
       prismaMock.dispute.findUnique.mockResolvedValueOnce(mockDispute);
       prismaMock.disputeVote.findUnique.mockResolvedValueOnce(null);
       prismaMock.disputeVote.create.mockResolvedValueOnce(mockVote);
+      prismaMock.disputeVote.count.mockResolvedValueOnce(1);
       prismaMock.dispute.update.mockResolvedValueOnce({
         ...mockDispute,
         status: DisputeStatus.IN_PROGRESS,
@@ -423,6 +432,7 @@ describe("Dispute Management System", () => {
         votes: [],
       });
       prismaMock.dispute.update.mockResolvedValueOnce(resolvedDispute);
+      prismaMock.disputeVote.count.mockResolvedValueOnce(0);
       prismaMock.job.update.mockResolvedValueOnce({
         ...mockJob,
         status: JobStatus.COMPLETED,

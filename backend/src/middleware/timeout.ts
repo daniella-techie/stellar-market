@@ -14,9 +14,10 @@ export function requestTimeoutMiddleware(
   res: Response,
   next: NextFunction,
 ): void {
-  const acceptHeader = req.headers.accept ?? "";
+  const acceptHeader = req.headers?.accept ?? "";
+  const path = req.path ?? "";
   if (
-    req.path.endsWith("/stream") ||
+    path.endsWith("/stream") ||
     (typeof acceptHeader === "string" && acceptHeader.includes("text/event-stream"))
   ) {
     next();
