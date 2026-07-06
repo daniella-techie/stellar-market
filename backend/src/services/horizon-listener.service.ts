@@ -1,12 +1,5 @@
-import { rpc, scValToNative, xdr } from "@stellar/stellar-sdk";
-import {
-  PrismaClient,
-  BadgeTier,
-  EscrowEventType,
-  Prisma,
-  Notification,
-  NotificationType,
-} from "@prisma/client";
+import { rpc, scValToNative, Contract, xdr } from "@stellar/stellar-sdk";
+import { PrismaClient, BadgeTier, EscrowEventType, Prisma, Notification, NotificationType } from "@prisma/client";
 import { config } from "../config";
 import { NotificationService } from "./notification.service";
 import { logger } from "../lib/logger";
@@ -17,6 +10,8 @@ import { ReputationCacheService } from "./reputation-cache.service";
 
 export type { CircuitBreakerStatus };
 export type { CircuitState } from "../lib/circuit-breaker";
+
+export const allowedTokensStore = new Set<string>();
 
 const prisma = new PrismaClient();
 const server = new rpc.Server(config.stellar.rpcUrl);
@@ -563,8 +558,13 @@ async function processEvent(event: SorobanEvent): Promise<void> {
       if (name === "created") return await handleJobCreated(event);
       if (name === "funded") return await handleJobFunded(event);
       if (name === "pmt_released") return await handlePaymentReleased(event);
-      if (name === "paused")       return await handleContractPaused(event);
-      if (name === "unpaused")     return await handleContractUnpaused(event);
+      if (name === "token_allowed") return await handleTokenAllowed(event);
+      if (name === "token_revoked") return await handleTokenRevoked(event);
+      if (name === "created") return await handleJobCreated(event);
+      if (name === "funded") return await handleJobFunded(event);
+      if (name === "pmt_released") return await handlePaymentReleased(event);
+      if (name === "paused") return await handleContractPaused(event);
+      if (name === "unpaused") return await handleContractUnpaused(event);
     }
 
     if (contract === "dispute") {
@@ -582,6 +582,22 @@ async function processEvent(event: SorobanEvent): Promise<void> {
     );
     throw err; // re-throw so processHorizonEvent can handle retries/DLQ
   }
+}
+
+async function handleTokenAllowed(event: SorobanEvent): Promise<void> {
+  const data = scValToNative(event.value);
+  if (!Array.isArray(data) || data.length < 2) return;
+  const token = String(data[0] ?? "");
+  allowedTokensStore.add(token);
+  logger.info({ token }, "[HorizonListener] TokenAllowed event processed");
+}
+
+async function handleTokenRevoked(event: SorobanEvent): Promise<void> {
+  const data = scValToNative(event.value);
+  if (!Array.isArray(data) || data.length < 2) return;
+  const token = String(data[0] ?? "");
+  allowedTokensStore.delete(token);
+  logger.info({ token }, "[HorizonListener] TokenRevoked event processed");
 }
 
 // ─── polling loop (circuit-breaker guarded) ───────────────────────────────────
@@ -708,6 +724,8 @@ export async function getHorizonStatus(): Promise<{
   };
 }
 
+
+
 export async function replayHorizonDlq(): Promise<{
   replayed: number;
   failed: number;
@@ -758,6 +776,8 @@ let activePoll: Promise<void> | null = null;
 export function startHorizonListener(): void {
   if (timerId || running) return;
 
+  void initializeAllowedTokens();
+
   const contractIds = [
     config.stellar.escrowContractId,
     config.stellar.disputeContractId,
@@ -806,11 +826,44 @@ export function stopHorizonListener(): void {
   if (intervalId) {
     clearInterval(intervalId);
     intervalId = null;
-  }
-  running = false;
-  if (timerId) {
-    clearTimeout(timerId);
-    timerId = null;
-    logger.info("[HorizonListener] Stopped");
+    running = false;
+    if (timerId) {
+      clearTimeout(timerId);
+      timerId = null;
+      logger.info("[HorizonListener] Stopped");
+    }
   }
 }
+
+  async function initializeAllowedTokens(): Promise<void> {
+    const contractId = config.stellar.escrowContractId;
+    if (!contractId) {
+      logger.warn("[HorizonListener] Missing escrowContractId, skipping token cache init");
+      return;
+    }
+    try {
+      const { Contract, TransactionBuilder, Account } = await import("@stellar/stellar-sdk");
+      const contract = new Contract(contractId);
+      const result = await server.simulateTransaction(
+        new TransactionBuilder(
+          new Account("GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF", "0"),
+          { fee: "100", networkPassphrase: config.stellar.networkPassphrase }
+        )
+          .addOperation(contract.call("get_allowed_tokens"))
+          .setTimeout(30)
+          .build()
+      );
+
+      if ("result" in result && result.result) {
+        const native = scValToNative(result.result.retval);
+        if (Array.isArray(native)) {
+          for (const token of native) {
+            allowedTokensStore.add(String(token));
+          }
+          logger.info({ count: native.length }, "[HorizonListener] Initialized allowedTokensStore");
+        }
+      }
+    } catch (error) {
+      logger.warn({ err: error }, "[HorizonListener] Failed to initialize allowedTokensStore");
+    }
+  }
