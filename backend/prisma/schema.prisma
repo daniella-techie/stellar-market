@@ -114,6 +114,14 @@ enum DisputeStatus {
   RESOLVED
 }
 
+enum DisputeEventType {
+  DISPUTE_OPENED
+  EVIDENCE_SUBMITTED
+  ARBITRATOR_ASSIGNED
+  VOTE_CAST
+  VERDICT_REACHED
+}
+
 model User {
   id                     String    @id @default(cuid())
   walletAddress          String?   @unique
@@ -468,12 +476,25 @@ model Dispute {
   initiator   User          @relation("DisputeInitiated", fields: [initiatorId], references: [id])
   votes       DisputeVote[]
   attachments Attachment[]
+  events      DisputeEvent[]
 
   @@index([jobId])
   @@index([clientId])
   @@index([freelancerId])
   @@index([initiatorId])
   @@index([status])
+}
+
+model DisputeEvent {
+  id        Int              @id @default(autoincrement())
+  disputeId String
+  type      DisputeEventType
+  payload   Json?
+  createdAt DateTime         @default(now())
+
+  dispute Dispute @relation(fields: [disputeId], references: [id], onDelete: Cascade)
+
+  @@index([disputeId, id])
 }
 
 model DisputeVote {

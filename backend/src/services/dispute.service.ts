@@ -7,11 +7,13 @@ import {
   DisputeStatus,
   JobStatus,
   EscrowStatus,
+  DisputeEventType,
 } from "@prisma/client";
 import { createError } from "../middleware/error";
 import { NotificationService } from "./notification.service";
 import { ContractService } from "./contract.service";
 import { logger } from "../lib/logger";
+import { recordDisputeEvent } from "./dispute-event.service";
 
 const prisma = new PrismaClient();
 
@@ -136,6 +138,11 @@ export class DisputeService {
       message: `A dispute has been raised for job "${dispute.job.title}". You have been notified as the freelancer.`,
       metadata: { disputeId: dispute.id, jobId, initiatorId },
       skipBatching: true,
+    });
+
+    await recordDisputeEvent(dispute.id, DisputeEventType.DISPUTE_OPENED, {
+      initiatorId,
+      initiatorUsername: dispute.initiator.username,
     });
 
     return dispute;
@@ -676,6 +683,13 @@ export class DisputeService {
       });
     }
 
+    const voteCount = await prisma.disputeVote.count({ where: { disputeId } });
+    await recordDisputeEvent(disputeId, DisputeEventType.VOTE_CAST, {
+      voterId,
+      choice,
+      voteCount,
+    });
+
     return vote;
   }
 
@@ -747,6 +761,10 @@ export class DisputeService {
       skipBatching: true,
     });
 
+    await recordDisputeEvent(disputeId, DisputeEventType.VERDICT_REACHED, {
+      outcome,
+    });
+
     return updatedDispute;
   }
 
@@ -783,6 +801,11 @@ export class DisputeService {
           where: { id: disputeId },
           data: { onChainDisputeId },
         });
+        await recordDisputeEvent(
+          disputeId,
+          DisputeEventType.ARBITRATOR_ASSIGNED,
+          { onChainDisputeId },
+        );
         break;
 
       case "VOTE_CAST":

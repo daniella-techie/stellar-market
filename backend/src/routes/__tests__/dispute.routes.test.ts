@@ -26,4 +26,15 @@ describe("Dispute routes auth protection", () => {
       error: "Access denied. No token provided.",
     });
   });
+
+  it("GET /api/disputes/:id/stream returns 401 when unauthenticated", async () => {
+    const response = await request(app)
+      .get("/api/disputes/test-dispute-id/stream")
+      .set("Accept", "text/event-stream");
+
+    expect(response.status).toBe(401);
+    expect(response.body).toEqual({
+      error: "Access denied. No token provided.",
+    });
+  });
 });

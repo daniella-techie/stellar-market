@@ -1,5 +1,5 @@
 import { Router, Request, Response } from "express";
-import { DisputeStatus, UserRole, PrismaClient } from "@prisma/client";
+import { DisputeStatus, UserRole, PrismaClient, DisputeEventType } from "@prisma/client";
 import crypto from "crypto";
 import fs from "fs";
 import path from "path";
@@ -7,6 +7,9 @@ import { authenticate, AuthRequest } from "../middleware/auth";
 import { asyncHandler } from "../middleware/error";
 import { validate } from "../middleware/validation";
 import { DisputeService } from "../services/dispute.service";
+import { recordDisputeEvent } from "../services/dispute-event.service";
+import { disputeEmitter } from "../lib/dispute-emitter";
+import type { DisputeEvent } from "@prisma/client";
 import { upload, UPLOAD_DIR } from "../config/upload";
 import { validateFileMimeType, formatFileSize } from "../utils/fileValidation";
 import { config, MAX_PAGE_SIZE } from "../config";
@@ -28,6 +31,45 @@ import {
 } from "../schemas/dispute";
 
 const prisma = new PrismaClient();
+
+async function assertDisputeViewerAccess(
+  disputeId: string,
+  userId: string,
+  userRole: UserRole | undefined,
+): Promise<{ allowed: true } | { allowed: false; status: number; error: string }> {
+  const dispute = await prisma.dispute.findUnique({
+    where: { id: disputeId },
+    include: {
+      votes: { where: { voterId: userId }, select: { id: true } },
+    },
+  });
+
+  if (!dispute) {
+    return { allowed: false, status: 404, error: "Dispute not found." };
+  }
+
+  const isParticipant =
+    dispute.clientId === userId ||
+    dispute.freelancerId === userId ||
+    dispute.initiatorId === userId;
+  const isRegisteredVoter = dispute.votes.length > 0;
+  const isAdmin = userRole === UserRole.ADMIN;
+
+  if (!isParticipant && !isRegisteredVoter && !isAdmin) {
+    return {
+      allowed: false,
+      status: 403,
+      error:
+        "Access denied. Only dispute participants or registered voters can view this dispute.",
+    };
+  }
+
+  return { allowed: true };
+}
+
+function writeSseEvent(res: Response, event: DisputeEvent): void {
+  res.write(`id: ${event.id}\ndata: ${JSON.stringify(event)}\n\n`);
+}
 
 async function verifyAnchorTxOnHorizon(txHash: string): Promise<boolean> {
   try {
@@ -128,6 +170,64 @@ router.get(
     // Community listing returns array for frontend compatibility
     res.setHeader("X-Max-Page-Size", String(MAX_PAGE_SIZE));
     res.json(disputes);
+  }),
+);
+
+/**
+ * GET /api/disputes/:id/stream
+ * Server-Sent Events stream for dispute timeline updates
+ */
+router.get(
+  "/:id/stream",
+  authenticate,
+  validate({ params: disputeIdParamSchema }),
+  asyncHandler(async (req: AuthRequest, res: Response) => {
+    const disputeId = req.params.id as string;
+    const access = await assertDisputeViewerAccess(
+      disputeId,
+      req.userId!,
+      req.userRole,
+    );
+
+    if (!access.allowed) {
+      res.status(access.status).json({ error: access.error });
+      return;
+    }
+
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
+    res.flushHeaders?.();
+
+    const lastEventHeader = req.headers["last-event-id"];
+    const lastEventId = Number(
+      Array.isArray(lastEventHeader) ? lastEventHeader[0] : lastEventHeader ?? "0",
+    );
+    const cursor = Number.isFinite(lastEventId) && lastEventId >= 0 ? lastEventId : 0;
+
+    const backfill = await prisma.disputeEvent.findMany({
+      where: { disputeId, id: { gt: cursor } },
+      orderBy: { id: "asc" },
+    });
+
+    for (const event of backfill) {
+      writeSseEvent(res, event);
+    }
+
+    const listener = (event: DisputeEvent) => {
+      writeSseEvent(res, event);
+    };
+
+    disputeEmitter.on(`dispute:${disputeId}`, listener);
+
+    const keepAlive = setInterval(() => {
+      res.write(": keepalive\n\n");
+    }, 15_000);
+
+    req.on("close", () => {
+      clearInterval(keepAlive);
+      disputeEmitter.off(`dispute:${disputeId}`, listener);
+    });
   }),
 );
 
@@ -494,6 +594,13 @@ router.post(
       attachments.push({
         ...attachment,
         sizeFormatted: formatFileSize(attachment.size),
+      });
+    }
+
+    if (attachments.length > 0) {
+      await recordDisputeEvent(disputeId, DisputeEventType.EVIDENCE_SUBMITTED, {
+        fileCount: attachments.length,
+        uploaderId: req.userId,
       });
     }
 

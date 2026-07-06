@@ -77,4 +77,22 @@ describe("requestTimeoutMiddleware", () => {
     expect(res.status).not.toHaveBeenCalled();
     expect(res.end).toHaveBeenCalled();
   });
+
+  it("skips timeout for SSE stream routes", () => {
+    const req: any = {
+      originalUrl: "/api/v1/disputes/abc/stream",
+      path: "/abc/stream",
+      method: "GET",
+      headers: { accept: "text/event-stream" },
+      requestId: "req-5",
+    };
+    const res = makeRes();
+    const next = jest.fn();
+
+    requestTimeoutMiddleware(req, res, next);
+    jest.advanceTimersByTime(REQUEST_TIMEOUT_MS);
+
+    expect(next).toHaveBeenCalledTimes(1);
+    expect(res.status).not.toHaveBeenCalled();
+  });
 });
