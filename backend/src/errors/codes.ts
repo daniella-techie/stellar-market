@@ -16,6 +16,7 @@ export const ErrorCodes = {
   RATE_LIMITED: "RATE_LIMITED",
   ACCOUNT_DELETED: "ACCOUNT_DELETED",
   PAYLOAD_TOO_LARGE: "PAYLOAD_TOO_LARGE",
+  WALLET_REQUIRED: "WalletRequired",
 } as const;
 
 export type ErrorCode = (typeof ErrorCodes)[keyof typeof ErrorCodes];
