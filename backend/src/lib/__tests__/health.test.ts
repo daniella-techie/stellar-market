@@ -5,6 +5,10 @@ const pingMock = jest.fn();
 const isRedisConnectedMock = jest.fn();
 const getHealthMock = jest.fn();
 
+jest.mock("../../services/horizon-listener.service", () => ({
+  getHorizonListenerHealth: jest.fn().mockReturnValue("ok"),
+}));
+
 jest.mock("../redis", () => ({
   __esModule: true,
   default: {
@@ -19,16 +23,6 @@ jest.mock("../../config", () => ({
     version: "1.0.0",
     stellar: {
       rpcUrl: "https://soroban-testnet.stellar.org",
-      escrowContractId: "",
-      disputeContractId: "",
-      reputationContractId: "",
-    },
-    smtp: {
-      host: "smtp.test",
-      port: 587,
-      user: "",
-      pass: "",
-      from: "noreply@test.io",
     },
   },
 }));
@@ -59,17 +53,24 @@ describe("getHealthStatus", () => {
     expect(result.status).toBe("ok");
     expect(result.version).toBe("1.0.0");
     expect(result.uptime).toBeGreaterThanOrEqual(0);
+    expect(result.checks).toEqual({
+      database: "ok",
+      redis: "ok",
+      horizonListener: "ok",
+      sorobanRpc: "ok",
+    });
+
     expect(result).toEqual({
       status: "ok",
       service: "stellarmarket-api",
-      version: "1.0.0",
       uptime: expect.any(Number),
       checks: {
         database: "ok",
         redis: "ok",
-        sorobanRpc: "ok",
-        horizonListener: "connected",
+        horizonListener: "ok",
+        sorobanRpc: "ok"
       },
+      version: "1.0.0"
     });
   });
 

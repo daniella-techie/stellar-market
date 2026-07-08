@@ -24,8 +24,8 @@ export interface NotificationJobData {
 
 const connection = RedisClient.getInstance();
 
-export const notificationQueue = new Queue<NotificationJobData>("notifications", {
-  connection,
+export const notificationQueue = new Queue<NotificationJobData, any, string>("notifications", {
+  connection: connection as any,
   defaultJobOptions: {
     attempts: 3,
     backoff: { type: "exponential", delay: 1000 },
@@ -58,20 +58,20 @@ export function getNotificationPriority(type: NotificationType): NotificationPri
   }
 }
 
-let worker: Worker<NotificationJobData> | null = null;
+let worker: Worker<NotificationJobData, any, string> | null = null;
 
 export function startNotificationWorker(
   getSocketEmitter: (userId: string) => boolean,
   emitToUser: (userId: string, event: string, data: unknown) => void,
 ) {
-  worker = new Worker<NotificationJobData>(
+  worker = new Worker<NotificationJobData, any, string>(
     "notifications",
-    async (job: Job<NotificationJobData>) => {
+    async (job: Job<NotificationJobData, any, string>) => {
       const { userId, notificationId } = job.data;
 
       const rateLimitKey = `notif:ratelimit:${userId}`;
-      const count = await connection.incr(rateLimitKey);
-      if (count === 1) await connection.expire(rateLimitKey, 1);
+      const count = await (connection as any).incr(rateLimitKey);
+      if (count === 1) await (connection as any).expire(rateLimitKey, 1);
 
       if (count > 10) {
         await notificationQueue.add("send", job.data, {
@@ -130,7 +130,7 @@ export function startNotificationWorker(
       }
     },
     {
-      connection,
+      connection: connection as any,
       concurrency: 20,
     },
   );

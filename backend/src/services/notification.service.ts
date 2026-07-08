@@ -113,7 +113,7 @@ export class NotificationService {
 
     const priority = getNotificationPriority(type);
     await notificationQueue.add(
-      "send",
+      "send" as any,
       {
         userId,
         type,
